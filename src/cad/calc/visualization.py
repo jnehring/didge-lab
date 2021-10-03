@@ -1,15 +1,27 @@
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+from cad.calc.conv import freq_to_note, note_name
+
 class DidgeVisualizer:
     
     @classmethod
     def create_didge_shape(cls, geo):
+
+        margin_y=10
+        margin_x=10
+
         max_y=max([x[1] for x in geo.geo])
+        center_y = max_y/2 + margin_y
 
         df={"x":[], "y": [], "series": []}
         for i in range(0, len(geo.geo)):
             p=geo.geo[i]
 
-            p_oben=p[1] + d1/2
-            p_unten=-1*p[1] - d1/2
+            p_oben=center_y + p[1]/2 
+            p_unten=center_y - p[1]/2
 
             df["x"].append(p[0])
             df["y"].append(p_oben)
@@ -28,19 +40,20 @@ class DidgeVisualizer:
     
     @classmethod
     def vis_didge(cls, geo):
-        df=Visualizer.create_didge_shape(geo)
+
+        df=DidgeVisualizer.create_didge_shape(geo)
         n_series=len(df["series"].unique())
         palette = ["#000000"]*n_series
         sns.set(rc={'figure.figsize':(15,3)})
-        g = sns.lineplot(data=df, x="x", y="y", hue="series", palette=palette)
-        #g.set(ylim=(0, y_dim))
-        #g.set(xlim=(0, x_dim))
+        g=sns.lineplot(data=df, x="x", y="y", hue="series", palette=palette)
+        g.set(ylim=(0, df["y"].max()))
+        g.set(xlim=(0, df["x"].max()))
         g.get_legend().remove()
-        #g.set_yticks([])
+        g.set_yticks([])
         g.xaxis.set_ticks_position("top")
-        #g.show()
         plt.axis('equal')
-        plt.show()
+        return g
+
         
 class FFTVisualiser:
     
@@ -56,7 +69,7 @@ class FFTVisualiser:
         sns.lineplot(data=fft)
         
         for t in target:
-            note_number=Note.freq_to_note(t)
-            print(t, note_number)
+            note_number=freq_to_note(t)
+            #print(t, note_number, note_name(note_number))
             plt.axvline(t, 0, 1, color="black", dashes=[5,5])
         plt.show()

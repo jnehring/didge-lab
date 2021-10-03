@@ -73,7 +73,7 @@ def didgmo_bridge(geo, skip_fft=False):
     subprocess.check_output(command)
     
     if not skip_fft:
-        fft=pd.read_csv("sample.fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
+        fft=pd.read_csv("temp.fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
         return PeakFile("temp.peak"), fft
     else:
         return PeakFile("temp.peak")

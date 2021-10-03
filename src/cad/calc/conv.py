@@ -4,6 +4,7 @@ def note_to_freq(note):
     return 440*pow(2, note/12)
 
 def note_name(note):
+    note=round(note)
     note+=48
     octave=math.floor(note/12)
     number=note%12
