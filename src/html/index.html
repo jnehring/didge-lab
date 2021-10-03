@@ -1,34 +1,202 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-    <meta charset="utf-8">
-    <title>Blank HTML5</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js" integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css" integrity="sha512-aOG0c6nPNzGk+5zjwyJaoRUgCdOrfSDhmMID2u4+OIslr0GjpLKo7Xm0Ao3xmpM4T8AmIouRkqwj1nrdVsLKEQ==" crossorigin="anonymous" referrerpolicy="no-referrer" /></head>
-    <script src="./didge.js"></script>
+<!-- Load the Paper.js library -->
+<script
+  src="https://code.jquery.com/jquery-3.6.0.min.js"
+  integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+  crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.15/paper-full.min.js" integrity="sha512-ovjLI1ZcZe6bw+ImQ21r+sv8q/Vwob2kq7tFidK6E1LWfi0T4uobbmpfEU1//a9h9o5Kkt+MnMWf6rWlg0EiMw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script integrity="" src="js/mindmup-editabletable.js" integrity="sha512-ovjLI1ZcZe6bw+ImQ21r+sv8q/Vwob2kq7tFidK6E1LWfi0T4uobbmpfEU1//a9h9o5Kkt+MnMWf6rWlg0EiMw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- Define inlined JavaScript -->
+<style>
+body { 
+        font-family: Verdana,Geneva,sans-serif; 
+    }    
+</style>
+<script type="text/javascript">
+    
+shape=[
+    [0, 32],  
+    [600, 32],  
+    [700, 50],  
+    [800, 40],  
+    [1150, 40],  
+    [1250, 60],  
+    [1350, 42],  
+    [1700, 45],  
+    [1800, 65],  
+    [1900, 70], 
+    [2000, 75]
+];
+
+
+DidgeShape={
+
+    drag_index: null,
+    drag_startpoint: null,
+    margin: 10,
+    measure_height: 50,
+    
+    draw_didge: function(){
+        paper.project.clear();
+    
+        maxx=0;
+        maxy=0;
+        for( var i=0; i<shape.length; i++){
+            if( shape[i][0] > maxx ) maxx=shape[i][0];
+            if( shape[i][1] > maxy ) maxy=shape[i][1];
+        }
+    
+        canvas_width=1000;
+        canvas_height=200;
+        DidgeShape.scaling=canvas_width/maxx;
+        //center_y=DidgeShape.margin + maxy/2;
+        center_y=canvas_height/2;
+
+        measure = new paper.Path();
+        measure.strokeColor = 'black';
+        measure_starty=20;
+        measure.add(new paper.Point(DidgeShape.margin, measure_starty));
+        measure.add(new paper.Point(DidgeShape.margin + maxx*DidgeShape.scaling, measure_starty));
+        measure_ticksize=500;
+        tick=0;
+        ticks=[];
+        while( tick<maxx ){
+            ticks.push(tick);
+            tick += measure_ticksize;
+        }
+        if(ticks[ticks-length-1] != maxx) ticks.push(Math.round(maxx));
+
+        for( var i=0; i<ticks.length; i++){
+
+            tick=ticks[i];
+            tickpath=new paper.Path();
+            tickpath.strokeColor="black";
+            tickx=DidgeShape.margin + tick*DidgeShape.scaling
+            tickpath.add(new paper.Point(tickx, measure_starty));
+            tickpath.add(new paper.Point(tickx, measure_starty+5));
+
+            text = new paper.PointText(new paper.Point(tickx, measure_starty-5));
+            text.justification = 'center';
+            text.fillColor = 'black';
+            text.content = tick;
+        }
+
+        path_unten = new paper.Path();
+        path_oben = new paper.Path();
+        path_oben.strokeColor = 'black';
+        path_unten.strokeColor = 'black';
+    
+        dragger_radius=5;
+        $("#dimensions tbody").html("");
+        for( var i=0; i<shape.length; i++){
+            y_unten=DidgeShape.measure_height + DidgeShape.margin + (center_y + shape[i][1]/2)*DidgeShape.scaling;
+            y_oben=DidgeShape.measure_height + DidgeShape.margin + (center_y - shape[i][1]/2) * DidgeShape.scaling;
+            x=DidgeShape.margin + shape[i][0] * DidgeShape.scaling;
+    
+            drag_x=paper.Shape.Rectangle(
+                new paper.Point(x-2, y_unten+5),
+                new paper.Point(x+2, y_oben-5)
+            );
+            drag_x.shapeIndex=i;
+            drag_x.fillColor="white";
+    
+            drag_x.onMouseEnter = function(event) {
+                this.fillColor = '#666666';
+            };
+            drag_x.onMouseLeave = function(event) {
+                this.fillColor = 'white';
+            };
+            drag_x.onMouseDown = function(event) {
+                DidgeShape.drag_index=this.shapeIndex;
+                console.log(event);
+                DidgeShape.drag_startpoint=event.point;
+            };
+            vertical_path=new paper.Path();
+            vertical_path.strokeColor="#cccccc";
+            vertical_path.add(new paper.Point(x, y_unten));
+            vertical_path.add(new paper.Point(x, y_oben));
+
+            path_unten.add(new paper.Point(x,y_unten));
+            path_oben.add(new paper.Point(x,y_oben));
+    
+    
+            tr = $("<tr>").appendTo($("#dimensions tbody"));
+                $("<td>").html(shape[i][0]).appendTo(tr);
+                $("<td>").html(shape[i][1]).appendTo(tr);
+        }
+        $('#dimensions').editableTableWidget();
+        $('#dimensions').on('validate', function(evt, newValue) {
+            return !isNaN(parseInt(newValue)) && parseInt(newValue) == parseFloat(newValue) && parseInt(newValue)>=0;
+        });
+        $("#dimensions").on('change', function(evt, newValue) {
+            shape=[];
+            x=-1;
+            $("#dimensions tbody td").each(function(){
+                if(x==-1){
+                    x=parseInt($(this).html());
+                } else{
+                    y=parseInt($(this).html());
+                    shape.push([x,y]);
+                    x=-1;
+                }
+            });
+            DidgeShape.draw_didge();
+        });
+
+        paper.view.draw();
+    }
+}
+
+window.onload = function() {
+    var canvas = document.getElementById('myCanvas');
+    paper.setup(canvas);
+    $('#dimensions').editableTableWidget();
+    canvas.addEventListener('mousemove', e => {
+        if( DidgeShape.drag_index != null){
+
+            if(DidgeShape.drag_index>0){
+                shift = (DidgeShape.drag_startpoint.x - e.offsetX)/DidgeShape.scaling;
+                
+                newx=shape[DidgeShape.drag_index][0]-shift;
+                console.log(shape[DidgeShape.drag_index-1]);
+                if(newx>shape[DidgeShape.drag_index-1][0]+10 && (
+                    DidgeShape.draw_index==shape.length-1 ||
+                    newx<shape[DidgeShape.drag_index+1][0]-10
+                )){
+                    shape[DidgeShape.drag_index][0] -= shift;
+                }
+
+                //console.log(DidgeShape.drag_startpoint.x, shift);
+            }
+            shifty=(DidgeShape.drag_startpoint.y - e.offsetY)/DidgeShape.scaling;
+            shape[DidgeShape.drag_index][1] += shifty;
+            if(shape[DidgeShape.drag_index][1] < 1) shape[DidgeShape.drag_index][1]=1;
+            console.log(shifty);
+
+            DidgeShape.draw_didge();
+        }
+    });
+    canvas.addEventListener('mouseup', e => {
+        DidgeShape.drag_index=null;
+    });
+    canvas.addEventListener('dblclick', e => {
+
+    });
+    DidgeShape.draw_didge();
+    
+}
+</script>
+</head>
 <body>
+	<canvas id="myCanvas" width="1100" height="200"></canvas>
 
-    <h1>Computer-Aided Design</h1>
-
-    <h2>Innenform</h2>
-    <textarea rows="20" cols="30">
-0 32 
-600 32 
-700 50 
-800 40 
-1150 40 
-1250 60 
-1350 42 
-1700 45 
-1800 65 
-1900 70
-2000 75
-        </textarea>
-
-    <div class="button submit">Submit</div>
+    <h2>Dimensions</h2>
+    <table id="dimensions" class="table table-striped">
+        <thead><tr><th>X</th><th>Y</th>
+        <tbody>
+        </tbody>
+      </table>
 
 </body>
-
 </html>
