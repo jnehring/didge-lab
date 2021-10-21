@@ -62,19 +62,37 @@ class PeakFile:
                 break
         print(s[0:-2])
 
+    def get_impedance_table(self, limit=None):
 
-def didgmo_bridge(geo, skip_fft=False):
+        df={}
+        for key in self.impedance_peaks[0].keys():
+            df[key]=[]
 
-    outfile="temp.geo"
+        for p in self.impedance_peaks:
+
+            for key in p.keys():
+                df[key].append(p[key])
+        
+        df=pd.DataFrame(df)
+        return df
+
+
+def didgmo_bridge(geo, skip_fft=False, thread_num=0):
+
+    name="temp" + str(thread_num)
+    outfile=name + ".geo"
     new_geo=geo.copy()
     new_geo.scale(0.001)
     new_geo.write_geo(outfile)
-    command=["didgmo", "geo2fft", "temp", "1000"]
+    command=["didgmo", "geo2fft", name, "1000"]
     subprocess.check_output(command)
     
     if not skip_fft:
-        fft=pd.read_csv("temp.fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
-        return PeakFile("temp.peak"), fft
+        fft=pd.read_csv(name + ".fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
+        return PeakFile(name + ".peak"), fft
     else:
-        return PeakFile("temp.peak")
+        return PeakFile(name + ".peak")
 
+# remove the temp... files
+def cleanup():
+    

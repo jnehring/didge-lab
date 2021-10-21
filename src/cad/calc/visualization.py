@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from cad.calc.conv import freq_to_note, note_name
+from cad.calc.didgmo import didgmo_bridge
 
 class DidgeVisualizer:
     
@@ -58,7 +59,7 @@ class DidgeVisualizer:
 class FFTVisualiser:
     
     @classmethod
-    def vis_fft_and_target(cls, fft, target):
+    def vis_fft_and_target(cls, fft, target=None):
         
         fft=fft.copy()
         
@@ -68,8 +69,18 @@ class FFTVisualiser:
         sns.set(rc={'figure.figsize':(15,5)})
         sns.lineplot(data=fft)
         
-        for t in target:
-            note_number=freq_to_note(t)
-            #print(t, note_number, note_name(note_number))
-            plt.axvline(t, 0, 1, color="black", dashes=[5,5])
-        plt.show()
+        if target != None:
+            for t in target:
+                note_number=freq_to_note(t)
+                #print(t, note_number, note_name(note_number))
+                plt.axvline(t, 0, 1, color="black", dashes=[5,5])
+
+def visualize_geo_fft(geo, target=None):
+    DidgeVisualizer.vis_didge(geo)
+    plt.show()
+    peak, fft=didgmo_bridge(geo)
+    FFTVisualiser.vis_fft_and_target(fft, target)
+    plt.show()
+    bell_size=geo.geo[-1][1]
+    print("size bell end: %.00fmm" % (bell_size))
+    return peak.get_impedance_table()

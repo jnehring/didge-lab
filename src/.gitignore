@@ -1,0 +1,5 @@
+*.lab
+*.peak
+*.geo
+*.fft
+projects/
