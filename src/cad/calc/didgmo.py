@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import random
 from tqdm import tqdm
-
+from threading import Lock
 
 class PeakFile:
 
@@ -76,23 +76,31 @@ class PeakFile:
         df=pd.DataFrame(df)
         return df
 
+lock=Lock()
+def didgmo_bridge(geo, skip_fft=False):
 
-def didgmo_bridge(geo, skip_fft=False, thread_num=0):
+    lock.acquire()
+    file_num=0
+    while os.path.exists("temp" + str(file_num) + ".geo"):
+        file_num+=1
+    lock.release()
 
-    name="temp" + str(thread_num)
+    name="temp" + str(file_num)
     outfile=name + ".geo"
     new_geo=geo.copy()
     new_geo.scale(0.001)
-    new_geo.write_geo(outfile)
-    command=["didgmo", "geo2fft", name, "1000"]
-    subprocess.check_output(command)
-    
-    if not skip_fft:
-        fft=pd.read_csv(name + ".fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
-        return PeakFile(name + ".peak"), fft
-    else:
-        return PeakFile(name + ".peak")
-
-# remove the temp... files
-def cleanup():
-    
+    try:
+        new_geo.write_geo(outfile)
+        command=["didgmo", "geo2fft", name, "1000"]
+        subprocess.check_output(command)
+        if not skip_fft:
+            fft=pd.read_csv(name + ".fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
+            peak=PeakFile(name + ".peak")
+            return peak, fft
+        else:
+            peak=PeakFile(name + ".peak")
+            return peak
+    finally:
+        files=[outfile, name + ".fft", name + ".peak", name + ".lab"]
+        for f in files:
+            os.remove(f)

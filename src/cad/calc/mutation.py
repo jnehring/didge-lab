@@ -9,15 +9,16 @@ import math
 import random
 import copy
 from tqdm import tqdm
-from threading import Thread, Lock
+from threading import Lock, Thread
+from multiprocessing import Pool
+import concurrent.futures
 
 from abc import ABC, abstractmethod
 import time
 
-class Mutator(Thread):
-    
-    def __init__(self, father, loss, n_iterations, learning_rate=1, n_poolsize=10, decrease_lr=True, thread_num=0, reporter=None):
-        Thread.__init__(self)
+class Mutator:
+
+    def __init__(self, father, loss, n_iterations, learning_rate=1, n_poolsize=10, decrease_lr=True, reporter=None):
         self.father=father
         self.loss=loss
         self.n_iterations=n_iterations
@@ -25,7 +26,6 @@ class Mutator(Thread):
         self.n_poolsize=n_poolsize
         self.pool=[]
         self.decrease_lr=decrease_lr
-        self.thread_num=thread_num
         self.reporter=reporter
         
     def run(self):
@@ -40,7 +40,7 @@ class Mutator(Thread):
 
             mutant=self.father.copy()
             mutant.mutate(lr)
-            mutant_loss=self.loss.get_loss(mutant.make_geo(), thread_num=self.thread_num)
+            mutant_loss=self.loss.get_loss(mutant.make_geo())
             total_loss += mutant_loss
 
             if len(self.pool)<self.n_poolsize or mutant_loss < self.pool[-1]["loss"]:
@@ -57,8 +57,11 @@ class Mutator(Thread):
 
             average_loss=total_loss / (1+i_iteration)
             best_loss=self.pool[0]["loss"]
-                        
+                    
         return self.pool[0]["mutant"], self.pool[0]["loss"]
+
+    def x(self):
+        return 3
     
     def get_pool(self):
         return [x["mutant"] for x in self.pool]
@@ -78,70 +81,50 @@ class Reporter(Thread):
         self.lock.release()
 
 
+def get_n_best_results(pool, n):
+    pool.sort(key=lambda x : x["loss"])
+    return pool[0:n]
 
-class PoolMutator:
-    
-    def __init__(self, pool, loss, n_iterations, learning_rate=1):
-        self.pool=pool
-        self.losses=[]
-        self.n_iterations=n_iterations
-        self.learning_rate=learning_rate
-        self.loss=loss
-        
-    def mutate(self):
-                
-        for i_pool in range(len(self.pool)):
-            father=self.pool[i_pool]
-            mutator=Mutator(self.pool[i_pool], self.loss, self.n_iterations, self.learning_rate, 1)
-            mutant, mutant_loss=mutator.mutate()
-            self.pool[i_pool] = mutant
-            self.losses.append(mutant_loss)
-
-        # sort pool and losses
-
-        self.pool=pool_sorted
-        self.losses=losses_sorted
-        
-        return self.pool, self.losses
-
-    def sort_pool(self, pool, losses):
-        loss_indizes={}
-        for i in range(len(losses)):
-            loss_indizes[i]=losses[i]
-
-        keys=sorted(list(loss_indizes.keys()), key=lambda x : losses[x])
-
-        pool_sorted=[]
-        losses_sorted=[]
-        for key in keys:
-            pool_sorted.append(pool[key])
-            losses_sorted.append(losses[key])
-
-        return pool_sorted, losses_sorted
+def run_mutator(mutator):
+    mutator.run()
 
 # mutate first in an exploratory and then in a fine tuning fashion
 def mutate_explore_then_finetune(loss=None, parameters=BasicShapeParameters(), n_poolsize=10, n_explore_iterations=3000, n_finetune_iterations=300, n_threads=4):
     assert(loss != None)
 
+    start=time.time()
     # explore
-    print("exploring...")
     n_explore_iterations_thread=int(n_explore_iterations/n_threads)
-    reporter=Reporter(n_explore_iterations)
+    reporter=Reporter(n_explore_iterations + n_poolsize*n_finetune_iterations)
+    reporter.set_description("exploring")
 
     mutators=[]
-    start=time.time()
     for i in range(n_threads):
-        mutator=Mutator(copy.deepcopy(parameters), copy.deepcopy(loss), n_explore_iterations_thread, n_poolsize=n_poolsize, decrease_lr=False, thread_num=i, reporter=reporter)
+        mutator=Mutator(copy.deepcopy(parameters), copy.deepcopy(loss), n_explore_iterations_thread, n_poolsize=n_poolsize, decrease_lr=False, reporter=reporter)
         mutators.append(mutator)
-        mutators[i].start()
 
-    for i in range(n_threads):
-        mutators[i].join()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
+        executor.map(run_mutator, mutators)
+
+    mutant_pool=[]
+    [mutant_pool.extend(m.pool) for m in mutators]
+    mutant_pool=get_n_best_results(mutant_pool, n_poolsize)
+
+    # finetune
+    reporter.set_description("finetuning")
+    mutators=[]
+    for mutant in mutant_pool:
+        mutator=Mutator(copy.deepcopy(mutant["mutant"]), copy.deepcopy(loss), n_finetune_iterations, n_poolsize=1, decrease_lr=True, reporter=reporter)
+        mutators.append(mutator)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:
+        executor.map(run_mutator, mutators)
+    mutant_pool=[]
+    [mutant_pool.extend(m.pool) for m in mutators]
+    mutant_pool=get_n_best_results(mutant_pool, n_poolsize)
+
 
     print(f"done in {time.time()-start:.2f}s")
 
-    
+    return mutant_pool
 
-    # pool_mutator=PoolMutator(mutator.get_pool(), loss, n_finetune_iterations, 0.1)
-    # pool, losses=pool_mutator.mutate()
-    # return pool, losses

@@ -22,7 +22,7 @@ loss=CombinedLoss(
 
 bsp=BasicShapeParameters()
 
-mutate_explore_then_finetune(loss=loss, parameters=BasicShapeParameters(), n_poolsize=10, n_explore_iterations=500, n_finetune_iterations=200)
+mutate_explore_then_finetune(loss=loss, parameters=BasicShapeParameters(), n_poolsize=5, n_explore_iterations=100, n_finetune_iterations=20)
 #pool, losses=mutate_explore_then_finetune(loss=loss, parameters=BasicShapeParameters(), n_poolsize=3, n_explore_iterations=10, n_finetune_iterations=10)
 
 #outdir="projects/penta"

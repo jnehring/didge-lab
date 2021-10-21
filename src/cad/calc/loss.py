@@ -17,12 +17,12 @@ class Loss(ABC):
         pass
 
     @abstractmethod
-    def get_loss(self, geo, peak=None, fft=None, thread_num=0):
+    def get_loss(self, geo, peak=None, fft=None):
         pass
 
-    def get_peak_fft(self, geo, peak, fft, thread_num=0):
+    def get_peak_fft(self, geo, peak, fft):
         if peak == None and fft == None:
-            peak, fft=didgmo_bridge(geo, thread_num=thread_num)
+            peak, fft=didgmo_bridge(geo)
             return peak, fft
         else:
             return peak, fft
@@ -34,9 +34,9 @@ class TargetNoteLoss(Loss):
         self.target_numbers=targets
         self.target_freqs=[note_to_freq(x) for x in targets]
         
-    def get_loss(self, geo, peak=None, fft=None, thread_num=0):
+    def get_loss(self, geo, peak=None, fft=None):
         try:
-            peak, fft=self.get_peak_fft(geo, peak, fft, thread_num=thread_num)
+            peak, fft=self.get_peak_fft(geo, peak, fft)
         except Exception:
             return 100000.0
         l=0.0
@@ -81,10 +81,10 @@ class ScaleLoss(Loss):
         decrease_factor=1-(0.5*i/self.n_peaks)
         return 100*decrease_factor*abs(f1-f2)
 
-    def get_loss(self, geo, peak=None, fft=None, thread_num=0):
+    def get_loss(self, geo, peak=None, fft=None):
         
         try:
-            peak, fft=self.get_peak_fft(geo, peak, fft, thread_num=thread_num)
+            peak, fft=self.get_peak_fft(geo, peak, fft)
         except Exception:
             return 100000.0
 
@@ -108,10 +108,10 @@ class AmpLoss(Loss):
         Loss.__init__(self)
         self.n_peaks=n_peaks
     
-    def get_loss(self, geo, peak=None, fft=None, thread_num=0   ):
+    def get_loss(self, geo, peak=None, fft=None   ):
         
         try:
-            peak, fft=self.get_peak_fft(geo, peak, fft, thread_num=thread_num)
+            peak, fft=self.get_peak_fft(geo, peak, fft)
         except Exception:
             return 100000.0
         if len(peak.impedance_peaks) < self.n_peaks:
@@ -136,11 +136,11 @@ class CombinedLoss(Loss):
         self.averages=[[] for x in losses]
         
         
-    def get_loss(self, geo, peak=None, fft=None, thread_num=0):
+    def get_loss(self, geo, peak=None, fft=None):
         
         loss=0.0
         for i in range(len(self.losses)):
-            thisloss=self.losses[i].get_loss(geo, peak=peak, fft=fft, thread_num=thread_num) * self.weights[i]
+            thisloss=self.losses[i].get_loss(geo, peak=peak, fft=fft) * self.weights[i]
             self.averages[i].append(thisloss)
 
             if len(self.averages[i]) > self.n_average_window:
