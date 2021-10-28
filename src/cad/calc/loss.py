@@ -93,7 +93,7 @@ class ScaleLoss(Loss):
 
         f_fundamental=note_to_freq(self.fundamental)
         f0=peak.impedance_peaks[0]["freq"]
-        loss=self.loss_per_frequency(f_fundamental, f0, 0)
+        loss=4*self.loss_per_frequency(f_fundamental, f0, 0)
         for i in range(1,self.n_peaks):
             f_peak=peak.impedance_peaks[i]["freq"]
             # get closest key from scale

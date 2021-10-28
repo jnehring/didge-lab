@@ -5,7 +5,7 @@ from cad.calc.didgmo import didgmo_bridge
 from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import os
 
-def make_html_report(pool, losses, dir):
+def make_html_report(mutants, dir):
 
     if not os.path.exists(dir):
         os.mkdir(dir)
@@ -15,19 +15,20 @@ def make_html_report(pool, losses, dir):
     html_overview="<table><tr class=\"even\">\n"
     html_overview+='<th>shape</th>\n'
     html_overview+='<th>loss</th>\n</tr>\n'
-    for i in range(len(losses)):
+    for i in range(len(mutants)):
         rclass = "even" if i%2==0 else "odd"
         html_overview += f"<tr><td class=\"{rclass}\">"
         html_overview += f"<a href=\"#{i}\">shape {i}</a></td>"
-        html_overview += f"<td>{losses[i]}</td></tr>\n"
+        loss=mutants[i]["loss"]
+        html_overview += f"<td>{loss}</td></tr>\n"
 
     html_overview+="<table>"
     html=html.replace("$overview$", html_overview)
 
     content_html=""
-    for i_shape in range(len(pool)):
+    for i_shape in range(len(mutants)):
 
-        geo=pool[i_shape].make_geo()
+        geo=mutants[i_shape]["mutant"].make_geo()
         suffix=str(i_shape)
         plt.figure(2*i_shape)
         DidgeVisualizer.vis_didge(geo)
@@ -41,7 +42,6 @@ def make_html_report(pool, losses, dir):
 
         shape_html=open("assets/report_content_template.html").read()
         shape_html = shape_html.replace("$suffix$", suffix)
-        shape_html = shape_html.replace("$loss$", str(losses[i_shape]))
 
         dimensions="<table><tr class=\"even\"><th>x</th><th>diameter</th></tr>"
         i=0
@@ -71,12 +71,37 @@ def make_html_report(pool, losses, dir):
         content_html+=shape_html
 
     html=html.replace("$report$", content_html)
-    f=open(os.path.join(dir, "report.html"), "w")
+    report_file=os.path.join(dir, "report.html")
+    f=open(report_file, "w")
     f.write(html)
     f.close()
 
-
+    print("wrote html report to " + report_file)
 
 
     # print("size bell end: %.00fmm" % (bell_size))
     # return fft, peak
+
+def geo_report(geo):
+
+    print("-"*20)
+    print("properties")
+    df={
+        "property": [],
+        "value": []
+    }
+
+    def add_property(name, value):
+        df["property"].append(name)
+        df["value"].append(value)
+    add_property("length", geo.geo[-1][0])
+    add_property("bell_size", geo.geo[-1][1])
+    df=pd.DataFrame(df)
+    print(df)
+
+    print()
+    print("impedance table")
+    
+    peak, fft=didgmo_bridge(geo)
+    print(peak.get_impedance_table())
+    print("-"*20)

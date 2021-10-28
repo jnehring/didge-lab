@@ -10,6 +10,7 @@ import pandas as pd
 import random
 from tqdm import tqdm
 from threading import Lock
+from cad.calc.geo import Geo
 
 class PeakFile:
 
@@ -74,10 +75,12 @@ class PeakFile:
                 df[key].append(p[key])
         
         df=pd.DataFrame(df)
+        a0=df["amp"][0]
+        df["amp_relative"]=df["amp"]/a0
         return df
 
 lock=Lock()
-def didgmo_bridge(geo, skip_fft=False):
+def didgmo_bridge(geo : Geo, skip_fft=False):
 
     lock.acquire()
     file_num=0
@@ -103,4 +106,11 @@ def didgmo_bridge(geo, skip_fft=False):
     finally:
         files=[outfile, name + ".fft", name + ".peak", name + ".lab"]
         for f in files:
+            os.remove(f)
+
+def cleanup():
+
+    files=os.listdir(".")
+    for f in files:
+        if f[0:4]=="temp":
             os.remove(f)

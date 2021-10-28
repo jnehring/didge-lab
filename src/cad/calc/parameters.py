@@ -22,6 +22,9 @@ class MutationParameter:
     def __repr__(self):
         return f"{self.name}={self.value}"
 
+    def toint(self):
+        self.value=int(self.value)
+
 
 class MutationParameterSet(ABC):
     
@@ -50,8 +53,11 @@ class MutationParameterSet(ABC):
             if ps[i].name == name:
                 return ps[i]
         raise Exception("unknown parameter " + name)
+
+    def get_value(self, name):
+        return self.get(name).value
         
-    def set(self, name, value):
+    def set(self, name, value, min=None, max=None):
         for i in range(len(self.mutable_parameters)):
             if self.mutable_parameters[i].name == name:
                 self.mutable_parameters[i].value = value
@@ -61,20 +67,33 @@ class MutationParameterSet(ABC):
                 self.immutable_parameters[i].value = value
                 return
         raise Exception("cannot find parameter \"" + name + "\"")
-            
-    def mutate(self, learning_rate):
-        for i in range(0, len(self.mutable_parameters)):
-            
-            if random.random() < learning_rate:
-                p=self.mutable_parameters[i]
 
-                r=(random.random()-0.5)*2
-                c=p.maximum-p.value
-                if r<0:
-                    c=p.value-p.minimum
-                p.value += r*c
+    def set_minmax(self, name, min, max):
+        for i in range(len(self.mutable_parameters)):
+            if self.mutable_parameters[i].name == name:
+                self.mutable_parameters[i].min = min
+                self.mutable_parameters[i].max = max
+                return
+        for i in range(len(self.immutable_parameters)):
+            if self.immutable_parameters[i].name == name:
+                self.immutable_parameters[i].min = min
+                self.immutable_parameters[i].max = max
+                return
+        raise Exception("cannot find parameter \"" + name + "\"")
             
-        self.after_mutate()            
+    # def mutate(self, learning_rate):
+    #     for i in range(0, len(self.mutable_parameters)):
+            
+    #         if random.random() < learning_rate:
+    #             p=self.mutable_parameters[i]
+
+    #             r=(random.random()-0.5)*2
+    #             c=p.maximum-p.value
+    #             if r<0:
+    #                 c=p.value-p.minimum
+    #             p.value += r*c
+            
+    #     self.after_mutate()            
 
     def __repr__(self):
         return type(self).__name__ + "\n * " + "\n * ".join(str(x) for x in self.mutable_parameters + self.immutable_parameters)
@@ -97,7 +116,6 @@ class BasicShapeParameters(MutationParameterSet):
         shape=[
             [0, self.get("d1").value]
         ]
-
         f=self.get("f").value
         for i in range(self.get("n_segments").value):
             x_delta=1.25-(((f+2*i/10)*10)%10)/10
@@ -115,5 +133,4 @@ class BasicShapeParameters(MutationParameterSet):
         return Geo(geo=shape)
                            
     def after_mutate(self):
-        n_segments=int(self.get("n_segments").value)
-        self.set("n_segments", n_segments)
+        self.get("n_segments").toint()

@@ -1,4 +1,4 @@
-from cad.calc.didgmo import PeakFile, didgmo_bridge
+from cad.calc.didgmo import PeakFile, didgmo_bridge, cleanup
 from cad.calc.visualization import DidgeVisualizer, FFTVisualiser, visualize_geo_fft
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
@@ -10,22 +10,23 @@ import copy
 from tqdm import tqdm
 from cad.calc.loss import ScaleLoss, AmpLoss, CombinedLoss
 from cad.calc.mutation import *
-from cad.calc.parameters import BasicShapeParameters
+from cad.calc.parameters import BasicShapeParameters, MutationParameterSet, MutationParameter
 from cad.calc.htmlreport import make_html_report
 
-# python -m algos.evolve_penta
+class TestParameter(MutationParameterSet):
+    
+    def __init__(self):
+        super(TestParameter, self).__init__()
+        self.mutable_parameters.append(MutationParameter("test", 0, -2, 2))
+        self.mutable_parameters.append(MutationParameter("test2", 0, -2, 2))
 
-loss=CombinedLoss(
-    [ScaleLoss(scale=[0,3,5,7,10], fundamental=-31, n_peaks=8), AmpLoss(n_peaks=8)],
-    [10.0, 0.1]
-)
+    def make_geo(self):
+        pass
 
-bsp=BasicShapeParameters()
+p=TestParameter()
+em=FinetuningMutator(learning_rate=1)
 
-mutate_explore_then_finetune(loss=loss, parameters=BasicShapeParameters(), n_poolsize=5, n_explore_iterations=100, n_finetune_iterations=20)
-#pool, losses=mutate_explore_then_finetune(loss=loss, parameters=BasicShapeParameters(), n_poolsize=3, n_explore_iterations=10, n_finetune_iterations=10)
+for i in range(10):
+    em.mutate(p)
+    print(p)
 
-#outdir="projects/penta"
-
-#make_html_report(pool, losses, outdir)
-# visualize_geo_fft(geo.make_geo(), None, dir=outdir)

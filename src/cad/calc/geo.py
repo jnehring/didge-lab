@@ -1,4 +1,5 @@
 import copy
+import pandas as pd
 
 class Geo:
 
@@ -74,3 +75,16 @@ class Geo:
         for i in range(start, end+1):
             self.geo[i][0]+=offset
             pass
+
+    def length(self):
+        return self.geo[-1][0]
+
+    def segments_to_str(self):
+        df={}
+        for x in ["x", "y"]:
+            df[x]=[]
+        for i in range(0, len(self.geo)):
+            df["x"].append(int(self.geo[i][0]))
+            df["y"].append(int(self.geo[i][1]))
+        df=pd.DataFrame(df)
+        return str(df)
