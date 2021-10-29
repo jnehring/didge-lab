@@ -1,5 +1,5 @@
 from cad.calc.loss import ScaleLoss, AmpLoss, CombinedLoss
-from cad.calc.mutation import mutate_explore_then_finetune, evolve_explore, Reporter, evolve_finetune
+from cad.calc.mutation import mutate_explore_then_finetune, evolve_explore, Reporter, evolve_finetune, Evolver, FinetuningMutator
 from cad.calc.parameters import BasicShapeParameters, MutationParameterSet, MutationParameter
 from cad.calc.report import make_html_report, geo_report
 import pickle
@@ -27,21 +27,26 @@ n_finetune_iterations=300
 n_poolsize=3
 #total=n_explore_iterations+n_poolsize*n_finetune_iterations
 total=n_poolsize*n_finetune_iterations
-reporter=Reporter(total)
 pickle_file="projects/temp/mutants.pickle"
 
 #mutants=evolve_explore(loss, father, n_poolsize, n_explore_iterations, reporter=reporter)
 #pickle.dump(mutants, open(pickle_file, "wb"))
 
-def visualize_scales_multiple_shapes(geos):
+def visualize_scales_multiple_shapes(geos, loss):
 
+    losses={"geo": [], "loss": [] }
+    for i in range(len(geos)):
+        losses["geo"].append(i)
+        losses["loss"].append(loss.get_loss(geos[i]))
+
+    print(pd.DataFrame(losses))
     df={}
     note_df={}
     for i in range(len(geos)):
         peak, fft=didgmo_bridge(geos[i])
-        key="series_" + str(i)
+        key="geo " + str(i)
         df[key]=fft["impedance"]
-        note_df[key]=[f"{x['note']} {x['cent-diff']}" for x in peak.impedance_peaks]
+        note_df[key]=[f"{x['note']} {x['cent-diff']} {x['freq']}" for x in peak.impedance_peaks]
 
     max_len=max([len(x) for x in note_df.values()])
     for key in note_df.keys():
@@ -49,24 +54,24 @@ def visualize_scales_multiple_shapes(geos):
             note_df[key].append(np.nan)
 
     note_df=pd.DataFrame(note_df)
+    print(note_df)
     df=pd.DataFrame(df)
     sns.lineplot(data=df)
     plt.show()
 
 class BubbleParameters(MutationParameterSet):
 
-    def __init__(self, geo):
+    def __init__(self, geo, pos=0.5, height=1.5, width=200):
         self.geo=geo
         super(BubbleParameters, self).__init__()
         
         #self.mutable_parameters.append(MutationParameter("length", 2500, 1800, 3000))
-        self.mutable_parameters.append(MutationParameter("pos", 0.5, 0, 1))
-        self.mutable_parameters.append(MutationParameter("height", 1.5, 1, 2))
-        self.mutable_parameters.append(MutationParameter("width", 200, 50, 400))     
+        self.mutable_parameters.append(MutationParameter("pos", pos, 0, 1))
+        self.mutable_parameters.append(MutationParameter("height", height, 1, 2))
+        self.mutable_parameters.append(MutationParameter("width", width, 50, 400))     
     
     def make_geo(self):
         shape=self.geo.copy().geo
-
 
         for index in range(len(shape)):
             if shape[index][0]>geo.length()*self.get_value("pos"):
@@ -82,6 +87,18 @@ class BubbleParameters(MutationParameterSet):
         x2=self.geo.length()*self.get_value("pos")
         x1=self.geo.length()*self.get_value("pos")-self.get_value("width")/2
         x3=self.geo.length()*self.get_value("pos")+self.get_value("width")/2
+
+        def limit_point(x):
+            if x<0:
+                return 1
+            elif x>self.geo.length():
+                return self.geo.length()-1
+            else:
+                return x
+
+        x1=limit_point(x1)
+        x2=limit_point(x2)
+        x3=limit_point(x3)
         
         get_y = lambda x : 2*(0.5*y0 + math.tan(alpha)*(x-x0))
         y1=get_y(x1)
@@ -100,12 +117,62 @@ class BubbleParameters(MutationParameterSet):
 
         return Geo(geo=new_shape)
 
+class MultiBubble(MutationParameterSet):
+
+    def __init__(self, geo, n_bubbles):
+        super(MultiBubble, self).__init__()
+        self.geo=geo
+        self.n_bubbles=n_bubbles
+        for i in range(n_bubbles):
+            si=str(i)
+            self.mutable_parameters.append(MutationParameter(si+"pos", 0.5, 0, 1))
+            self.mutable_parameters.append(MutationParameter(si+"height", 1.5, 1, 2))
+            self.mutable_parameters.append(MutationParameter(si+"width", 200, 50, 400))
+
+    def set_values(self, key, values):
+        assert len(values) == self.n_bubbles
+        for i in range(self.n_bubbles):
+            si=str(i)
+            self.set(si+key, values[i])
+
+    def make_geo(self):
+        geo=self.geo.copy()
+        for i in range(self.n_bubbles):
+            si=str(i)
+            bp=BubbleParameters(geo, pos=self.get_value(si+"pos"), height=self.get_value(si+"height"), width=self.get_value(si+"width"))
+            geo=bp.make_geo()
+
+        geo.sort_segments()
+        return geo
+
 
 mutants=pickle.load(open(pickle_file, "rb"))
+
 geo=mutants[0]["mutant"].make_geo()
-print(geo.segments_to_str())
-bp=BubbleParameters(geo)
-print(bp.make_geo().segments_to_str())
+fathers=[]
+n_threads=4
+n_bubbles=4
+for i in range(n_threads):
+    mb=MultiBubble(geo, n_bubbles)
+    pos=list(range(1,n_bubbles+1))
+    pos=[x/n_bubbles - 0.5/n_bubbles for x in pos]
+    mb.set_values("pos", pos)
+    fathers.append(mb)
+
+mutants=evolve_finetune(loss, fathers, 1000)
+
+geos=[geo]
+[geos.append(m.make_geo) for m in mutants]
+
+
+visualize_scales_multiple_shapes(geos, loss)
+
+
+#print(geo.segments_to_str())
+#bp=BubbleParameters(geo)
+#print(mb.make_geo().segments_to_str())
+
+
 #peak, fft=didgmo_bridge(mutants[0]["mutant"].make_geo())
 #print(peak.get_impedance_table())
 

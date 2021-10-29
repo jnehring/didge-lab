@@ -152,14 +152,17 @@ def evolve_explore(loss, parameters, n_poolsize, n_explore_iterations, n_threads
     finally:
         cleanup()
 
-def evolve_finetune(loss, mutant_pool, n_finetune_iterations, n_threads=4, reporter=None):
+def evolve_finetune(loss, mutant_pool, n_finetune_iterations, n_threads=4, reporter=None, create_pbar=False):
 
     if isinstance(mutant_pool, BasicShapeParameters):
         mutant_pool=[{"loss": 0, "mutant": mutant_pool}]
 
     try:
+
+        if create_pbar:
+            pbar=tqdm(total=n_finetune_iterations)
         if reporter == None:
-            reporter=Reporter(n_explore_iterations)
+            reporter=Reporter(n_finetune_iterations)
         reporter.set_description("finetuning")
         evolvers=[]
         lr=0.5

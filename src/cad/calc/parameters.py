@@ -56,7 +56,7 @@ class MutationParameterSet(ABC):
 
     def get_value(self, name):
         return self.get(name).value
-        
+
     def set(self, name, value, min=None, max=None):
         for i in range(len(self.mutable_parameters)):
             if self.mutable_parameters[i].name == name:

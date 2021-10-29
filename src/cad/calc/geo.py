@@ -88,3 +88,7 @@ class Geo:
             df["y"].append(int(self.geo[i][1]))
         df=pd.DataFrame(df)
         return str(df)
+
+    def sort_segments(self):
+        self.geo=sorted(self.geo, key=lambda x : x[0])
+
