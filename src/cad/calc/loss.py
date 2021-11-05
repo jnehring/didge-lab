@@ -1,4 +1,4 @@
-from cad.calc.didgmo import PeakFile, didgmo_bridge
+from cad.calc.didgmo import PeakFile, didgmo_high_res
 from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
@@ -10,6 +10,7 @@ import copy
 from tqdm import tqdm
 from abc import ABC, abstractmethod
 import statistics
+import pandas as pd
 
 class Loss(ABC):
 
@@ -19,13 +20,6 @@ class Loss(ABC):
     @abstractmethod
     def get_loss(self, geo, peak=None, fft=None):
         pass
-
-    def get_peak_fft(self, geo, peak, fft):
-        if peak == None and fft == None:
-            peak, fft=didgmo_bridge(geo)
-            return peak, fft
-        else:
-            return peak, fft
     
 class TargetNoteLoss(Loss):
     
@@ -35,8 +29,9 @@ class TargetNoteLoss(Loss):
         self.target_freqs=[note_to_freq(x) for x in targets]
         
     def get_loss(self, geo, peak=None, fft=None):
+        assert type(geo) == Geo
         try:
-            peak, fft=self.get_peak_fft(geo, peak, fft)
+            fft=self.get_fft(geo, fft)
         except Exception:
             return 100000.0
         l=0.0
@@ -59,48 +54,78 @@ class TargetNoteLoss(Loss):
 class ScaleLoss(Loss):
     
     # default: d minor pentatonic with 5 toots
-    def __init__(self, scale=[0,3,5,7,10], fundamental=-31, n_peaks=5):
+    def __init__(self, scale=[0,3,5,7,10], fundamental=-31, n_peaks=5, octave=False):
         Loss.__init__(self)
 
         self.scale_note_numbers=[]
         for i in range(len(scale)):
             self.scale_note_numbers.append(scale[i]+fundamental)
+
         self.scale_frequencies=[]
         self.n_peaks=n_peaks
         self.fundamental=fundamental
+        self.note_names=[]
         n_octaves=10
         for note_number in self.scale_note_numbers:
-            for i in range(n_octaves):
-                freq=note_to_freq(note_number+12*i)
+            self.note_names.append(note_name(note_number))
+            for i in range(0, n_octaves):
+                transposed_note=note_number+12*i
+                freq=note_to_freq(transposed_note)
                 self.scale_frequencies.append(freq)
+
+        self.octave=octave
                 
     def loss_per_frequency(self, f1, f2, i):
         f1=math.log(f1, 2)
-        f2=math.log(f2, 2)
-        
-        decrease_factor=1-(0.5*i/self.n_peaks)
-        return 100*decrease_factor*abs(f1-f2)
+        f2=math.log(f2, 2)        
+        #decrease_factor=1-(0.5*i/self.n_peaks)
+        decrease_factor=1
+        return decrease_factor*abs(f1-f2)
 
-    def get_loss(self, geo, peak=None, fft=None):
+    def get_loss(self, geo, peaks=None, fft=None):
         
-        try:
-            peak, fft=self.get_peak_fft(geo, peak, fft)
-        except Exception:
+        assert type(geo) == Geo
+
+        if type(peaks) is not pd.DataFrame and peak==None:
+            try:
+                peaks, fft=didgmo_high_res(geo)
+            except Exception:
+                return 100000.0
+
+        if len(peaks) < self.n_peaks:
             return 100000.0
 
-        if len(peak.impedance_peaks) < self.n_peaks:
-            return 100000.0
+        i_fundamental=0
+        while peaks.loc[i_fundamental]["note-number"]+12<self.fundamental:
+            i_fundamental+=1
 
         f_fundamental=note_to_freq(self.fundamental)
-        f0=peak.impedance_peaks[0]["freq"]
-        loss=4*self.loss_per_frequency(f_fundamental, f0, 0)
-        for i in range(1,self.n_peaks):
-            f_peak=peak.impedance_peaks[i]["freq"]
+
+        f0=peaks.loc[i_fundamental]["freq"]
+        loss=2*self.loss_per_frequency(f_fundamental, f0, 0)
+
+        f1=peaks.loc[i_fundamental+1]["freq"]
+
+        start_index=1
+        if self.octave:
+            start_index=2
+            loss+=self.loss_per_frequency(f_fundamental*2, f1, 0)
+
+        for i in range(start_index,self.n_peaks):
+            f_peak=peaks.loc[i_fundamental+i]["freq"]
             # get closest key from scale
             f_next_scale=min(self.scale_frequencies, key=lambda x:abs(x-f_peak))
             loss += self.loss_per_frequency(f_peak, f_next_scale, i)
-            
+
         return loss
+
+    def __str__(self):
+        s = "ScaleLoss\n"
+        for key, value in self.__dict__.items():
+            if key=="scale_frequencies":
+                value=[round(x, 2) for x in value]
+            s+=f"{key}={value}\n"
+        return s
         
 class AmpLoss(Loss):
     
@@ -110,17 +135,18 @@ class AmpLoss(Loss):
     
     def get_loss(self, geo, peak=None, fft=None   ):
         
+        assert type(geo) == Geo
         try:
-            peak, fft=self.get_peak_fft(geo, peak, fft)
+            fft=self.get_fft(geo, fft)
         except Exception:
             return 100000.0
-        if len(peak.impedance_peaks) < self.n_peaks:
+        if len(fft.peaks) < self.n_peaks:
             return 100000.0
 
         loss=0
-        a0=peak.impedance_peaks[0]["amp"]
+        a0=fft.peaks.loc[0]["amp"]
         for i in range(self.n_peaks):
-            amp=peak.impedance_peaks[i]["amp"]/a0
+            amp=fft.peaks.loc[0]["amp"]/a0
             if amp<0.1:
                 loss += 1/amp
                 
@@ -138,6 +164,7 @@ class CombinedLoss(Loss):
         
     def get_loss(self, geo, peak=None, fft=None):
         
+        assert type(geo) == Geo
         loss=0.0
         for i in range(len(self.losses)):
             thisloss=self.losses[i].get_loss(geo, peak=peak, fft=fft) * self.weights[i]

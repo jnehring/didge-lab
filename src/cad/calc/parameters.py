@@ -103,9 +103,9 @@ class BasicShapeParameters(MutationParameterSet):
     def __init__(self):
         super(BasicShapeParameters, self).__init__()
         
-        #self.mutable_parameters.append(MutationParameter("length", 2500, 1800, 3000))
-        self.mutable_parameters.append(MutationParameter("segment_width", 500, 400, 600))
-        self.mutable_parameters.append(MutationParameter("n_segments", 5, 1, 10))
+        self.mutable_parameters.append(MutationParameter("length", 2500, 2000, 3000))
+        self.mutable_parameters.append(MutationParameter("segment_width", 500, 200, 300))
+        self.mutable_parameters.append(MutationParameter("n_segments", 5, 5, 15))
         self.mutable_parameters.append(MutationParameter("f", 0.6, 0.0, 1.0))     
         self.mutable_parameters.append(MutationParameter("bell_d", 1.5, 1.0, 2.5))
         self.mutable_parameters.append(MutationParameter("max_d", 80, 50, 100))
@@ -130,7 +130,100 @@ class BasicShapeParameters(MutationParameterSet):
         scaling=self.get("max_d").value / max([x[1] for x in shape])
         for i in range(1,len(shape)):
             shape[i][1]*=scaling
+
+        length=shape[-1][0]
+        scaling=self.get_value("length")/length
+        for i in range(len(shape)):
+            shape[i][0]*=scaling
+
         return Geo(geo=shape)
                            
     def after_mutate(self):
         self.get("n_segments").toint()
+
+
+class BubbleParameters(MutationParameterSet):
+
+    def __init__(self, geo, pos=0.5, height=1.5, width=200):
+        self.geo=geo
+        super(BubbleParameters, self).__init__()
+        
+        #self.mutable_parameters.append(MutationParameter("length", 2500, 1800, 3000))
+        self.mutable_parameters.append(MutationParameter("pos", pos, 0, 1))
+        self.mutable_parameters.append(MutationParameter("height", height, 1, 2))
+        self.mutable_parameters.append(MutationParameter("width", width, 50, 400))     
+    
+    def make_geo(self):
+        shape=self.geo.copy().geo
+
+        for index in range(len(shape)):
+            if shape[index][0]>self.geo.length()*self.get_value("pos"):
+                break
+
+        x4=shape[index][0]
+        y4=shape[index][1]
+        x0=shape[index-1][0]
+        y0=shape[index-1][1]
+
+        alpha=math.atan(0.5*(y4-y0)/(x4-x0))
+
+        x2=self.geo.length()*self.get_value("pos")
+        x1=self.geo.length()*self.get_value("pos")-self.get_value("width")/2
+        x3=self.geo.length()*self.get_value("pos")+self.get_value("width")/2
+
+        def limit_point(x):
+            if x<0:
+                return 1
+            elif x>self.geo.length():
+                return self.geo.length()-1
+            else:
+                return x
+
+        x1=limit_point(x1)
+        x2=limit_point(x2)
+        x3=limit_point(x3)
+        
+        get_y = lambda x : 2*(0.5*y0 + math.tan(alpha)*(x-x0))
+        y1=get_y(x1)
+        y2=get_y(x2)*self.get_value("height")
+        y3=get_y(x3)
+
+        add_point = lambda x,y : new_shape.append([x,y])
+
+        new_shape=shape[0:index]
+        add_point(x1, y1)
+        add_point(x2, y2)
+        add_point(x3, y3)
+        new_shape.extend(shape[index:])
+
+        new_shape=sorted(new_shape, key=lambda x : x[0])
+
+        return Geo(geo=new_shape)
+
+class MultiBubble(MutationParameterSet):
+
+    def __init__(self, geo, n_bubbles):
+        super(MultiBubble, self).__init__()
+        self.geo=geo
+        self.n_bubbles=n_bubbles
+        for i in range(n_bubbles):
+            si=str(i)
+            self.mutable_parameters.append(MutationParameter(si+"pos", 0.5, 0, 1))
+            self.mutable_parameters.append(MutationParameter(si+"height", 1.5, 1, 2))
+            self.mutable_parameters.append(MutationParameter(si+"width", 200, 50, 400))
+
+    def set_values(self, key, values):
+        assert len(values) == self.n_bubbles
+        for i in range(self.n_bubbles):
+            si=str(i)
+            self.set(si+key, values[i])
+
+    def make_geo(self):
+        geo=self.geo.copy()
+        for i in range(self.n_bubbles):
+            si=str(i)
+            bp=BubbleParameters(geo, pos=self.get_value(si+"pos"), height=self.get_value(si+"height"), width=self.get_value(si+"width"))
+            geo=bp.make_geo()
+
+        geo.sort_segments()
+        return geo

@@ -92,3 +92,40 @@ class Geo:
     def sort_segments(self):
         self.geo=sorted(self.geo, key=lambda x : x[0])
 
+class geotools:
+
+    @staticmethod
+    def scale_length(geo, max_length):
+        factor=max_length/geo.length()
+        for i in range(len(geo.geo)):
+            geo.geo[i][0]*=factor
+        return geo
+
+    @staticmethod
+    def get_max_d(geo):
+        return max([x[1] for x in geo.geo])
+    
+    @staticmethod
+    def scale_diameter(geo, max_d):
+
+        didge_d=geotools.get_max_d(geo)
+        factor=max_d/didge_d
+        for i in range(1,len(geo.geo)):
+            geo.geo[i][1]*=factor
+        return geo
+
+    @staticmethod
+    def print_geo_summary(geo, peak):
+        s=f"length:\t{geo.length():.2f}\n"
+        s+=f"bell size:\t{geo.geo[-1][1]:.2f}\n"
+        s+=f"num peaks:\t{len(peak)}\n"
+        s+=str(peak)
+        print(s)
+
+    @staticmethod
+    def geo_to_json(geo):
+        return geo.geo
+
+    @staticmethod
+    def json_to_geo(geo_json):
+        return Geo(geo=geo_json)

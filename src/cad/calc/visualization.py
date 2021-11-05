@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 from cad.calc.conv import freq_to_note, note_name
-from cad.calc.didgmo import didgmo_bridge
+from cad.calc.didgmo import didgmo_bridge, didgmo_high_res
+import numpy as np
 
 class DidgeVisualizer:
     
@@ -78,9 +79,43 @@ class FFTVisualiser:
 def visualize_geo_fft(geo, target=None):
     DidgeVisualizer.vis_didge(geo)
     plt.show()
-    peak, fft=didgmo_bridge(geo)
+    peak, fft=didgmo_high_res(geo)
     FFTVisualiser.vis_fft_and_target(fft, target)
     plt.show()
     bell_size=geo.geo[-1][1]
     print("size bell end: %.00fmm" % (bell_size))
     return peak.get_impedance_table()
+
+def print_geo(geo):
+    print(geo.segments_to_str())
+    fft=didgmo_high_res(geo)
+    print(fft.peaks)
+
+def visualize_scales_multiple_shapes(geos, loss, no_grafic=False):
+
+    losses={"geo": [], "loss": [] }
+    for i in range(len(geos)):
+        losses["geo"].append(i)
+        losses["loss"].append(loss.get_loss(geos[i]))
+
+    print(pd.DataFrame(losses))
+    df={}
+    note_df={}
+    for i in range(len(geos)):
+        peak, fft=didgmo_bridge(geos[i])
+        key="geo " + str(i)
+        df[key]=fft["impedance"]
+        note_df[key]=[f"{x['note']} {x['cent-diff']} {x['freq']}" for x in peak.impedance_peaks]
+
+    max_len=max([len(x) for x in note_df.values()])
+    for key in note_df.keys():
+        while len(note_df[key]) < max_len:
+            note_df[key].append(np.nan)
+
+    note_df=pd.DataFrame(note_df)
+    print(note_df)
+
+    if not no_grafic:
+        df=pd.DataFrame(df)
+        sns.lineplot(data=df)
+        plt.show()

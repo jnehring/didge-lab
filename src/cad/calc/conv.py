@@ -14,3 +14,10 @@ def note_name(note):
 
 def freq_to_note(freq):
     return 12* (math.log2(freq) - math.log2(440))
+
+def freq_to_note_and_cent(freq):
+    
+    note_fuzzy=freq_to_note(freq)
+    note=round(note_fuzzy)
+    diff=note-note_fuzzy
+    return note, diff*100

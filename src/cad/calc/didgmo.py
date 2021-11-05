@@ -11,10 +11,46 @@ import random
 from tqdm import tqdm
 from threading import Lock
 from cad.calc.geo import Geo
+from cad.calc.conv import freq_to_note_and_cent, note_name
+
+class FFT:
+
+    def __init__(self, infile=None, fft=None, resolution=1):
+
+        if infile != None: 
+            self.fft=pd.read_csv(infile, delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
+            self.fft["freq"]=self.fft["freq"]/resolution
+        else:
+            self.fft=fft
+
+        self.peaks={"freq":[], "impedance":[], "note-name": [], "note-number": [], "cent-diff": []}
+
+        ascending=True
+        lastImpedance=0
+        for index, row in self.fft.iterrows():
+            freq=row["freq"]
+            impedance=row["impedance"]
+            #if freq>77 and freq<79:
+            #    print(freq, impedance)
+
+            if impedance<lastImpedance and ascending:
+                self.peaks["freq"].append(freq)
+                self.peaks["impedance"].append(impedance)
+                note, cent=freq_to_note_and_cent(freq)
+                self.peaks["note-number"].append(note)
+                self.peaks["cent-diff"].append(cent)
+                self.peaks["note-name"].append(note_name(note))
+                ascending=False
+            if impedance>lastImpedance:
+                ascending=True
+            lastImpedance=impedance
+
+        self.peaks=pd.DataFrame(self.peaks)
+        self.peaks["amp"]=self.peaks["impedance"]/self.peaks["impedance"].max()
 
 class PeakFile:
 
-    def __init__(self, infile):
+    def __init__(self, infile, resolution=1):
 
         self.impedance_peaks=[]
         self.groundtone_peaks=[]
@@ -30,7 +66,7 @@ class PeakFile:
             note_name=note_name[0:-1] + str(number)
             peak={
                 "t": int(line[0]),
-                "freq": int(line[1]),
+                "freq": int(line[1])/resolution,
                 "note": note_name,
                 "cent-diff": int(line[3]),
                 "amp": float(line[4])
@@ -57,7 +93,7 @@ class PeakFile:
 
             c+=1
 
-            s += "{%s|%.03d|%.02d}, " % (p["note"], p["freq"], p["cent-diff"])
+            s += "{%s|%.02f|%.02d}, " % (p["note"], p["freq"], p["cent-diff"])
 
             if limit != None and c==limit:
                 break
@@ -80,7 +116,7 @@ class PeakFile:
         return df
 
 lock=Lock()
-def didgmo_bridge(geo : Geo, skip_fft=False):
+def didgmo_bridge(geo : Geo, skip_fft=False, resolution=10, max=1000):
 
     lock.acquire()
     file_num=0
@@ -94,19 +130,40 @@ def didgmo_bridge(geo : Geo, skip_fft=False):
     new_geo.scale(0.001)
     try:
         new_geo.write_geo(outfile)
-        command=["didgmo", "geo2fft", name, "1000"]
+        command=["didgmo", "geo2fft", name, str(max), str(resolution)]
         subprocess.check_output(command)
-        if not skip_fft:
-            fft=pd.read_csv(name + ".fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
-            peak=PeakFile(name + ".peak")
-            return peak, fft
-        else:
-            peak=PeakFile(name + ".peak")
-            return peak
+        fft=FFT(infile=name + ".fft", resolution=resolution)
+        return fft
+        # if not skip_fft:
+        #     fft=pd.read_csv(name + ".fft", delimiter=" ", names=["freq", "impedance", "ground", "overblow"])
+        #     peak=PeakFile(name + ".peak", resolution=resolution)
+        #     return peak, fft
+        # else:
+        #     peak=PeakFile(name + ".peak", resolution=resolution)
+        #     return peak
     finally:
         files=[outfile, name + ".fft", name + ".peak", name + ".lab"]
         for f in files:
             os.remove(f)
+
+def didgmo_high_res(geo : Geo ):
+
+    high_res=20
+    high_res_limit=300
+
+    fft1=didgmo_bridge(geo, resolution=high_res, max=high_res_limit)
+    fft2=didgmo_bridge(geo, resolution=1, max=1000)
+    
+    fft1=fft1.fft
+    fft2=fft2.fft
+
+    fft2=fft2[fft2["freq"]>=high_res_limit]
+
+    fft=pd.concat([fft1,fft2])
+
+    fft=FFT(fft=fft)
+    return fft
+
 
 def cleanup():
 
