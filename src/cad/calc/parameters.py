@@ -2,7 +2,7 @@ from cad.calc.didgmo import PeakFile, didgmo_bridge
 from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
-from cad.calc.geo import Geo
+from cad.calc.geo import Geo, geotools
 from IPython.display import clear_output
 import math
 import random
@@ -56,6 +56,16 @@ class MutationParameterSet(ABC):
 
     def get_value(self, name):
         return self.get(name).value
+
+    def toint(self, name):
+        val=self.get_value(name)
+        val=round(val)
+        self.set(name, val)
+
+    def add_param(self, name, minimum, maximum, value=None):
+        if value==None:
+            value=minimum+(maximum-minimum)/2
+        self.mutable_parameters.append(MutationParameter(name, value, minimum, maximum))
 
     def set(self, name, value, min=None, max=None):
         for i in range(len(self.mutable_parameters)):
@@ -151,7 +161,7 @@ class BubbleParameters(MutationParameterSet):
         #self.mutable_parameters.append(MutationParameter("length", 2500, 1800, 3000))
         self.mutable_parameters.append(MutationParameter("pos", pos, 0, 1))
         self.mutable_parameters.append(MutationParameter("height", height, 1, 2))
-        self.mutable_parameters.append(MutationParameter("width", width, 50, 400))     
+        self.mutable_parameters.append(MutationParameter("width", width, 50, 300))     
     
     def make_geo(self):
         shape=self.geo.copy().geo
@@ -209,7 +219,7 @@ class MultiBubble(MutationParameterSet):
         for i in range(n_bubbles):
             si=str(i)
             self.mutable_parameters.append(MutationParameter(si+"pos", 0.5, 0, 1))
-            self.mutable_parameters.append(MutationParameter(si+"height", 1.5, 1, 2))
+            self.mutable_parameters.append(MutationParameter(si+"height", 1, 0.2, 3))
             self.mutable_parameters.append(MutationParameter(si+"width", 200, 50, 400))
 
     def set_values(self, key, values):
@@ -227,3 +237,69 @@ class MultiBubble(MutationParameterSet):
 
         geo.sort_segments()
         return geo
+
+class ExploringShape(MutationParameterSet):
+
+    def __init__(self):        
+        super(ExploringShape, self).__init__()
+
+        self.max_diameter=300
+        self.min_length=1500
+        self.max_length=3000
+
+    def make_geo(self):
+
+        n_segments=random.randrange(8,20)
+        final_length=random.randrange(self.min_length, self.max_length)
+        shape=[[0,32]]
+
+
+        x=final_length*(0.2*random.random() + 0.3)
+        y=shape[0][1]*(1+0.2*random.random())
+        shape.append([x,y])
+
+        xd=(final_length-x)/n_segments
+        for i in range(n_segments-1):
+            x=shape[-1][0] + xd*(random.random()+0.5)
+            y=shape[-1][1] * (0.5*random.random()+0.9)
+            shape.append([x,y])
+
+        bell_y=shape[-1][1] * (1+random.random())
+        bell_x=shape[-1][0] + random.randrange(80, 300)
+        shape.append([bell_x, bell_y])
+            
+        geo=Geo(geo=shape)
+        geotools.scale_length(geo, final_length)
+
+        if geotools.get_max_d(geo) > self.max_diameter:
+            geotools.scale_diameter(geo, self.max_diameter)
+
+        return geo
+
+
+class EvolveGeoParameter(MutationParameterSet):
+
+    def __init__(self, geo):
+        super(EvolveGeoParameter, self).__init__()
+        
+        self.geo=geo
+        for i in range(1, len(self.geo.geo)):
+            x=self.geo.geo[i][0]
+            y=self.geo.geo[i][1]
+            self.mutable_parameters.append(MutationParameter(f"x{i}", x, x*0.3, x*3))
+            self.mutable_parameters.append(MutationParameter(f"y{i}", y, y*0.3, y*3))
+        
+    def make_geo(self):
+
+        shape=[[self.geo.geo[0][0], self.geo.geo[0][1]]]
+        for i in range(1, len(self.geo.geo)):
+            x=self.get_value(f"x{i}")
+            y=self.get_value(f"y{i}")
+            shape.append([x,y])
+
+        geo=Geo(geo=shape)
+        geo.sort_segments()
+        return geo
+
+    def after_mutate(self):
+        pass

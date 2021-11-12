@@ -116,7 +116,7 @@ class PeakFile:
         return df
 
 lock=Lock()
-def didgmo_bridge(geo : Geo, skip_fft=False, resolution=10, max=1000):
+def didgmo_bridge(geo : Geo, skip_fft=False, resolution=1, max=1000):
 
     lock.acquire()
     file_num=0
@@ -159,7 +159,7 @@ def didgmo_high_res(geo : Geo ):
 
     fft2=fft2[fft2["freq"]>=high_res_limit]
 
-    fft=pd.concat([fft1,fft2])
+    fft=pd.concat([fft1,fft2], ignore_index=True)
 
     fft=FFT(fft=fft)
     return fft

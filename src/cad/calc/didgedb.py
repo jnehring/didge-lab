@@ -1,5 +1,5 @@
 from cad.calc.didgmo import didgmo_high_res
-from cad.calc.geo import Geo
+from cad.calc.geo import Geo, geotools
 import math
 import random
 import copy
@@ -15,6 +15,10 @@ import os
 from pymongo import MongoClient
 import re
 import pandas as pd
+from datetime import datetime
+import traceback
+from cad.calc.mutation import Reporter
+from multiprocessing import Pool
 
 class DidgeMongoDb():
 
@@ -33,7 +37,7 @@ class DidgeMongoDb():
     def get_collection(self):
         return self.get_db()["didge"][self.collection]
 
-    def save_batch(self, geos=None, peaks=None, ffts=None):
+    def save_batch(self, geos=None, peaks=None, ffts=None, parameterset=""):
         batch=[]
         for i in range(len(geos)):
             peak=peaks[i]
@@ -45,7 +49,9 @@ class DidgeMongoDb():
             geo=geotools.geo_to_json(geos[i])
             s={
                 "geo": geo,
-                "peak": peak
+                "peak": peak,
+                "parameterset": parameterset,
+                "creation_date": datetime.now().isoformat()
             }
             batch.append(s)
         self.get_collection().insert_many(batch)
@@ -56,34 +62,86 @@ class DidgeMongoDb():
         return geo, peak
 
 
-def build_db(folder, father, n_batches=100, n_didges_per_patch=500):
+import queue
+import threading
+from tqdm import tqdm
+
+def build_db(father, n_iterations=10000, collection="shapes", parameterset=None):
     m=ExploringMutator()
 
-    pbar=tqdm(total=n_didges_per_patch*n_batches)
-    for i in range(0, n_batches):
+    #reporter=Reporter(n_iterations)
+    n_threads=10
+    db=DidgeMongoDb()
+    batch_size=100
+    n_iterations_per_thread=int(n_iterations/n_threads)
+    n_jobs=round(n_iterations/batch_size)
+    if parameterset==None:
+        parameterset=str(type(father))
 
-        ffts=[]
-        geos=[]
-        peaks=[]
-        for j in range(0, n_didges_per_patch):
-            pbar.update(1)
-            try:
-                p=father.copy()
-                m.mutate(p)
-                p.after_mutate()
+    dataQueue = queue.Queue()
 
-                geo=p.make_geo()
-                fft=didgmo_high_res(geo)
+    processes = []
 
-                ffts.append(fft)
-                geos.append(geo)
-                peaks.append(fft.peaks)
-            except Exception as e:
-                pass
-                
-        #pickle.dump(ffts, open(os.path.join(folder, f"fft_{i}.pkl"), "wb"))
-        pickle.dump(geos, open(os.path.join(folder, f"geo_{i}.pkl"), "wb"))
-        pickle.dump(peaks, open(os.path.join(folder, f"peak_{i}.pkl"), "wb"))
+    class ProducerThread(threading.Thread):
+        def __init__(self, father, n_iterations, mutator, dataQueue):
+            threading.Thread.__init__(self)
+            self.father=father
+            self.n_iterations=n_iterations
+            self.mutator=mutator
+            self.dataQueue=dataQueue
+
+        def run(self):
+            for j in range(n_iterations):
+
+                try:
+                    p=self.father.copy()
+                    self.mutator.mutate(p)
+                    p.after_mutate()
+
+                    geo=p.make_geo()
+                    fft=didgmo_high_res(geo)
+                    self.dataQueue.put((geo, fft.peaks))
+
+                except Exception as e:
+                    continue
+                    #print(traceback.format_exc())
+            
+    class ConsumerThread(threading.Thread):
+
+        def __init__(self, dataQueue, n_iterations):
+            threading.Thread.__init__(self)
+            self.dataQueue=dataQueue
+            self.stop=False
+            self.n_iterations=n_iterations
+
+        def run(self):
+            geos=[]
+            peaks=[]
+            pbar=tqdm(total=self.n_iterations)
+
+            while not self.stop:
+                d=self.dataQueue.get()
+                pbar.update()
+                geos.append(d[0])
+                peaks.append(d[1])
+
+                if len(geos)>=batch_size:
+                    db.save_batch(geos, peaks, parameterset=parameterset)
+                    geos=[]
+                    peaks=[]
+
+    threads=[]
+    for i in range(n_threads):
+        pt=ProducerThread(father, n_iterations_per_thread, ExploringMutator(), dataQueue)
+        threads.append(pt)
+        pt.start()
+
+    ct=ConsumerThread(dataQueue, n_iterations)
+    ct.start()
+    for i in range(n_threads):
+        threads[i].join()
+
+    ct.stop=True
 
 def search_pkl_db(dbfolder, searchfct):
     files=os.listdir(dbfolder)

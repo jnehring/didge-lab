@@ -62,13 +62,12 @@ class FFTVisualiser:
     @classmethod
     def vis_fft_and_target(cls, fft, target=None):
         
-        fft=fft.copy()
-        
-        fft=fft.drop(columns=["ground", "overblow", "freq"])
+        fft=fft.fft.drop(columns=["ground", "overblow"])
         for column in fft.columns:
             fft[column]=fft[column] / fft[column].max()
+
         sns.set(rc={'figure.figsize':(15,5)})
-        sns.lineplot(data=fft)
+        sns.lineplot(data=fft, x="freq", y="impedance")
         
         if target != None:
             for t in target:
@@ -79,12 +78,11 @@ class FFTVisualiser:
 def visualize_geo_fft(geo, target=None):
     DidgeVisualizer.vis_didge(geo)
     plt.show()
-    peak, fft=didgmo_high_res(geo)
+    fft=didgmo_high_res(geo)
     FFTVisualiser.vis_fft_and_target(fft, target)
     plt.show()
     bell_size=geo.geo[-1][1]
     print("size bell end: %.00fmm" % (bell_size))
-    return peak.get_impedance_table()
 
 def print_geo(geo):
     print(geo.segments_to_str())

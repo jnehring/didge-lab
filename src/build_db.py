@@ -1,56 +1,111 @@
-from cad.calc.didgedb import search_db, build_db
-from cad.calc.parameters import MutationParameterSet
+from cad.calc.didgedb import build_db
+from cad.calc.parameters import ExploringShape
 import random
+from cad.calc.didgmo import didgmo_high_res
 from cad.calc.geo import Geo, geotools
+import concurrent.futures
+from cad.calc.mutation import Reporter, MutationParameterSet, ExploringMutator
+import numpy as np
+import math
+from cad.calc.mt import produce_and_iterate, Producer
+import time
 
-class ExploringShape(MutationParameterSet):
+class RoundedDidge(MutationParameterSet):
 
-    def __init__(self):        
-        super(ExploringShape, self).__init__()
+    def __init__(self):
+        super(RoundedDidge, self).__init__()
+
+        max_n_segments=10
+        self.add_param("n_segments", 1, max_n_segments, value=3)
+        self.add_param("length", 1300, 3000)
+        self.add_param("bellsize", 80, 300)
+        self.add_param("straight_length", 1000, 2000)
+        self.add_param("straight_widening", 1, 3)
+        for i in range(max_n_segments):
+            self.add_param(f"{i}length", 1000, 2000)
+            self.add_param(f"{i}wide", 1, 3)
+        self.add_param("bell", 0.2, 1)
+
+        self.set("2wide", 3)
+
+    def after_mutate(self):
+        self.toint("length")
+        self.toint("bellsize")
+        self.toint("n_segments")
+
+    def sigmoid(self, x):
+        return 0.5*(1+math.tanh((x)/2))
+
+    def make_curve(self, length, height, offset_x=0, offset_y=0, end=1.0, n_points=10):
+        shape=[]
+
+        start=0.0
+        interval=(end-start)/n_points
+        for a in np.arange(start, end+interval, interval):
+            x=a*length + offset_x
+            y=height*self.sigmoid((a*10)-5) + offset_y
+            shape.append([x,y])
+        return shape
 
     def make_geo(self):
 
-        n_segments=random.randrange(8,20)
-        final_length=random.randrange(2000, 3000)
-        shape=[[0,32]]
-
-
-        x=final_length*(0.2*random.random() + 0.3)
-        y=shape[0][1]*(1+0.5*random.random())
+        shape=[[0, 32]]
+        x=self.get_value("straight_length")
+        y=shape[-1][1] * self.get_value("straight_widening")
         shape.append([x,y])
 
-        xd=(final_length-x)/n_segments
-        for i in range(n_segments-1):
-            x=shape[-1][0] + xd*(random.random()+0.5)
-            y=shape[-1][1] * (0.5*random.random()+0.9)
-            shape.append([x,y])
+        n_segments=self.get_value("n_segments")
+        for i in range(n_segments):
+            seg_length=1000
+            seg_height=30
+            bell=1
+            if i==n_segments-1:
+                bell=self.get_value("bell")
+            new_shape=self.make_curve(seg_length, seg_height, offset_x=shape[-1][0], offset_y=shape[-1][1], end=bell)
+            shape.extend(new_shape)
 
-        bell_y=shape[-1][1] * (1+random.random())
-        bell_x=shape[-1][0] + random.randrange(80, 300)
-        shape.append([bell_x, bell_y])
-            
         geo=Geo(geo=shape)
-        geotools.scale_length(geo, final_length)
-
-        max_diameter=400
-        if geotools.get_max_d(geo) > max_diameter:
-            geotools.scale_diameter(geo, max_diameter)
-
+        geo=geotools.scale_length(geo, self.get_value("length"))
+        if geo.geo[-1][1]>self.get_value("bellsize"):
+            geo=geotools.scale_diameter(geo, self.get_value("bellsize"))
         return geo
 
-dbfolder="projects/didgedb/2"
+n_threads=2
+n_iterations_per_thread=3
+n_iterations_total=n_threads*n_iterations_per_thread
+
+class CreateDidgeShapes(Producer):
+
+    def __init__(self, father, mutator):
+        self.father=father
+        self.mutator=mutator
+
+    def run(self, queue):
+    
+        for i in range(n_iterations_per_thread):
+            p=self.father.copy()
+            self.mutator.mutate(p)
+            p.after_mutate()
+
+            geo=p.make_geo()
+            fft=didgmo_high_res(geo)
+            queue.put((geo, fft))
 
 
-es=ExploringShape()
+producer=[]
+for i in range(n_threads):
+    p=CreateDidgeShapes(RoundedDidge(), ExploringMutator())
+    producer.append(p)
 
-build_db(dbfolder, es)
-            
+for geo, fft in produce_and_iterate(producer, n_total=n_iterations_total):
 
-def search(geo, peak):
-    index=0
-    if peak.loc[0]["freq"] < 70:
-        index+=1
-    return peak.iloc[index]["note-name"] == "D1"
+# rd=RoundedDidge()
+# mutator=ExploringMutator()
+# mutator.mutate(rd)
+# rd.after_mutate()
+# rd.make_geo()
+#build_db(RoundedDidge())
+
     #return peak.iloc[index]["note-name"]=="D1"
 
 #geos, peaks=list(zip(*searchdb(search)))

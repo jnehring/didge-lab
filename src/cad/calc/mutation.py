@@ -3,7 +3,7 @@ from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo
-from cad.calc.parameters import BasicShapeParameters
+from cad.calc.parameters import BasicShapeParameters, MutationParameterSet
 from IPython.display import clear_output
 import math
 import random
@@ -197,9 +197,9 @@ def evolve_explore(loss, parameters, n_poolsize, n_explore_iterations, n_threads
     finally:
         cleanup()
 
-def evolve_finetune(loss, mutant_pool, n_finetune_iterations, n_threads=4, reporter=None, create_pbar=False):
+def evolve_finetune(loss, mutant_pool, n_finetune_iterations, n_threads=4, reporter=None):
 
-    if isinstance(mutant_pool, BasicShapeParameters):
+    if isinstance(mutant_pool, MutationParameterSet):
         mutant_pool=[{"loss": 0, "mutant": mutant_pool}]
 
     if len(mutant_pool)<n_threads:
@@ -207,8 +207,6 @@ def evolve_finetune(loss, mutant_pool, n_finetune_iterations, n_threads=4, repor
 
     try:
 
-        if create_pbar:
-            pbar=tqdm(total=n_finetune_iterations)
         if reporter == None:
             reporter=Reporter(n_finetune_iterations)
         reporter.set_description("finetuning")
@@ -216,7 +214,7 @@ def evolve_finetune(loss, mutant_pool, n_finetune_iterations, n_threads=4, repor
         lr=0.5
         n_iterations_thread=int(n_finetune_iterations/len(mutant_pool))
         for mutant in mutant_pool:
-            evolver=Evolver(copy.deepcopy(mutant["mutant"]), copy.deepcopy(loss), FinetuningMutator(learning_rate=lr), n_iterations_thread, n_poolsize=1, reporter=reporter)
+            evolver=Evolver(copy.deepcopy(mutant), copy.deepcopy(loss), FinetuningMutator(learning_rate=lr), n_iterations_thread, n_poolsize=1, reporter=reporter)
             evolvers.append(evolver)
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=n_threads) as executor:

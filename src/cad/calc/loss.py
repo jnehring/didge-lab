@@ -11,6 +11,7 @@ from tqdm import tqdm
 from abc import ABC, abstractmethod
 import statistics
 import pandas as pd
+import logging
 
 class Loss(ABC):
 
@@ -77,47 +78,55 @@ class ScaleLoss(Loss):
                 
     def loss_per_frequency(self, f1, f2, i):
         f1=math.log(f1, 2)
-        f2=math.log(f2, 2)        
+        f2=math.log(f2, 2)
         #decrease_factor=1-(0.5*i/self.n_peaks)
         decrease_factor=1
         return decrease_factor*abs(f1-f2)
 
     def get_loss(self, geo, peaks=None, fft=None):
         
-        assert type(geo) == Geo
+        try:
+            assert type(geo) == Geo
 
-        if type(peaks) is not pd.DataFrame and peak==None:
-            try:
-                peaks, fft=didgmo_high_res(geo)
-            except Exception:
+            if type(peaks) is not pd.DataFrame and peaks==None:
+                fft=didgmo_high_res(geo)
+                peaks=fft.peaks
+
+            if len(peaks) < self.n_peaks:
                 return 100000.0
 
-        if len(peaks) < self.n_peaks:
+            i_fundamental=0
+            while peaks.loc[i_fundamental]["note-number"]+12<self.fundamental:
+                i_fundamental+=1
+
+            f_fundamental=note_to_freq(self.fundamental)
+
+            f0=peaks.loc[i_fundamental]["freq"]
+            loss=2*self.loss_per_frequency(f_fundamental, f0, 0)
+
+            logging.debug(f"l0: {loss:.2f}, target freq: {f_fundamental:.2f}, actual freq: {f0:.2f}")
+
+            
+
+            start_index=1
+            if self.octave:
+                f1=peaks.loc[i_fundamental+1]["freq"]
+                start_index=2
+                l=self.loss_per_frequency(f_fundamental*2, f1, 0)
+                loss+=l
+                logging.debug(f"l1: {l:.2f}, target freq: {f_fundamental*2:.2f}, actual freq: {f1:.2f}")
+
+            for i in range(start_index,self.n_peaks):
+                f_peak=peaks.loc[i_fundamental+i]["freq"]
+                # get closest key from scale
+                f_next_scale=min(self.scale_frequencies, key=lambda x:abs(x-f_peak))
+                l = self.loss_per_frequency(f_peak, f_next_scale, i)
+                loss += l
+                logging.debug(f"l{i}: {l:.2f}, target freq: {f_next_scale:.2f}, actual freq: {f_peak:.2f}")
+            return loss
+        except Exception as e:
+            logging.error(e)
             return 100000.0
-
-        i_fundamental=0
-        while peaks.loc[i_fundamental]["note-number"]+12<self.fundamental:
-            i_fundamental+=1
-
-        f_fundamental=note_to_freq(self.fundamental)
-
-        f0=peaks.loc[i_fundamental]["freq"]
-        loss=2*self.loss_per_frequency(f_fundamental, f0, 0)
-
-        f1=peaks.loc[i_fundamental+1]["freq"]
-
-        start_index=1
-        if self.octave:
-            start_index=2
-            loss+=self.loss_per_frequency(f_fundamental*2, f1, 0)
-
-        for i in range(start_index,self.n_peaks):
-            f_peak=peaks.loc[i_fundamental+i]["freq"]
-            # get closest key from scale
-            f_next_scale=min(self.scale_frequencies, key=lambda x:abs(x-f_peak))
-            loss += self.loss_per_frequency(f_peak, f_next_scale, i)
-
-        return loss
 
     def __str__(self):
         s = "ScaleLoss\n"

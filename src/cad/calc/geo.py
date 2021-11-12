@@ -115,10 +115,14 @@ class geotools:
         return geo
 
     @staticmethod
-    def print_geo_summary(geo, peak):
-        s=f"length:\t{geo.length():.2f}\n"
+    def print_geo_summary(geo, peak=None, loss=None):
+        s=f"length:\t\t{geo.length():.2f}\n"
         s+=f"bell size:\t{geo.geo[-1][1]:.2f}\n"
+        s+=f"num segments:\t{len(geo.geo)}\n"
         s+=f"num peaks:\t{len(peak)}\n"
+        if loss != None:
+            s+=f"loss:\t\t{loss:.2f}\n"
+            
         s+=str(peak)
         print(s)
 

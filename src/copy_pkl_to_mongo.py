@@ -22,7 +22,7 @@ for geo, peak in search_pkl_db(dbfolder, lambda x,y : True):
     peaks.append(peak)
 
     if len(geos)==batch_size:
-        db.save_batch(geos=geos, peaks=peaks)
+        db.save_batch(geos=geos, peaks=peaks, parameterset="ExploringShape")
         geos=[]
         peaks=[]
 
