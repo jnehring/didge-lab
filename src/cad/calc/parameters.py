@@ -303,3 +303,86 @@ class EvolveGeoParameter(MutationParameterSet):
 
     def after_mutate(self):
         pass
+
+class AddBubble(MutationParameterSet):
+
+    def __init__(self, geo):
+        super(AddBubble, self).__init__()
+        
+        self.geo=geo
+        self.add_param("n_bubbles", 1, 5)
+        self.set("n_bubbles", 0)
+
+        for i in range(0, 5):
+            self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))
+            self.mutable_parameters.append(MutationParameter(f"{i}width", 400, 50, 450))
+            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0, 1.5))
+    
+    def get_index(self, shape, x):
+        for i in range(len(shape)):
+            if shape[i][0]>x:
+                return i
+        return None
+
+    def get_y(self, shape, x):
+        i=self.get_index(shape, x)
+        xa=shape[i-1][0]
+        xe=shape[i][0]
+        ya=shape[i-1][1]
+        ye=shape[i][1]
+        alpha=math.atan(0.5*(ye-ya) / (xe-xa))
+
+        xd=x-xa
+        y=ya + 2*xd*math.tan(alpha)
+        return y
+
+    def make_bubble(self, shape, pos, width, height):
+
+        shape=self.geo.geo
+        n_segments=11
+        pos=pos*(self.geo.length()-2*width) + width
+        
+        i=self.get_index(shape, pos)
+
+        xa=shape[i-1][0]
+        xe=shape[i][0]
+        ya=self.get_y(shape, pos-0.5*width)
+        ye=self.get_y(shape, pos+0.5*width)
+        alpha=math.atan(0.5*(ye-ya) / (xe-xa))
+
+        bubbleshape=[]
+
+        for i in range(1, n_segments+1):
+            x=pos-0.5*width + i*width/n_segments
+            y=ya + 2*(x-xa)*math.tan(alpha)
+
+            #print(math.tan(alpha), 2*(x-xa))
+            factor=1+math.sin((i-1)*math.pi/(n_segments-1))*height
+            y*=factor
+            bubbleshape.append([x,y])
+
+        newshape=[]
+
+        ia=self.get_index(shape, xa)
+        ie=self.get_index(shape, xe)
+
+        newshape.extend(shape[0:ia])
+        newshape.extend(bubbleshape)
+        newshape.extend(shape[ie:])
+        return newshape
+        # geo=Geo(geo=newshape)
+        # geo.sort_segments()
+        # return geo.shape
+        
+    def make_geo(self):
+
+        shape=self.geo.copy().geo
+        for i in range(self.get_value("n_bubbles")):
+            pos=self.get_value(f"{i}pos")
+            width=self.get_value(f"{i}width")
+            height=self.get_value(f"{i}height")
+            shape=self.make_bubble(shape, pos, width, height)
+        return Geo(geo=shape)
+
+    def after_mutate(self):
+        self.toint("n_bubbles")

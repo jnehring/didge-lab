@@ -51,7 +51,7 @@ class FinetuningMutator(Mutator):
 
 class Evolver:
 
-    def __init__(self, father, loss, mutator, n_iterations, n_poolsize=10, reporter=None, show_progress=False, log_loss=False, local_rank=0):
+    def __init__(self, father, loss, mutator, n_iterations, n_poolsize=10, reporter=None, pbar=None, show_progress=False, log_loss=False, local_rank=0):
         self.father=father
         self.loss=loss
         self.n_iterations=n_iterations
@@ -62,6 +62,7 @@ class Evolver:
         self.show_progress=show_progress
         self.mutator=mutator
         self.local_rank=local_rank
+        self.pbar=pbar
 
     def run(self):
         total_loss=0.0
@@ -69,8 +70,8 @@ class Evolver:
         if self.is_log_loss:
             self.log_loss=[]
 
-        if self.show_progress:
-            pbar=tqdm(total=self.n_iterations)
+        if self.show_progress and self.pbar is None:
+            self.pbar=tqdm(total=self.n_iterations)
 
         self.pool.append({
             "mutant": self.father,
@@ -87,14 +88,14 @@ class Evolver:
                 self.log_loss.append(mutant_loss)
             total_loss += mutant_loss
 
-            if len(self.pool)<self.n_poolsize or mutant_loss < self.pool[-1]["loss"]:
-                self.pool.append({
-                    "loss": mutant_loss,
-                    "mutant": mutant 
-                })
-                self.pool.sort(key=lambda x : x["loss"])
-                if len(self.pool) > self.n_poolsize:
-                    self.pool=self.pool[0:self.n_poolsize]
+            self.pool.append({
+                "loss": mutant_loss,
+                "mutant": mutant 
+            })
+
+            self.pool.sort(key=lambda x : x["loss"])
+            if len(self.pool) > self.n_poolsize:
+                self.pool=self.pool[0:self.n_poolsize]
 
             if self.reporter != None:
                 self.reporter.update(self)
@@ -103,9 +104,7 @@ class Evolver:
             best_loss=self.pool[0]["loss"]
 
             if self.show_progress:
-                pbar.update(1)
-        if self.show_progress:
-            pbar.close()
+                self.pbar.update(1)
         return self.pool[0]["mutant"], self.pool[0]["loss"]
 
     def get_pool(self):

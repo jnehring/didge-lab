@@ -37,7 +37,7 @@ class Geo:
     def write_geo(self, outfile):
         f=open(outfile, "w")
         for segment in self.geo:
-            seg=f"{segment[0]:.2f} {segment[1]:.2f}\n"
+            seg=f"{segment[0]:.10f} {segment[1]:.10f}\n"
             f.write(seg)
         f.close()
 

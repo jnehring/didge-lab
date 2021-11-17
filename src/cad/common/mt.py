@@ -26,7 +26,7 @@ class WorkerThread(threading.Thread):
     def is_finished(self):
         return self.finished
 
-def produce_and_iterate(producers, n_total=None):
+def produce_and_iterate(producers, n_total=None, pbar=-1):
     threads=[]
     dataQueue=queue.Queue()
     for producer in producers:
@@ -37,7 +37,9 @@ def produce_and_iterate(producers, n_total=None):
     stop=False
 
     has_progressbar=False
-    if n_total != None:
+    if pbar != -1:
+        has_progressbar=True
+    elif n_total != None:
         pbar=tqdm(total=n_total)
         has_progressbar=True
     while not stop:

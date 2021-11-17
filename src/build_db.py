@@ -1,4 +1,4 @@
-from cad.calc.didgedb import build_db
+from cad.calc.didgedb import build_db, PickleDB
 from cad.calc.parameters import ExploringShape
 import random
 from cad.calc.didgmo import didgmo_high_res
@@ -7,7 +7,6 @@ import concurrent.futures
 from cad.calc.mutation import Reporter, MutationParameterSet, ExploringMutator
 import numpy as np
 import math
-from cad.calc.mt import produce_and_iterate, Producer
 import time
 
 class RoundedDidge(MutationParameterSet):
@@ -74,30 +73,7 @@ n_threads=2
 n_iterations_per_thread=3
 n_iterations_total=n_threads*n_iterations_per_thread
 
-class CreateDidgeShapes(Producer):
-
-    def __init__(self, father, mutator):
-        self.father=father
-        self.mutator=mutator
-
-    def run(self, queue):
-    
-        for i in range(n_iterations_per_thread):
-            p=self.father.copy()
-            self.mutator.mutate(p)
-            p.after_mutate()
-
-            geo=p.make_geo()
-            fft=didgmo_high_res(geo)
-            queue.put((geo, fft))
-
-
-producer=[]
-for i in range(n_threads):
-    p=CreateDidgeShapes(RoundedDidge(), ExploringMutator())
-    producer.append(p)
-
-for geo, fft in produce_and_iterate(producer, n_total=n_iterations_total):
+build_db(RoundedDidge(), ExploringMutator(), 3, "rounded_didge", db=PickleDB())
 
 # rd=RoundedDidge()
 # mutator=ExploringMutator()
