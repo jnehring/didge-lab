@@ -73,7 +73,7 @@ n_threads=2
 n_iterations_per_thread=3
 n_iterations_total=n_threads*n_iterations_per_thread
 
-build_db(RoundedDidge(), ExploringMutator(), 3, "rounded_didge", db=PickleDB())
+build_db(RoundedDidge(), ExploringMutator(), 3, "rounded_didge",  n_threads=20, db=PickleDB())
 
 # rd=RoundedDidge()
 # mutator=ExploringMutator()

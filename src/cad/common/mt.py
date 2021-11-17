@@ -5,6 +5,7 @@ import queue
 from tqdm import tqdm
 import time
 from abc import ABC, abstractmethod
+from multiprocessing import Process
 
 class Producer(ABC):
 
@@ -12,9 +13,8 @@ class Producer(ABC):
     def run(self, producer_thread):
         pass
 
-class WorkerThread(threading.Thread):
+class WorkerProcess:
     def __init__(self, dataQueue, producer):
-        threading.Thread.__init__(self)
         self.dataQueue=dataQueue
         self.producer=producer
         self.finished=False
@@ -27,13 +27,13 @@ class WorkerThread(threading.Thread):
         return self.finished
 
 def produce_and_iterate(producers, n_total=None, pbar=-1):
-    threads=[]
+    processes=[]
     dataQueue=queue.Queue()
     for producer in producers:
-        pt=WorkerThread(dataQueue, producer)
-        threads.append(pt)
-        pt.start()
-
+        pt=WorkerProcess(dataQueue, producer)
+        processes.append(pt)
+        p=Process(target=pt.run, args=())
+        p.start()
     stop=False
 
     has_progressbar=False
@@ -44,6 +44,7 @@ def produce_and_iterate(producers, n_total=None, pbar=-1):
         has_progressbar=True
     while not stop:
         d=dataQueue.get()
+        print(d)
         yield d
 
         if has_progressbar:
