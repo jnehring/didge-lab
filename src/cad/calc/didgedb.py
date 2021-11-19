@@ -22,6 +22,24 @@ from multiprocessing import Pool
 from cad.common.mt import Producer, produce_and_iterate
 from cad.cadsd.cadsd import CADSDResult
 import uuid
+from abc import ABC, abstractmethod
+
+class DatabaseObject():
+
+    def __init__(self, geo, peak, name=""):
+        self.geo=geo
+        self.peak=peak
+        self.name=name
+
+    def to_json(self):
+        s={
+            "geo": geotools.geo_to_json(self.geo),
+            "peak": self.peak.to_dict("records"),
+            "name": self.name,
+            "creation_date": datetime.now().isoformat()
+        }
+        return s
+
 
 class DidgeMongoDb():
 
@@ -31,7 +49,7 @@ class DidgeMongoDb():
 
     def get_db(self):
         if self.client==None:
-            self.client = MongoClient("mongodb://localhost:27017/")
+            self.client = MongoClient("mongodb://root:octron@localhost:27017/")
         return self.client
 
     def drop(self):
@@ -40,24 +58,27 @@ class DidgeMongoDb():
     def get_collection(self):
         return self.get_db()["didge"][self.collection]
 
-    def save_batch(self, geos=None, peaks=None, ffts=None, parameterset=""):
-        batch=[]
-        for i in range(len(geos)):
-            peak=peaks[i]
-
-            if len(peaks[i])==0:
-                continue
-
-            peak=peak.to_dict("records")
-            geo=geotools.geo_to_json(geos[i])
-            s={
-                "geo": geo,
-                "peak": peak,
-                "parameterset": parameterset,
-                "creation_date": datetime.now().isoformat()
-            }
-            batch.append(s)
+    def save_batch(self, batch):
         self.get_collection().insert_many(batch)
+
+    # def save_batch(self, geos=None, peaks=None, ffts=None, parameterset=""):
+    #     batch=[]
+    #     for i in range(len(geos)):
+    #         peak=peaks[i]
+
+    #         if len(peaks[i])==0:
+    #             continue
+
+    #         peak=peak.to_dict("records")
+    #         geo=geotools.geo_to_json(geos[i])
+    #         s={
+    #             "geo": geo,
+    #             "peak": peak,
+    #             "parameterset": parameterset,
+    #             "creation_date": datetime.now().isoformat()
+    #         }
+    #         batch.append(s)
+    #     self.get_collection().insert_many(batch)
 
     def unserialize(self, s):
         geo=Geo(geo=s["geo"])
@@ -82,6 +103,7 @@ class PickleDB():
 
             peak=peak.to_dict("records")
             geo=geotools.geo_to_json(geos[i])
+
             s={
                 "geo": geo,
                 "peak": peak,
@@ -93,7 +115,15 @@ class PickleDB():
         outfile=os.path.join(self.folder, str(uuid.uuid4()) + ".pkl")
         pickle.dump(batch, open(outfile, "wb"))
 
-def build_db(father, mutator, n_iterations_per_thread, name, db=None, batch_size=200, n_threads=4):
+    def iterate(self):
+        files=os.listdir(self.folder)
+        for f in files:
+            f=os.path.join(self.folder, f)
+            d=pickle.load(open(f, "rb"))
+            for o in d:
+                yield o
+
+def build_db(father, mutator, n_iterations_per_thread, name, db=None, batch_size=200, n_threads=4, indexer=None):
 
     class CreateDidgeShapes(Producer):
 
@@ -102,7 +132,7 @@ def build_db(father, mutator, n_iterations_per_thread, name, db=None, batch_size
             self.mutator=mutator
 
         def run(self, queue):
-        
+
             for i in range(n_iterations_per_thread):
                 p=self.father.copy()
                 self.mutator.mutate(p)
@@ -116,17 +146,20 @@ def build_db(father, mutator, n_iterations_per_thread, name, db=None, batch_size
 
     if db==None:
         db=DidgeMongoDb()
-    geos=[]
-    peaks=[]
+
+    dos=[]
     n_iterations_total=n_iterations_per_thread*n_threads
     for geo, fft in produce_and_iterate(producer, n_total=n_iterations_total):
-        geos.append(geo)
-        peaks.append(fft.peaks)
 
-        if len(geos)==batch_size:
-            db.save_batch(geos=geos, peaks=peaks, parameterset=name)
+        do=DatabaseObject(geo, fft.peaks, name)
+        dos.append(do.to_json())
+
+        if len(dos)==batch_size:
+            db.save_batch(dos)
+            dos=[]
         
-    db.save_batch(geos=geos, peaks=peaks, parameterset=name)
+    if len(dos)>0:
+        db.save_batch(dos)
 
 # def build_db(father, mutator, n_iterations=10000, collection="shapes", parameterset=None):
 #     m=ExploringMutator()

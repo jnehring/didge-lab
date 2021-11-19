@@ -1,7 +1,11 @@
-from cad.calc.didgedb import DidgeMongoDb
+from cad.calc.didgedb import DidgeMongoDb, PickleDB
 
-db=DidgeMongoDb()
+db=PickleDB()
+for didge in db.iterate():
+    print(didge)
+    break
 
-print(db.get_collection().count())
+#db=DidgeMongoDb()
+#print(db.get_collection().count())
 #for result in db.get_collection().find():
 #    print(result)

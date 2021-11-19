@@ -1,11 +1,10 @@
 # multithreading helper class
 
 import threading
-import queue
 from tqdm import tqdm
 import time
 from abc import ABC, abstractmethod
-from multiprocessing import Process
+from multiprocessing import Process, Queue
 
 class Producer(ABC):
 
@@ -21,6 +20,7 @@ class WorkerProcess:
 
     def run(self):
         self.producer.run(self.dataQueue)
+        self.dataQueue.put("...finished...")
         self.finished=True
 
     def is_finished(self):
@@ -28,13 +28,12 @@ class WorkerProcess:
 
 def produce_and_iterate(producers, n_total=None, pbar=-1):
     processes=[]
-    dataQueue=queue.Queue()
+    dataQueue=Queue()
     for producer in producers:
         pt=WorkerProcess(dataQueue, producer)
         processes.append(pt)
         p=Process(target=pt.run, args=())
         p.start()
-    stop=False
 
     has_progressbar=False
     if pbar != -1:
@@ -42,17 +41,15 @@ def produce_and_iterate(producers, n_total=None, pbar=-1):
     elif n_total != None:
         pbar=tqdm(total=n_total)
         has_progressbar=True
-    while not stop:
+
+    finished_processes=0
+    while finished_processes != len(processes):
         d=dataQueue.get()
-        print(d)
-        yield d
 
-        if has_progressbar:
-            pbar.update(1)
-        count_finished=0
-        for t in threads:
-            if t.is_finished():
-                count_finished+=1
-        if count_finished==len(producers):
-            stop=True
+        if d == "...finished...":
+            finished_processes+=1
+        else:
+            yield d
 
+            if has_progressbar:
+                pbar.update(1)
