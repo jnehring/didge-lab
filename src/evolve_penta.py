@@ -1,9 +1,9 @@
 from cad.calc.parameters import MutationParameterSet, MutationParameter, EvolveGeoParameter
 import random
 from cad.calc.geo import Geo, geotools
-from cad.calc.didgedb import DidgeMongoDb
+from cad.calc.didgedb import DidgeMongoDb, DatabaseObject
 from cad.calc.loss import ScaleLoss
-from cad.calc.mutation import evolve_finetune, ExploringMutator, evolve_explore, FinetuningMutator
+from cad.calc.mutation import evolve_finetune, ExploringMutator, evolve_explore, FinetuningMutator, evolve_generations
 from cad.calc.parameters import BasicShapeParameters, AddBubble
 from cad.calc.didgmo import didgmo_high_res
 from tqdm import tqdm
@@ -41,66 +41,94 @@ def search_in_db(poolsize, early_stop=-1):
         count=0
         pbar.update(1)
 
-        for p in o["peak"][0:3]:
+        for p in o["peak"][0:2]:
 
             if p["note-number"] in target_notes:
                 count+=1
         if count<2:
             continue
 
-        geo, peak = db.unserialize(o)
-        geoloss=loss.get_loss(geo, peaks=peak)
-        pool.append((geo, peak, geoloss))
+        do=DatabaseObject.from_json(o)
+        geoloss=loss.get_loss(do.geo, peaks=do.peak)
+        pool.append((do, geoloss))
 
-        pool=sorted(pool, key=lambda x : x[2])
+        pool=sorted(pool, key=lambda x : x[1])
         if len(pool)>poolsize:
             pool=pool[0:poolsize]
 
     return pool
 
-pkl_file="projects/temp/temp.pkl"
 pool_size=10
 
-logging.info("searching for candidates in db")
-pool=search_in_db(pool_size)
+pkl_file="projects/temp/temp.pkl"
+if False:
+    logging.info("searching for candidates in db")
+    pool=search_in_db(pool_size)
+    pickle.dump(pool, open(pkl_file, "wb"))
+else:
+    pool=pickle.load(open(pkl_file, "rb"))
 
-logging.info("mutating candidates")
-n_generations=100
-n_iterations_per_generation=100
+pkl_file="projects/temp/evolve_penta.pkl"
+if False:
+    logging.info("brute force bubble search")
+    pool=[(AddBubble(x[0].geo), x[1]) for x in pool]
+    pool=evolve_generations(pool, loss, ExploringMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
+else:
+    pool=pickle.load(open(pkl_file, "rb"))
 
-from cad.calc.mutation import Evolver
-class MutationProducer(Producer):
 
-    def __init__(self, mutator, father, loss, n_iterations, n_pool_size, pbar):
+
+# for p in pool:
+#     do, geoloss=p
+#     do.print_summary(loss=geoloss)
+#     print()
+# logging.info("mutating candidates")
+# n_generations=100
+# n_iterations_per_generation=100
+
+# from cad.calc.mutation import Evolver
+# class MutationProducer(Producer):
+
+#     def __init__(self, mutator, father, loss, n_iterations, n_pool_size, pbar):
         
-        self.evolver=Evolver(father, loss, mutator, n_iterations, n_poolsize=n_pool_size, pbar=pbar, show_progress=True)
+#         self.evolver=Evolver(father, loss, mutator, n_iterations, n_poolsize=n_pool_size, pbar=pbar, show_progress=True)
 
-    def run(self, queue):
-        self.evolver.run()
-        for m in self.evolver.pool:
-            queue.put(m)
+#     def run(self, queue):
+#         self.evolver.run()
+#         for m in self.evolver.pool:
+#             queue.put(m)
 
-def pooling_mutation(mutator, pool, n_generations, n_iterations_per_generation, loss, best_loss=-1):
-    pool_size=len(pool)
-    n_total=n_generations*pool_size*n_iterations_per_generation
-    pbar=tqdm(total=n_total)
-    for i_generation in range(n_generations):
-        pbar.set_description(f"generation={i_generation}, best_loss={best_loss:.2f}")
-        producers=[]
-        for i in range(pool_size):
-            mp=MutationProducer(mutator, pool[i], loss, n_iterations_per_generation, pool_size, pbar)
-            producers.append(mp)
-        pool=list(produce_and_iterate(producers))
-        pkl.dump(pool, open(pkl_file, "wb"))
-        best_loss=pool[0]["loss"]
-        pool=[p["mutant"] for p in pool]
+# def pooling_mutation(mutator, pool, n_generations, n_iterations_per_generation, loss, best_loss=-1):
+#     pool_size=len(pool)
+#     n_total=n_generations*pool_size*n_iterations_per_generation
+#     pbar=tqdm(total=n_total)
+#     for i_generation in range(n_generations):
+#         pbar.set_description(f"generation={i_generation}, best_loss={best_loss:.2f}")
+#         producers=[]
+#         for i in range(pool_size):
+#             mp=MutationProducer(mutator, pool[i], loss, n_iterations_per_generation, pool_size, pbar)
+#             producers.append(mp)
+#         pool=list(produce_and_iterate(producers))
+#         pkl.dump(pool, open(pkl_file, "wb"))
+#         best_loss=pool[0]["loss"]
+#         pool=[p["mutant"] for p in pool]
 
-logging.info(f"start pooling mutation with poolsize={len(pool)}, n_generations={n_generations}, n_iterations_per_generation={n_iterations_per_generation}")
-best_loss=pool[0][2]
-logging.info(f"initial best loss={best_loss:.2f}")
-pool=[AddBubble(p[0]) for p in pool]
-mutator=FinetuningMutator()
-pooling_mutation(mutator, pool, n_generations, n_iterations_per_generation, loss, best_loss=best_loss)
+# logging.info(f"start pooling mutation with poolsize={len(pool)}, n_generations={n_generations}, n_iterations_per_generation={n_iterations_per_generation}")
+# best_loss=pool[0][2]
+# logging.info(f"initial best loss={best_loss:.2f}")
+# pool=[AddBubble(p[0]) for p in pool]
+# mutator=FinetuningMutator()
+# pooling_mutation(mutator, pool, n_generations, n_iterations_per_generation, loss, best_loss=best_loss)
+
+
+
+
+
+
+
+
+
+
 
 # i=0
 # for p in pool:

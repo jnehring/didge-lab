@@ -1,4 +1,5 @@
-from cad.calc.didgmo import PeakFile, didgmo_high_res
+#from cad.calc.didgmo import PeakFile, didgmo_high_res
+from cad.cadsd.cadsd import CADSDResult
 from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
@@ -12,6 +13,7 @@ from abc import ABC, abstractmethod
 import statistics
 import pandas as pd
 import logging
+import traceback
 
 class Loss(ABC):
 
@@ -89,19 +91,20 @@ class ScaleLoss(Loss):
             assert type(geo) == Geo
 
             if type(peaks) is not pd.DataFrame and peaks==None:
-                fft=didgmo_high_res(geo)
-                peaks=fft.peaks
+
+                res=CADSDResult.from_geo(geo)
+                peaks=res.peaks
 
             if len(peaks) < self.n_peaks:
                 return 100000.0
 
             i_fundamental=0
-            while peaks.loc[i_fundamental]["note-number"]+12<self.fundamental:
+            while peaks.iloc[i_fundamental]["note-number"]+12<self.fundamental:
                 i_fundamental+=1
 
             f_fundamental=note_to_freq(self.fundamental)
 
-            f0=peaks.loc[i_fundamental]["freq"]
+            f0=peaks.iloc[i_fundamental]["freq"]
             loss=2*self.loss_per_frequency(f_fundamental, f0, 0)
 
             logging.debug(f"l0: {loss:.2f}, target freq: {f_fundamental:.2f}, actual freq: {f0:.2f}")
@@ -110,14 +113,14 @@ class ScaleLoss(Loss):
 
             start_index=1
             if self.octave:
-                f1=peaks.loc[i_fundamental+1]["freq"]
+                f1=peaks.iloc[i_fundamental+1]["freq"]
                 start_index=2
                 l=self.loss_per_frequency(f_fundamental*2, f1, 0)
                 loss+=l
                 logging.debug(f"l1: {l:.2f}, target freq: {f_fundamental*2:.2f}, actual freq: {f1:.2f}")
 
             for i in range(start_index,self.n_peaks):
-                f_peak=peaks.loc[i_fundamental+i]["freq"]
+                f_peak=peaks.iloc[i_fundamental+i]["freq"]
                 # get closest key from scale
                 f_next_scale=min(self.scale_frequencies, key=lambda x:abs(x-f_peak))
                 l = self.loss_per_frequency(f_peak, f_next_scale, i)
@@ -126,6 +129,8 @@ class ScaleLoss(Loss):
             return loss
         except Exception as e:
             logging.error(e)
+            logging.error(traceback.format_exc())
+            logging.error("problematic geo: " + str(geo.geo))
             return 100000.0
 
     def __str__(self):

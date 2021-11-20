@@ -36,8 +36,10 @@ class MutationParameterSet(ABC):
     def make_geo():
         pass
 
-    # overwrite for custom validation
     def after_mutate(self):
+        pass
+
+    def before_mutate(self):
         pass
 
     def validate(self):

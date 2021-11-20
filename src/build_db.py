@@ -14,7 +14,7 @@ n_threads=2
 n_iterations_per_thread=3
 n_iterations_total=n_threads*n_iterations_per_thread
 
-build_db(RoundedDidge(), ExploringMutator(), 1000000, "rounded_didge",  n_threads=20, db=DidgeMongoDb(), batch_size=100)
+build_db(ExploringShape(), ExploringMutator(), 5000, "exploring_shape",  n_threads=20, db=DidgeMongoDb())
 
 # rd=RoundedDidge()
 # mutator=ExploringMutator()

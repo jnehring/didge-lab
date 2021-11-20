@@ -10,12 +10,14 @@ import random
 import copy
 from tqdm import tqdm
 from threading import Lock, Thread
-from multiprocessing import Pool
+from multiprocessing import Pool, Queue, Process
 import concurrent.futures
 import traceback
 from abc import ABC, abstractmethod
 import time
 import logging
+from cad.common.mt import Producer, produce_and_iterate
+import pickle
 
 class Mutator(ABC):
 
@@ -81,8 +83,11 @@ class Evolver:
         for i_iteration in range(self.n_iterations):
             self.current_iteration=i_iteration
             mutant=self.father.copy()
+            
+            mutant.before_mutate()
             self.mutator.mutate(mutant, i_iteration=i_iteration, n_total_iterations=self.n_iterations)
             mutant.after_mutate()
+            
             mutant_loss=self.loss.get_loss(mutant.make_geo())
             if self.is_log_loss:
                 self.log_loss.append(mutant_loss)
@@ -276,3 +281,90 @@ def mutate_explore_then_finetune(loss=None, parameters=BasicShapeParameters(), n
     finally:
         cleanup()
 
+class MutationJob:
+
+    def __init__(self, father, mutator, loss, pool_index):
+        self.father=father
+        self.pool_index=pool_index
+        self.mutator=mutator
+        self.loss=loss
+    
+    def mutate(self, result_queue):
+        mutant=self.father.copy()
+        self.mutator.mutate(mutant)
+        mutant.after_mutate()
+        mutant_loss=self.loss.get_loss(mutant.make_geo())
+        result_queue.put((mutant, mutant_loss, self.pool_index))
+
+def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates=""):
+
+    finish_message="...finished..."
+
+    total=n_generations*len(pool)*n_generation_size
+    pbar=tqdm(total=total)
+
+    best_loss=min([x[1] for x in pool])
+    pbar.set_description(f"best_loss={best_loss:.2f}, i_generation={1}/{n_generations}")
+    for i_generation in range(n_generations):
+
+        processing_queue=Queue()
+        result_queue=Queue()
+        results=[]
+        
+        def process_mutator_queue():
+            while True:
+                job=processing_queue.get()
+                if job == finish_message:
+                    result_queue.put(finish_message)
+                    break
+                job.mutate(result_queue)
+
+        # fill processing queue
+        for i_pool in range(len(pool)):
+            for i_mutation in range(n_generation_size):
+                mj=MutationJob(pool[i_pool][0], mutator, loss, i_pool)
+                processing_queue.put(mj)
+        for i in range(n_threads):
+            processing_queue.put(finish_message)
+
+        # start worker threads to process this queue and write results to result_queue
+        processes=[]
+        for i in range(n_threads):
+            p = Process(target=process_mutator_queue, args=())
+            processes.append(p)
+            p.start()
+
+        # collect results in order to update progress bar
+        finished_count=0
+        while finished_count<n_threads:
+            result=result_queue.get()
+            if result!=finish_message:
+                pbar.update(1)
+                results.append(result)
+            else:
+                finished_count+=1
+
+        # all jobs are processed. now update mutant pool
+
+        # collect all mutants
+        result_pool={}
+        for i in range(len(pool)):
+            result_pool[i]=[]
+
+        for result in results:
+            result_pool[result[2]].append((result[0], result[1]))
+        
+        # add fathers and get fitest
+        for index in range(len(pool)):
+            result_pool[index].append(pool[index])
+            result_pool[index]=sorted(result_pool[index], key=lambda x : x[1])
+            pool[index]=result_pool[index][0]
+
+        # get best loss
+        best_loss=min([x[1] for x in pool])
+        pbar.set_description(f"best_loss={best_loss:.2f}, i_generation={i_generation+1}/{n_generations}")
+
+        if store_intermediates != "":
+            pickle.dump(pool, open(store_intermediates, "wb"))
+    
+    return pool

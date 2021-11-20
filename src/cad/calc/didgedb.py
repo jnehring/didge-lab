@@ -40,6 +40,26 @@ class DatabaseObject():
         }
         return s
 
+    @classmethod
+    def from_json(cls, o):
+        geo=Geo(geo=o["geo"])
+        peak=pd.DataFrame(o["peak"])
+        name=o["name"]
+        return DatabaseObject(geo, peak, name)
+
+    def print_summary(self, loss=None):
+        s=f"length:\t\t{self.geo.length():.2f}\n"
+        s+=f"bell size:\t{self.geo.geo[-1][1]:.2f}\n"
+        s+=f"num segments:\t{len(self.geo.geo)}\n"
+        s+=f"num peaks:\t{len(self.peak)}\n"
+        s+=f"name:\t{self.name}\n"
+        if loss != None:
+            s+=f"loss:\t\t{loss:.2f}\n"
+            
+        s+=str(self.peak)
+        print(s)
+
+
 
 class DidgeMongoDb():
 
@@ -80,7 +100,7 @@ class DidgeMongoDb():
     #         batch.append(s)
     #     self.get_collection().insert_many(batch)
 
-    def unserialize(self, s):
+    def unserialize(qelf, s):
         geo=Geo(geo=s["geo"])
         peak=pd.DataFrame(s["peak"])
         return geo, peak
