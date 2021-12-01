@@ -10,14 +10,16 @@ import copy
 from tqdm import tqdm
 import numpy as np
 from abc import ABC, abstractmethod
+import pandas as pd
 
 class MutationParameter:
     
-    def __init__(self, name, value, minimum=None, maximum=None):
+    def __init__(self, name, value, minimum=None, maximum=None, immutable=False):
         self.name=name
         self.value=value
         self.minimum=minimum
         self.maximum=maximum
+        self.immutable=immutable
         
     def __repr__(self):
         return f"{self.name}={self.value}"
@@ -54,9 +56,16 @@ class MutationParameterSet(ABC):
         for i in range(len(ps)):
             if ps[i].name == name:
                 return ps[i]
-        raise Exception("unknown parameter " + name)
+        return None
 
-    def get_value(self, name):
+    def has_value(self, name):
+        ps=self.mutable_parameters + self.immutable_parameters
+        for i in range(len(ps)):
+            if ps[i].name == name:
+                return True
+        return False
+
+    def get_value(self, name):      
         return self.get(name).value
 
     def toint(self, name):
@@ -64,10 +73,24 @@ class MutationParameterSet(ABC):
         val=round(val)
         self.set(name, val)
 
-    def add_param(self, name, minimum, maximum, value=None):
+    def add_param(self, name, minimum, maximum, value=None, immutable=False):
         if value==None:
             value=minimum+(maximum-minimum)/2
-        self.mutable_parameters.append(MutationParameter(name, value, minimum, maximum))
+
+        self.mutable_parameters.append(MutationParameter(name, value, minimum, maximum, immutable=immutable))
+
+    def is_mutable(self, name):
+        for i in range(len(self.mutable_parameters)):
+            if self.mutable_parameters[i].name == name:
+                if hasattr(self.mutable_parameters[i], "immutable"):
+                    return self.mutable_parameters[i].immutable
+                else:
+                    return True
+        for i in range(len(self.immutable_parameters)):
+            if self.immutable_parameters[i].name == name:
+                return False
+        raise Exception("cannot find parameter \"" + name + "\"")
+
 
     def set(self, name, value, min=None, max=None):
         for i in range(len(self.mutable_parameters)):
@@ -83,32 +106,30 @@ class MutationParameterSet(ABC):
     def set_minmax(self, name, min, max):
         for i in range(len(self.mutable_parameters)):
             if self.mutable_parameters[i].name == name:
-                self.mutable_parameters[i].min = min
-                self.mutable_parameters[i].max = max
+                self.mutable_parameters[i].minimum = min
+                self.mutable_parameters[i].maximum = max
                 return
         for i in range(len(self.immutable_parameters)):
             if self.immutable_parameters[i].name == name:
-                self.immutable_parameters[i].min = min
-                self.immutable_parameters[i].max = max
+                self.immutable_parameters[i].minimum = min
+                self.immutable_parameters[i].maximum = max
                 return
         raise Exception("cannot find parameter \"" + name + "\"")
             
-    # def mutate(self, learning_rate):
-    #     for i in range(0, len(self.mutable_parameters)):
-            
-    #         if random.random() < learning_rate:
-    #             p=self.mutable_parameters[i]
-
-    #             r=(random.random()-0.5)*2
-    #             c=p.maximum-p.value
-    #             if r<0:
-    #                 c=p.value-p.minimum
-    #             p.value += r*c
-            
-    #     self.after_mutate()            
-
     def __repr__(self):
-        return type(self).__name__ + "\n * " + "\n * ".join(str(x) for x in self.mutable_parameters + self.immutable_parameters)
+
+        df={"name": [], "value": [], "min": [], "max": [], "mutable": []}
+        for p in self.mutable_parameters + self.immutable_parameters:
+
+            df["name"].append(p.name)
+            df["value"].append(p.value)
+            df["min"].append(p.minimum)
+            df["max"].append(p.maximum)
+            df["mutable"].append(self.is_mutable(p.name))
+
+        return str(pd.DataFrame(df))
+
+        #return type(self).__name__ + "\n * " + "\n * ".join(str(x) for x in self.mutable_parameters + self.immutable_parameters)
 
 class BasicShapeParameters(MutationParameterSet):
     
@@ -449,4 +470,33 @@ class RoundedDidge(MutationParameterSet):
         geo=geotools.scale_length(geo, self.get_value("length"))
         if geo.geo[-1][1]>self.get_value("bellsize"):
             geo=geotools.scale_diameter(geo, self.get_value("bellsize"))
+        return geo
+
+class FinetuningParameters(MutationParameterSet):
+
+    def __init__(self, geo):
+        super(FinetuningParameters, self).__init__()
+
+        for i in range(0, len(geo.geo)):
+            p=geo.geo[i]
+            self.add_param(f"x{i}", p[0]*0.8, p[0]*1.2)
+            self.add_param(f"y{i}", p[1]*0.8, p[1]*1.2)
+            self.set(f"x{i}", p[0])
+            self.set(f"y{i}", p[1])
+        self.get("x0").immutable=True
+        self.get("x1").immutable=True
+
+    def make_geo(self):
+        geo=[]
+        i=0
+        while True:
+            if not self.has_value(f"x{i}") :
+                break
+            x=self.get_value(f"x{i}")
+            y=self.get_value(f"y{i}")
+            geo.append([x,y])
+            i+=1
+
+        geo=Geo(geo=geo)
+        geo.sort_segments()
         return geo

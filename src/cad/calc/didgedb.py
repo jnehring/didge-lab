@@ -36,7 +36,8 @@ class DatabaseObject():
             "geo": geotools.geo_to_json(self.geo),
             "peak": self.peak.to_dict("records"),
             "name": self.name,
-            "creation_date": datetime.now().isoformat()
+            "creation_date": datetime.now().isoformat(),
+            "base_note": self.peak.iloc[0]["note-name"]
         }
         return s
 

@@ -10,11 +10,11 @@ import math
 import time
 
 
-n_threads=2
-n_iterations_per_thread=3
+n_threads=20
+n_iterations_per_thread=50000
 n_iterations_total=n_threads*n_iterations_per_thread
 
-build_db(ExploringShape(), ExploringMutator(), 5000, "exploring_shape",  n_threads=20, db=DidgeMongoDb())
+build_db(ExploringShape(), ExploringMutator(), n_iterations_per_thread, "exploring_shape",  n_threads=n_threads, db=DidgeMongoDb())
 
 # rd=RoundedDidge()
 # mutator=ExploringMutator()

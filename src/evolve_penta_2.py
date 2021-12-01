@@ -2,8 +2,8 @@ from cad.calc.parameters import MutationParameterSet, MutationParameter, EvolveG
 import random
 from cad.calc.geo import Geo, geotools
 from cad.calc.didgedb import DidgeMongoDb, DatabaseObject
-from cad.calc.loss import ScaleLoss
-from cad.calc.mutation import evolve_finetune, ExploringMutator, evolve_explore, FinetuningMutator, evolve_generations
+from cad.calc.loss import ScaleLoss, Loss
+from cad.calc.mutation import Mutator, evolve_finetune, ExploringMutator, evolve_explore, FinetuningMutator, evolve_generations
 from cad.calc.parameters import BasicShapeParameters, AddBubble, FinetuningParameters
 from cad.calc.didgmo import didgmo_high_res
 from tqdm import tqdm
@@ -14,84 +14,114 @@ from cad.calc.visualization import visualize_geo_fft, DidgeVisualizer
 import math
 import matplotlib.pyplot as plt
 from cad.common.mt import Producer, produce_and_iterate 
+import os
+from abc import ABC, abstractmethod
+import sys
+from cad.common.app import App
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s')
+
+class SearchInDbStep(PipelineStep):
+
+    def __init__(self):
+        super().__init__("SearchInDb")
+
+    def execute(self, pool : MutantPool ) -> MutantPool:
+        poolsize=10
+        db=DidgeMongoDb()
+        fundamental=-31
+        loss=ScaleLoss(scale=[0,3,5,7,10], fundamental=fundamental, n_peaks=8, octave=True)
+
+        c=0
+
+        target_notes=[fundamental, fundamental+12, fundamental+24, fundamental-12]
+        pool=[]
+        
+        #f={"parameterset": "<class '__main__.RoundedDidge'>"}
+        f={"base_note": "D1"}
+        total=db.get_collection().count_documents(filter=f)
+        pbar=tqdm(total=total)
+
+        early_stop=-1
+        for o in db.get_collection().find(f):
+            c+=1
+
+            if c==early_stop:
+                break
+
+            count=0
+            pbar.update(1)
+
+            for p in o["peak"][0:2]:
+
+                if p["note-number"] in target_notes:
+                    count+=1
+            if count<2:
+                continue
+
+            do=DatabaseObject.from_json(o)
+            geoloss=loss.get_loss(do.geo, peaks=do.peak)
+            pool.append((do, geoloss))
+
+            pool=sorted(pool, key=lambda x : x[1])
+            if len(pool)>poolsize:
+                pool=pool[0:poolsize]
+
+        pool=MutantPool(pool=pool)
+        return pool
+
+    
+pipeline=Pipeline("evolve_penta")
+# initial_pool=[]
+# for i in range(10):
+#     initial_pool.append((BasicShapeParameters(), sys.float_info.max))
+# initial_pool=MutantPool(pool=initial_pool)
 fundamental=-31
 loss=ScaleLoss(scale=[0,3,5,7,10], fundamental=fundamental, n_peaks=8, octave=True)
+# step=ExplorePipelineStep(ExploringMutator(), loss, initial_pool)
+# pipeline.add_step(step)
 
-def search_in_db(poolsize, early_stop=-1):
-    db=DidgeMongoDb()
+step=SearchInDbStep()
+pipeline.add_step(step)
+step=FinetuningPipelineStep(FinetuningMutator(), loss)
+pipeline.add_step(step)
 
-    c=0
-    target_notes=[fundamental, fundamental+12, fundamental+24, fundamental-12]
-    #target_notes=[fundamental]
-    pool=[]
-    
-    #f={"parameterset": "<class '__main__.RoundedDidge'>"}
-    f={}
-    total=db.get_collection().count_documents(filter=f)
-    pbar=tqdm(total=total)
+pipeline.execute()
 
-    for o in db.get_collection().find(f):
-        c+=1
 
-        if c==early_stop:
-            break
 
-        count=0
-        pbar.update(1)
+# pkl_file="projects/temp/temp.pkl"
+# if False:
+#     logging.info("searching for candidates in db")
+#     pool=search_in_db(pool_size)
+#     pickle.dump(pool, open(pkl_file, "wb"))
+# else:
+#     pool=pickle.load(open(pkl_file, "rb"))
 
-        for p in o["peak"][0:2]:
+# pkl_file="projects/temp/evolve_penta.pkl"
+# if False:
+#     logging.info("brute force bubble search")
+#     pool=[(AddBubble(x[0].geo), x[1]) for x in pool]
+#     pool=evolve_generations(pool, loss, ExploringMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
+# else:
+#     pool=pickle.load(open(pkl_file, "rb"))
 
-            if p["note-number"] in target_notes:
-                count+=1
-        if count<2:
-            continue
+# logging.info("fine tune bubble search")
 
-        do=DatabaseObject.from_json(o)
-        geoloss=loss.get_loss(do.geo, peaks=do.peak)
-        pool.append((do, geoloss))
+# pkl_file="projects/temp/evolve_penta2.pkl"
 
-        pool=sorted(pool, key=lambda x : x[1])
-        if len(pool)>poolsize:
-            pool=pool[0:poolsize]
+# if False:
+#     for p in pool:
+#         for p2 in p[0].mutable_parameters:
+#             p2.immutable=False
+#         p[0].get("n_bubbles").immutable=True
+#     pool=evolve_generations(pool, loss,FinetuningMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
+# else:
+#     pool=pickle.load(open(pkl_file, "rb"))
 
-    return pool
-
-pool_size=10
-
-pkl_file="projects/temp/temp.pkl"
-if False:
-    logging.info("searching for candidates in db")
-    pool=search_in_db(pool_size)
-    pickle.dump(pool, open(pkl_file, "wb"))
-else:
-    pool=pickle.load(open(pkl_file, "rb"))
-
-pkl_file="projects/temp/evolve_penta.pkl"
-if False:
-    logging.info("brute force bubble search")
-    pool=[(AddBubble(x[0].geo), x[1]) for x in pool]
-    pool=evolve_generations(pool, loss, ExploringMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
-else:
-    pool=pickle.load(open(pkl_file, "rb"))
-
-logging.info("fine tune bubble search")
-
-pkl_file="projects/temp/evolve_penta2.pkl"
-
-if False:
-    for p in pool:
-        for p2 in p[0].mutable_parameters:
-            p2.immutable=False
-        p[0].get("n_bubbles").immutable=True
-    pool=evolve_generations(pool, loss,FinetuningMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
-else:
-    pool=pickle.load(open(pkl_file, "rb"))
-
-pkl_file="projects/temp/evolve_penta3.pkl"
-pool=[(FinetuningParameters(x[0].make_geo()), x[1]) for x in pool]
-pool=evolve_generations(pool, loss, FinetuningMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
+# pkl_file="projects/temp/evolve_penta3.pkl"
+# pool=[(FinetuningParameters(x[0].make_geo()), x[1]) for x in pool]
+# pool=evolve_generations(pool, loss, FinetuningMutator(), n_generations=1000, n_generation_size=30, n_threads=30, store_intermediates=pkl_file)
 
 # for p in pool:
 #     do, geoloss=p
