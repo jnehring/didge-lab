@@ -6,8 +6,8 @@ import pickle
 
 pool=pickle.load(open("projects/pipelines/evolve_penta/0.pkl", "rb"))
 geo=pool.pool[0][0].geo
-
 cadsd_result=CADSDResult.from_geo(geo)
+
 mpe=MutantPoolEntry(None, geo, 1.2, cadsd_result)
 pool=MutantPool()
 pool.add_entry(mpe)

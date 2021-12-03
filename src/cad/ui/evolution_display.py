@@ -16,82 +16,78 @@ class EvolutionDisplay:
         self.n_total=n_generations*n_generation_size*poolsize
         self.i_generation=1
         self.start_time=time.time()
-        self.progress_cache={
+        self.cache_didge_geometry=None
+
+        self.infos={
             "generation_size": n_generation_size,
             "pool_size": poolsize,
             "n_threads": n_threads,
             "pipeline_step": pipeline_step
         }
 
+    # call this to change iteration counter only
     def update_iteration(self):
         self.i_iteration+=1
         self.visualize()
 
+    def format_timespan(self, time_left):
+        unit="seconds"
+        if time_left>60: 
+            time_left/=60
+            unit="minutes"
+        if time_left>60:
+            time_left/=60
+            unit="hours"
+        if time_left>24:
+            time_left/=24
+            unit="days"
+        time_left=round(time_left, 2)
+        rest_time=str(time_left) + " " + unit
+        return rest_time
+
+    # call this when 
     def update_generation(self, i_generation, pool):
 
         self.i_generation=i_generation
 
-        self.progress_cache["best loss"]=pool.get_best_loss()
-        self.progress_cache["mean loss"]=pool.get_mean_loss()
+        self.infos["best loss"]=pool.get_best_loss()
+        self.infos["mean loss"]=pool.get_mean_loss()
         rest_time="?"
         if i_generation>1:
             elapsed_time=time.time()-self.start_time
-            time_left=self.n_generations * elapsed_time / self.i_generation
-            unit="seconds"
-            if time_left>60: 
-                time_left/=60
-                unit="minutes"
-            if time_left>60:
-                time_left/=60
-                unit="hours"
-            if time_left>24:
-                time_left/=24
-                unit="days"
-            time_left=round(time_left, 2)
-            rest_time=str(time_left) + " " + unit
-        self.progress_cache["remaining time"]=rest_time
+            time_left=self.n_generations * elapsed_time / self.i_generation     
+            rest_time=self.format_timespan(time_left)
+        self.infos["remaining time"]=rest_time
 
         best_entry=pool.get_best_entry()
 
-        cache=""
-
         e=pool.get_best_entry()
-        self.new_df()
-        self.add("length", f"{e.geo.geo[-1][0]:.2f} mm")
-        self.add("bell size", f"{e.geo.geo[-1][1]:.2f} mm")
-        cache += self.get_df("best didge geometry")
+        geo=e.geo.geo
+        self.infos["length"]=f"{geo[-1][0]:.2f} mm"
+        self.infos["bell size"]=f"{geo[-1][1]:.2f} mm"
+        self.infos["geo n segments"]=f"{len(geo)}"
 
+        cache=""
         if e.cadsd_result != None:
             peaks=e.cadsd_result.peaks.copy()
             peaks.impedance=peaks.impedance.apply(lambda x : f"{x:.2e}")
             peaks["cent-diff"]=peaks["cent-diff"].apply(lambda x : f"{x:.2f}")
-            cache += self.make_section(peaks, "best didge tuning", show_header=True)
-            cache += self.get_sep()
-            cache += "best didge fft\n"
+            
+            cache += self.make_heading("best didge tuning")
+            cache += peaks.to_string() + "\n"
+            cache += self.make_heading("best didge fft")
             cache += self.fft_chart(e.cadsd_result.fft.copy())
 
+#            self.stdscr.addstr(f"{imp:.2e}")
+            
         self.cache=cache
 
         self.visualize()
 
-    def new_df(self):
-        self.df={"label": [], "value": []}
-
-    def add(self, label, value):
-        self.df["label"].append(label)
-        self.df["value"].append(value)
-
-    def get_sep(self):
-        return "-"*(shutil.get_terminal_size().columns-1) + "\n"
-
-    def get_df(self, header):
-        df=pd.DataFrame(self.df)
-        header=self.get_sep() + header + "\n" + "\n"
-        return header + df.to_string(index=False, header=False) + "\n\n"
-
-    def make_section(self, df, header, show_header=False):
-        header=self.get_sep() + header + "\n"  + "\n"
-        return header + df.to_string(index=False, header=show_header) + "\n\n"
+    def make_heading(self, label):
+        sep=""
+        #sep="-"*(shutil.get_terminal_size().columns-1)
+        return sep + "\n" + label + "\n"
 
     def visualize(self):
         if self.disabled:
@@ -101,16 +97,42 @@ class EvolutionDisplay:
             self.is_initialized=True
 
         self.stdscr.erase()
-        #self.stdscr.addstr(f"best loss: {best_loss:.2f}")
-        #self.stdscr.addstr(f"generation: {i_generation}")
 
-        self.new_df()
-        self.add("iteration", f"{self.i_iteration}/{self.n_total}")
-        self.add("generation", f"{self.i_generation}/{self.n_generations}")
-        for key, value in self.progress_cache.items():
-            self.add(key, value)
+        # make info screen
+        n_columns=2
+        column_width=int(np.floor((shutil.get_terminal_size().columns)/2))-2
 
-        self.stdscr.addstr(self.get_df("evolution progress"))
+        self.stdscr.addstr("Infos\n")
+        #labels=sorted(list(self.infos.keys()))
+        labels=list(self.infos.keys())
+        n_rows=int(np.ceil(len(labels)/n_columns))
+        
+        for y in range(n_rows):
+            row=""
+            for x in range(n_columns):
+
+                pos=y*n_columns+x
+                
+                if pos>=len(labels):    
+
+                    continue
+                label=str(labels[pos])
+                value=str(self.infos[label])
+
+                padding=column_width-(len(label)+len(value))
+
+                cell=label
+                if padding>0:
+                    cell+=" "*padding
+                cell+=value
+                if len(cell)>column_width:
+                    cell=row[0:column_width-3] + "..."
+                cell += "  "
+                row += cell
+            row += "\n" 
+            self.stdscr.addstr(row)
+                # self.stdscr.addstr(label+"\n")
+                # self.stdscr.addstr(label+"\n")
 
         try:
             self.stdscr.addstr(self.cache)
@@ -120,7 +142,7 @@ class EvolutionDisplay:
 
     def fft_chart(self, df):
 
-        width=(shutil.get_terminal_size().columns-1)
+        width=(shutil.get_terminal_size().columns-1) - len("1.0e+01 | ")
         height=15
         
         bins=[]
@@ -128,27 +150,40 @@ class EvolutionDisplay:
         maximum=df.impedance.max()
 
         df.impedance=np.log2(df.impedance)
-        df.impedance -= df.impedance.min()
+
+        mini=df.impedance.min()
 
         bin_size=(df.freq.max()-df.freq.min())/width
         freq=df.freq.min()
         for i in range(width):
             y=df[(df.freq>=freq) & (df.freq<freq+bin_size)].impedance.max()
+            #y=df[(df.freq>=freq) & (df.freq<freq+bin_size)].impedance.max()
             bins.append(y)
             freq+=bin_size
+
         bins=np.array(bins)
         bins-=bins.min()
-        bins=bins*height/bins.max()
-        bins=np.array([round(x)-1 for x in bins])
+        maxi=bins.max()
+        bins=bins*height/maxi
+        bins=np.array([round(x) for x in bins])
+
+        
+        ticks=[mini, (maxi-mini)/2, maxi]
+        ticks=[f"{x:.2e}" for x in ticks]
 
         chart=""
         for y in range(height):
+
+            row=""
+            tick=""
+
             for x in range(width):
                 if bins[x]>=height-y:
-                    chart+="x"
+                    row+="x"
+                    tick=f"{(2^bins[x]):.1e}"
                 else:
-                    chart += " "
-            chart += "\n"
+                    row += " "
+            chart += tick + " | "+ row + "\n"
 
         num_ticks=4
         min_freq=str(int(df.freq.min())) + " "
@@ -157,8 +192,8 @@ class EvolutionDisplay:
         label = " frequency (hz) "
         pad=width - len(min_freq) - len(max_freq) - len(label)
         pad/=2
-        pad="-"*int(pad)
-        ticks=min_freq + pad + label + pad + max_freq
+        pad="-"*int(np.ceil(pad))
+        ticks=(" " * (len(tick)+3)) + min_freq + pad + label + pad + max_freq
         chart += ticks + "\n"
         
         return chart
