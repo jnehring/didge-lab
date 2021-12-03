@@ -334,7 +334,7 @@ class AddBubble(MutationParameterSet):
         
         self.geo=geo
         self.add_param("n_bubbles", 1, 5)
-        self.set("n_bubbles", 0)
+        self.set("n_bubbles", 1)
 
         for i in range(0, 5):
             self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))

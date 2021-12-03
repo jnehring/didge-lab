@@ -19,7 +19,9 @@ import logging
 from cad.common.mt import Producer, produce_and_iterate
 import pickle
 import numpy as np
-import curses
+import pandas as pd
+import shutil
+from cad.ui.evolution_display import EvolutionDisplay
 
 class Mutator(ABC):
 
@@ -303,65 +305,77 @@ class MutationJob:
         mutant=self.father.copy()
         self.mutator.mutate(mutant, i_iteration=self.i_generation, n_total_iterations=self.n_generations)
         mutant.after_mutate()
-        mutant_loss, cadsd_result=self.loss.get_loss(mutant.make_geo())
-        result_queue.put((mutant, mutant_loss, cadsd_result, self.pool_index))
+        geo=mutant.make_geo()
+        mutant_loss, cadsd_result=self.loss.get_loss(geo)
+        me=MutantPoolEntry(mutant, geo, mutant_loss, cadsd_result)
+        result_queue.put((me, self.pool_index))
 
-class EvolutionDisplay:
+class MutantPoolEntry:
 
-    def __init__(self, n_generations, n_generation_size):
-        self.n_generations=n_generations
-        self.n_generation_size=n_generation_size
-        self.cache=""
-        self.disabled=False
-        self.is_initialized=False
-
-    def update_iteration(self):
-        self.i_iteration+=1
-        self.visualize()
-
-    def update_generation(self, i_generation, best_geo, cadsd_result, best_loss, mean_loss):
-
-        self.i_generation=i_generation
-        self.i_iteration=1
-        self.best_geo=best_geo
+    def __init__(self, parameterset, geo, loss, cadsd_result):
+        self.parameterset=parameterset
+        self.loss=loss
+        self.geo=geo
         self.cadsd_result=cadsd_result
-        self.best_loss=best_loss
-        self.mean_loss=mean_loss
-        self.cache=f"generation: {self.i_generation}\n"
-        self.visualize()
 
-    def visualize(self):
-        if self.disabled:
-            return
-        if not self.is_initialized:
-            self.stdscr = curses.initscr()
+class MutantPool:
 
-        self.stdscr.erase()
-        #self.stdscr.addstr(f"best loss: {best_loss:.2f}")
-        #self.stdscr.addstr(f"generation: {i_generation}")
-        self.stdscr.addstr(f"iteration: {self.i_iteration}\n")
-        self.stdscr.addstr(self.cache)
-        self.stdscr.refresh()
+    def __init__(self):
+        self.pool=[]
 
-    def end(self):
-        if self.is_initialized:
-            curses.endwin()
+    def iterate(self):
+        for m in self.pool:
+            yield m
 
-def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates=""):
+    def add_entry(self, entry):
+        self.pool.append(entry)
+
+    def add(self, parameterset, geo, loss, cadsd_result):
+        e=MutantPoolEntry(parameterset, geo, loss, cadsd_result)
+        self.add_entry(e)
+
+    @classmethod
+    def create_from_father(cls, father : MutationParameterSet, n_poolsize : int):
+        pool=MutantPool()
+        for x in range(n_poolsize):
+            p=father.copy()
+            geo=p.make_geo()
+            pool.add(p, geo, 100000, None)
+        return pool
+
+    def sort(self):
+        self.pool = sorted(self.pool, key=lambda x : x.loss)
+
+    def get_best_loss(self):
+        self.sort()
+        return self.pool[0].loss
+
+    def get_mean_loss(self):
+        return np.mean([x.loss for x in self.pool])
+
+    def get_best_entry(self):
+        self.sort()
+        return self.pool[0]
+
+    def len(self):
+        return len(self.pool)
+
+    def get(self, i):
+        return self.pool[i]
+
+def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates="", pipeline_step=""):
 
     finish_message="...finished..."
 
-    total=n_generations*len(pool)*n_generation_size
-    pbar=tqdm(total=total)
+    total=n_generations*pool.len()*n_generation_size
 
-    best_loss=min([x[1] for x in pool])
-    mean_loss=np.mean([x[1] for x in pool])
-    best_geo=np.mean([x[1] for x in pool])
+    best_entry=pool.get_best_entry()
+    mean_loss=pool.get_mean_loss()
 
-    display=EvolutionDisplay(n_generations, n_generation_size)
-    display.disabled=True
+    display=EvolutionDisplay(n_generations, n_generation_size, pool.len(), n_threads, pipeline_step)
+    #display.disabled=True
     try:
-        display.update_generation(1, None, None, best_loss, mean_loss)
+        display.update_generation(1, pool)
         #pbar.set_description(f"best_loss={best_loss:.2f}, mean_loss={mean_loss:.2f}, gen={1}/{n_generations}, pool_size={len(pool)}")
         for i_generation in range(n_generations):
 
@@ -378,9 +392,9 @@ def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size
                     job.mutate(result_queue)
 
             # fill processing queue
-            for i_pool in range(len(pool)):
+            for i_pool in range(pool.len()):
                 for i_mutation in range(n_generation_size):
-                    mj=MutationJob(pool[i_pool][0], mutator, loss, i_pool, i_generation, n_generations)
+                    mj=MutationJob(pool.get(i_pool).parameterset, mutator, loss, i_pool, i_generation, n_generations)
                     processing_queue.put(mj)
             for i in range(n_threads):
                 processing_queue.put(finish_message)
@@ -406,36 +420,28 @@ def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size
 
             # collect all mutants
             result_pool={}
-            for i in range(len(pool)):
+            for i in range(pool.len()):
                 result_pool[i]=[]
 
             for result in results:
-                result_pool[result[3]].append((result[0], result[1], result[2]))
+                result_pool[result[1]].append(result[0])
             
-            # add fathers and get fitest
-            for index in range(len(pool)):
-                result_pool[index].append(pool[index])
-                result_pool[index]=sorted(result_pool[index], key=lambda x : x[1])
-                pool[index]=result_pool[index][0]
+            # add fathers and create new mutant pool
+            pool_size=pool.len()
+            new_pool=MutantPool()
+            for index in range(pool_size):
+                result_pool[index].append(pool.get(index))
+                result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss)
+                new_pool.add_entry(result_pool[index][0])
 
-            print("-"*20)
-            print(pool[0])
-            print(len(pool[0]))
-            print("-"*20)
-
-            # get best mutant
-            best_mutant_index=np.argmax([x[1] for x in pool])
-            best_loss=pool[best_mutant_index][1]
-            best_geo=pool[best_mutant_index][0].make_geo()
-            best_cadsd_result=result_pool[best_mutant_index][2]
-            mean_loss=np.mean([x[1] for x in pool])
-
-            display.update_generation(i_generation, best_geo, best_cadsd_result, best_loss, mean_loss)
-
-            # pbar.set_description(f"best_loss={best_loss:.2f}, mean_loss={mean_loss:.2f}, gen={i_generation+1}/{n_generations}, pool_size={len(pool)}")
+            pool=new_pool
+                
+            #print(f"pool len{pool.len()}")
+            display.update_generation(i_generation+2, pool)
 
             if store_intermediates != "":
                 pickle.dump(pool, open(store_intermediates, "wb"))
     finally:
         display.end()
+
     return pool

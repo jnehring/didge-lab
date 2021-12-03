@@ -1,6 +1,6 @@
-from cad.calc.pipeline import Pipeline, ExplorePipelineStep, FinetuningPipelineStep, MutantPool
+from cad.calc.pipeline import Pipeline, ExplorePipelineStep, FinetuningPipelineStep
 from cad.common.app import App
-from cad.calc.mutation import ExploringMutator, FinetuningMutator
+from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
 from cad.calc.didgedb import DidgeMongoDb, DatabaseObject
 from cad.calc.parameters import MutationParameterSet
 from cad.calc.loss import Loss
@@ -119,15 +119,7 @@ class SingerLoss(Loss):
 
 loss=SingerLoss()
 pipeline=Pipeline("minisinger")
-mutator=FinetuningMutator()
-
-mutant=father.copy()
-mutator.mutate(mutant, i_iteration=1, n_total_iterations=10)
-mutant.after_mutate()
-
-loss.get_loss(mutant.make_geo())
-
-pipeline.add_step(ExplorePipelineStep(mutator, loss, initial_pool))
+pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool))
 pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))
 pipeline.run()
 # l=[]

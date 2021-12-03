@@ -6,25 +6,7 @@ from cad.calc.mutation import Mutator, evolve_generations
 from cad.calc.parameters import MutationParameterSet, FinetuningParameters
 from cad.common.app import App
 import logging
-
-class MutantPool:
-
-    def __init__(self, pool=[]):
-        self.pool=pool
-
-    def iterate(self):
-        for m in self.mutants:
-            yield m[0], m[1]
-
-    def get_pool(self):
-        return self.pool
-
-    @classmethod
-    def create_from_father(cls, father : MutationParameterSet, n_poolsize : int):
-        pool=[[father.copy(), 100000] for i in range(n_poolsize)]
-        pool=MutantPool(pool=pool)
-        return pool
-
+from cad.calc.mutation import MutantPool
 
 class PipelineStep(ABC):
 
@@ -77,8 +59,7 @@ class ExplorePipelineStep(PipelineStep):
         n_generations=App.get_config().n_generations
         n_generation_size=App.get_config().n_generation_size
 
-        pool=evolve_generations(self.initial_pool.pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads  )
-        pool=MutantPool(pool=pool)
+        pool=evolve_generations(self.initial_pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="explore")
         return pool
 
 class FinetuningPipelineStep(PipelineStep):
@@ -89,12 +70,9 @@ class FinetuningPipelineStep(PipelineStep):
 
     def execute(self,pool : MutantPool) -> MutantPool:
         
-        parameters=[[FinetuningParameters(x[0].make_geo()), x[1]] for x in pool.pool]
-
         n_threads=App.get_config().n_threads
         n_generations=App.get_config().n_generations
         n_generation_size=App.get_config(). n_generation_size
 
-        pool=evolve_generations(pool.pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads)
-        pool=MutantPool(pool=pool)
+        pool=evolve_generations(pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="finetune")
         return pool
