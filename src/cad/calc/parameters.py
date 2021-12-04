@@ -500,3 +500,55 @@ class FinetuningParameters(MutationParameterSet):
         geo=Geo(geo=geo)
         geo.sort_segments()
         return geo
+
+
+class RandomDidgeParameters(MutationParameterSet):
+    
+    def __init__(self):
+        MutationParameterSet.__init__(self)
+        
+        self.add_param("length", 1000, 1700)
+        self.add_param("bell_width", 50, 300)
+        self.add_param("n_segments", 2, 20)
+        self.add_param("first_segment", 0.2, 0.8)
+        self.add_param("d1", 0,0, value=32, immutable=True)
+    
+    def after_mutate(self):
+        self.get("n_segments").toint()
+        
+    def make_geo(self):
+        self.get("n_segments").toint()
+
+        shape=[
+            [0, self.get("d1").value]
+        ]
+
+        y=np.random.sample(self.get_value("n_segments"))
+
+        target_width=self.get_value("bell_width")-self.get_value("d1")
+        y=y/y.sum()
+        offset=0
+        for i in range(len(y)):
+            y[i]+=offset
+            offset=y[i]
+        y*=target_width
+        y+=self.get_value("d1")
+
+        x=np.random.sample(self.get_value("n_segments")-1)
+        x=x/x.sum()
+        x*=(1-self.get_value("first_segment"))
+        x=np.concatenate([[self.get_value("first_segment")], x])
+        x*=self.get_value("length")
+
+        offset=0
+        for i in range(len(x)):
+            x[i]+=offset
+            offset=x[i]
+
+        for i in range(len(x)):
+            shape.append([x[i], y[i]])
+
+        return Geo(geo=shape)
+                           
+    def after_mutate(self):
+        self.get("n_segments").toint()

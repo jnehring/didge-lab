@@ -3,6 +3,7 @@ import time
 import pandas as pd
 import shutil
 import numpy as np
+import threading
 
 class EvolutionDisplay:
 
@@ -17,6 +18,9 @@ class EvolutionDisplay:
         self.i_generation=1
         self.start_time=time.time()
         self.cache_didge_geometry=None
+        self.visible_mutant_index=None
+        self.pool=None
+        self.stop=False
 
         self.infos={
             "generation_size": n_generation_size,
@@ -24,6 +28,8 @@ class EvolutionDisplay:
             "n_threads": n_threads,
             "pipeline_step": pipeline_step
         }
+
+        self.ui_thread = None
 
     # call this to change iteration counter only
     def update_iteration(self):
@@ -49,6 +55,10 @@ class EvolutionDisplay:
     def update_generation(self, i_generation, pool):
 
         self.i_generation=i_generation
+        self.pool=pool
+
+        if self.visible_mutant_index==None:
+            self.visible_mutant_index=0
 
         self.infos["best loss"]=pool.get_best_loss()
         self.infos["mean loss"]=pool.get_mean_loss()
@@ -89,18 +99,39 @@ class EvolutionDisplay:
         #sep="-"*(shutil.get_terminal_size().columns-1)
         return sep + "\n" + label + "\n"
 
+    def start_ui_thread(self):
+        def ui_thread_function(ed:EvolutionDisplay):
+            while not ed.stop:
+                char = ed.stdscr.getch()
+                ed.visible_mutant_index+=1
+                ed.visualize()
+
+        self.ui_thread=threading.Thread(target=ui_thread_function, args=(self,))
+        self.ui_thread.start()
+
     def visualize(self):
+
         if self.disabled:
             return
         if not self.is_initialized:
             self.stdscr = curses.initscr()
             self.is_initialized=True
+            self.start_ui_thread()
 
         self.stdscr.erase()
 
+        # make heading
+        heading="mutant: "
+        if self.visible_mutant_index==None:
+            heading+="not initialized"
+        else:
+            heading+=f"{self.visible_mutant_index+1}/{self.pool.len()}"
+        heading += "\n\n"
+        self.stdscr.addstr(heading)
+
         # make info screen
         n_columns=2
-        column_width=int(np.floor((shutil.get_terminal_size().columns)/2))-2
+        column_width=int(np.floor((shutil.get_terminal_size().columns)/2))-3
 
         self.stdscr.addstr("Infos\n")
         #labels=sorted(list(self.infos.keys()))
@@ -201,3 +232,4 @@ class EvolutionDisplay:
     def end(self):
         if self.is_initialized:
             curses.endwin()
+        self.stop=True
