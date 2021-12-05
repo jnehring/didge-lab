@@ -7,6 +7,7 @@ from cad.calc.parameters import MutationParameterSet, FinetuningParameters
 from cad.common.app import App
 import logging
 from cad.calc.mutation import MutantPool
+from cad.ui.evolution_ui import EvolutionUI
 
 class PipelineStep(ABC):
 
@@ -23,7 +24,8 @@ class Pipeline:
         self.steps=[]
         self.name=name
         self.folder=os.path.join("projects/pipelines/", name)
-
+        self.ui=EvolutionUI()
+        
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
 
@@ -31,11 +33,14 @@ class Pipeline:
         self.steps.append(step)
 
     def run(self):
-        
+
         pool=None
 
         no_cache=App.get_config().no_cache
         for i in range(len(self.steps)):
+
+            App.context["current_pipeline_step"]=i
+            App.publish("start_pipeline_step", (i, type(self.steps).__name__))
 
             pkl_file=os.path.join(self.folder, str(i) + ".pkl")
             if not no_cache and os.path.exists(pkl_file):

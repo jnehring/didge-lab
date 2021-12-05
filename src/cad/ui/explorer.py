@@ -51,6 +51,7 @@ class Explorer:
         f=os.path.join(self.pipeline_dir, f"{self.loaded_pipeline}.pkl")
         self.mutant_pool=pickle.load(open(f, "rb"))
         mutant=self.mutant_pool.get(self.visible_mutant_index)
+
         peak=mutant.cadsd_result.peaks
         fft=mutant.cadsd_result.fft
         geo=mutant.geo
@@ -69,7 +70,6 @@ class Explorer:
         peak_window=PeakWindow(peak)
         self.ui.add_window(peak_window)
 
-        self.ui.add_separator()
         self.ui.add_separator()
         self.ui.add_window(FFTWindow(fft))
         
@@ -90,7 +90,7 @@ class Explorer:
         mw.add_option('y', "last mutant", y)
         mw.add_option('.', "go back", back)
         self.menu=mw
-        self.ui.add_window(mw)
+        self.ui.add_window(mw)  
             
         self.ui.display()
 

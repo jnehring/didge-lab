@@ -18,6 +18,10 @@ class UserInterface:
 
     def add_window(self, win):
         self.windows.append(win)
+        return len(self.windows)-1
+
+    def replace_window(self, win, pos):
+        self.windows[pos]=win
 
     def clear(self):
         self.windows=[]
@@ -69,9 +73,11 @@ class DictWindow(Window):
 
     def __init__(self, data, n_columns=2, title=None):
         Window.__init__(self, title)
-        self.content_str=self.dict_to_table(data, n_columns)
+        self.n_columns=n_columns
+        self.update_dict(data)
 
-    def dict_to_table(self, data, n_columns):        
+    def update_dict(self, data):        
+        n_columns=self.n_columns
         content_str=""
         column_width=int(np.floor((shutil.get_terminal_size().columns)/n_columns))-3
 
@@ -105,7 +111,7 @@ class DictWindow(Window):
 
             row += "\n"
             content_str += row 
-        return content_str
+        self.content_str=content_str
     
     def _render(self):
         return self.content_str
@@ -115,18 +121,26 @@ class StaticTextWindow(Window):
     def __init__(self, static_str):
         Window.__init__(self)
         self.static_str=static_str
+    
+    def set_text(self, static_str):
+        self.static_str=static_str
 
     def _render(self):
         return self.static_str
 
 class PeakWindow(Window):
 
-    def __init__(self, peak):
-
+    def __init__(self, peak=None):
         Window.__init__(self,"Tuning")
+        if peak==None:
+            self.content=""
+        else:
+            self.set_peak(peak)
+
+    def set_peak(self, peak):
         peak.impedance=peak.impedance.apply(lambda x : f"{x:.2e}")
         peak["cent-diff"]=peak["cent-diff"].apply(lambda x : f"{x:.2f}")
-        self.content=peak.to_string()
+        self.content=peak.to_string() + "\n"
 
     def _render(self):
         return self.content
@@ -153,4 +167,9 @@ class MenuWindow(Window):
 
     def run_fct(self, key, args=()):
         self.fcts[key](args)
+
+    def key_pressed(self, key):
+        if self.has_key(key):
+            self.run_fct(key)
+
 

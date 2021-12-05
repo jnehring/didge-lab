@@ -1,14 +1,36 @@
 import configargparse
 import logging
+from threading import Lock
 
 class App:
 
     config=None
     context={}
+    subscribers={}
+    context_lock=Lock()
+
+    @classmethod
+    def set_context(cls, key, value):
+        App.context_lock.acquire()
+        App.context[key]=value
+        App.context_lock.release()
+
+    @classmethod
+    def get_context(cls, key):
+        App.context_lock.acquire()
+        val=App.context[key]
+        App.context_lock.release()
+        return val
+
+    @classmethod
+    def init(cls):
+        # add config to context
+        for key, value in App.get_config().__dict__.items():
+            App.set_context(key, value)
 
     @classmethod
     def init_logging(self):
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s')
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s', filename="log.txt")
 
     @classmethod
     def get_config(cls, path="config.ini"):
@@ -24,5 +46,21 @@ class App:
 
             App.config=options
 
-            # add config to context
         return App.config
+
+    @classmethod
+    def publish(cls, topic, args=None):
+
+        if topic not in App.subscribers:
+            return
+        for s in App.subscribers[topic]:
+            if args is None:
+                s()
+            else:
+                s(*args)
+
+    @classmethod
+    def subscribe(cls, topic, fct):
+        if topic not in App.subscribers:
+            App.subscribers[topic]=[]
+        App.subscribers[topic].append(fct)

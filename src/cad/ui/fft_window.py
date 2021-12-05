@@ -4,7 +4,13 @@ import numpy as np
 
 class FFTWindow(Window):
 
-    def __init__(self, df):
+    def __init__(self, fft=None):
+        if fft is None:
+            self.chart=""
+        else:
+            self.set_fft(fft)
+
+    def set_fft(self, df):
         Window.__init__(self, "FFT")
 
         width=(shutil.get_terminal_size().columns-1) - len("1.0e+01 | ")

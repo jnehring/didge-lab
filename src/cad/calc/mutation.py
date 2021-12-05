@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import shutil
 from cad.ui.evolution_display import EvolutionDisplay
+from cad.common.app import App
 
 class Mutator(ABC):
 
@@ -116,11 +117,6 @@ class Evolver:
             if self.reporter != None:
                 self.reporter.update(self)
 
-            average_loss=total_loss / (1+i_iteration)
-            best_loss=self.pool[0]["loss"]
-
-            if self.show_progress:
-                self.pbar.update(1)
         return self.pool[0]["mutant"], self.pool[0]["loss"]
 
     def get_pool(self):
@@ -369,79 +365,74 @@ def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size
 
     total=n_generations*pool.len()*n_generation_size
 
-    best_entry=pool.get_best_entry()
-    mean_loss=pool.get_mean_loss()
+    for i_generation in range(n_generations):
 
-    display=EvolutionDisplay(n_generations, n_generation_size, pool.len(), n_threads, pipeline_step)
-    #display.disabled=True
-    try:
-        display.update_generation(1, pool)
-        #pbar.set_description(f"best_loss={best_loss:.2f}, mean_loss={mean_loss:.2f}, gen={1}/{n_generations}, pool_size={len(pool)}")
-        for i_generation in range(n_generations):
+        App.set_context("i_generation", i_generation)
+        App.set_context("i_iteration", 0)
+        App.publish("generation_started", (i_generation, pool))
 
-            processing_queue=Queue()
-            result_queue=Queue()
-            results=[]
-            
-            def process_mutator_queue():
-                while True:
-                    job=processing_queue.get()
-                    if job == finish_message:
-                        result_queue.put(finish_message)
-                        break
-                    job.mutate(result_queue)
+        processing_queue=Queue()
+        result_queue=Queue()
+        results=[]
+        
+        def process_mutator_queue():
+            while True:
+                job=processing_queue.get()
+                if job == finish_message:
+                    result_queue.put(finish_message)
+                    break
+                job.mutate(result_queue)
 
-            # fill processing queue
-            for i_pool in range(pool.len()):
-                for i_mutation in range(n_generation_size):
-                    mj=MutationJob(pool.get(i_pool).parameterset, mutator, loss, i_pool, i_generation, n_generations)
-                    processing_queue.put(mj)
-            for i in range(n_threads):
-                processing_queue.put(finish_message)
+        # fill processing queue
+        for i_pool in range(pool.len()):
+            for i_mutation in range(n_generation_size):
+                mj=MutationJob(pool.get(i_pool).parameterset, mutator, loss, i_pool, i_generation, n_generations)
+                processing_queue.put(mj)
+        for i in range(n_threads):
+            processing_queue.put(finish_message)
 
-            # start worker threads to process this queue and write results to result_queue
-            processes=[]
-            for i in range(n_threads):
-                p = Process(target=process_mutator_queue, args=())
-                processes.append(p)
-                p.start()
+        # start worker threads to process this queue and write results to result_queue
+        processes=[]
+        for i in range(n_threads):
+            p = Process(target=process_mutator_queue, args=())
+            processes.append(p)
+            p.start()
 
-            # collect results in order to update progress bar
-            finished_count=0
-            while finished_count<n_threads:
-                result=result_queue.get()
-                if result!=finish_message:
-                    display.update_iteration()
-                    results.append(result)
-                else:
-                    finished_count+=1
+        i_iteration=0
 
-            # all jobs are processed. now update mutant pool
+        # collect results in order to update progress bar
+        finished_count=0
+        while finished_count<n_threads:
+            result=result_queue.get()
+            if result!=finish_message:
+                i_iteration+=1
+                App.set_context("i_iteration", i_iteration)
+                App.publish("iteration_finished", (i_iteration,))
+                results.append(result)
+            else:
+                finished_count+=1
 
-            # collect all mutants
-            result_pool={}
-            for i in range(pool.len()):
-                result_pool[i]=[]
+        # all jobs are processed. now update mutant pool
 
-            for result in results:
-                result_pool[result[1]].append(result[0])
-            
-            # add fathers and create new mutant pool
-            pool_size=pool.len()
-            new_pool=MutantPool()
-            for index in range(pool_size):
-                result_pool[index].append(pool.get(index))
-                result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss)
-                new_pool.add_entry(result_pool[index][0])
+        # collect all mutants
+        result_pool={}
+        for i in range(pool.len()):
+            result_pool[i]=[]
 
-            pool=new_pool
-                
-            #print(f"pool len{pool.len()}")
-            display.update_generation(i_generation+2, pool)
+        for result in results:
+            result_pool[result[1]].append(result[0])
+        
+        # add fathers and create new mutant pool
+        pool_size=pool.len()
+        new_pool=MutantPool()
+        for index in range(pool_size):
+            result_pool[index].append(pool.get(index))
+            result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss)
+            new_pool.add_entry(result_pool[index][0])
 
-            if store_intermediates != "":
-                pickle.dump(pool, open(store_intermediates, "wb"))
-    finally:
-        display.end()
+        pool=new_pool
+        
+        if store_intermediates != "":
+            pickle.dump(pool, open(store_intermediates, "wb"))
 
     return pool

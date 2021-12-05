@@ -14,6 +14,7 @@ import statistics
 import pandas as pd
 import logging
 import traceback
+import numpy as np
 
 class Loss(ABC):
 
@@ -198,3 +199,53 @@ class CombinedLoss(Loss):
             avg[t]=m
         return avg
             
+class SingerLoss(Loss):
+
+    def __init__(self):
+        Loss.__init__(self)
+        self.weight_base_note_loss=1.0
+        self.weight_overtone_loss=1.0
+        self.weight_singer_loss=1.0
+
+    def loss_per_frequency(self, f1, f2):
+        f1=math.log(f1, 2)
+        f2=math.log(f2, 2)
+        return abs(f1-f2)
+
+    def get_loss(self, geo, peaks=None, fft=None):
+        
+        base_note=-31 # should be a D
+        res=CADSDResult.from_geo(geo)
+        peaks=res.peaks
+
+        freqs=list(peaks.freq)
+
+        # tune base note
+
+        fundamental=-31
+        base_freq=note_to_freq(-31)
+        base_note_loss=self.loss_per_frequency(base_freq, freqs[0])
+
+        # tune overtones
+        overtone_loss=0
+        
+        scale=np.array([0,2,3,5,7,9,10])+fundamental
+        scale_frequencies=[]
+        for i in range(len(scale)):
+            for octave in range(5):
+                scale_frequencies.append(note_to_freq(scale[i] + 12*octave))
+
+        for i in range(1, len(freqs)):
+            freq=freqs[i]
+            f_next_scale=min(scale_frequencies, key=lambda x:abs(x-freq))
+            l = self.loss_per_frequency(freq, f_next_scale)
+            overtone_loss+=l
+        overtone_loss /= len(freqs)-1
+
+        # singer loss
+        singer_loss=1-(peaks[peaks.freq>=500].impedance.sum()/peaks.impedance.sum())
+        singer_loss=max(0, singer_loss-0.2)
+
+        final_loss=self.weight_base_note_loss*base_note_loss + self.weight_overtone_loss*overtone_loss + self.weight_singer_loss*singer_loss
+        return final_loss, res
+

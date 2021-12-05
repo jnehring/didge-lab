@@ -1,3 +1,7 @@
-from cad.common.app import App
+class HalloWelt:
 
-print(App.options)
+    pass
+
+x=HalloWelt()
+s=type(x).__name__
+print(s)
