@@ -132,7 +132,7 @@ class PeakWindow(Window):
 
     def __init__(self, peak=None):
         Window.__init__(self,"Tuning")
-        if peak==None:
+        if peak is None:
             self.content=""
         else:
             self.set_peak(peak)
@@ -160,6 +160,7 @@ class MenuWindow(Window):
         menu="keys "
         keys=list(self.fcts.keys())
         menu += ", ".join([key + ": " + self.labels[key] for key in keys])
+        menu += "\n"
         return menu
 
     def has_key(self, key):

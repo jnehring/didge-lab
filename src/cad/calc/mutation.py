@@ -1,5 +1,4 @@
 from cad.calc.didgmo import PeakFile, didgmo_high_res, cleanup
-from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo
@@ -21,7 +20,6 @@ import pickle
 import numpy as np
 import pandas as pd
 import shutil
-from cad.ui.evolution_display import EvolutionDisplay
 from cad.common.app import App
 
 class Mutator(ABC):

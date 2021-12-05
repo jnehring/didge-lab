@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 from cad.calc.conv import freq_to_note, note_name
 from cad.calc.didgmo import didgmo_bridge, didgmo_high_res
 import numpy as np
+import os
 
 class DidgeVisualizer:
     
@@ -62,9 +63,11 @@ class FFTVisualiser:
     @classmethod
     def vis_fft_and_target(cls, fft, target=None):
         
-        fft=fft.fft.drop(columns=["ground", "overblow"])
-        for column in fft.columns:
-            fft[column]=fft[column] / fft[column].max()
+        #fft=fft.copy().drop(columns=["ground", "overblow"])
+        fft=fft.copy()
+        fft.reset_index(drop=True, inplace=True) 
+        # for column in fft.columns:
+        #     fft[column]=fft[column] / fft[column].max()
 
         sns.set(rc={'figure.figsize':(15,5)})
         sns.lineplot(data=fft, x="freq", y="impedance")
@@ -74,6 +77,17 @@ class FFTVisualiser:
                 note_number=freq_to_note(t)
                 #print(t, note_number, note_name(note_number))
                 plt.axvline(t, 0, 1, color="black", dashes=[5,5])
+
+def visualize_mutant_to_files(mutant, output_dir, filename):
+    plt.clf()
+    DidgeVisualizer.vis_didge(mutant.geo)
+    geofile=os.path.join(output_dir, filename + "geo.png")
+    plt.savefig(geofile)
+    plt.clf()
+    FFTVisualiser.vis_fft_and_target(mutant.cadsd_result.fft)
+    fftfile=os.path.join(output_dir, filename + "fft.png")
+    plt.savefig(fftfile)
+    return geofile, fftfile
 
 def visualize_geo_fft(geo, target=None):
     DidgeVisualizer.vis_didge(geo)

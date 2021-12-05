@@ -1,5 +1,4 @@
 from cad.calc.didgmo import PeakFile, didgmo_bridge
-from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo, geotools
