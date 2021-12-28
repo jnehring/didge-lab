@@ -2,6 +2,7 @@ from cad.calc.didgmo import PeakFile, didgmo_high_res, cleanup
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo
+from cad.cadsd.cadsd import CADSDResult
 from cad.calc.parameters import BasicShapeParameters, MutationParameterSet
 from IPython.display import clear_output
 import math
@@ -105,12 +106,15 @@ class MutantPool:
         self.add_entry(e)
 
     @classmethod
-    def create_from_father(cls, father : MutationParameterSet, n_poolsize : int):
+    def create_from_father(cls, father : MutationParameterSet, n_poolsize : int, do_cadsd=False):
         pool=MutantPool()
         for x in range(n_poolsize):
             p=father.copy()
             geo=p.make_geo()
-            pool.add(p, geo, 100000, None)
+            cadsd=None
+            if do_cadsd:
+                cadsd=CADSDResult.from_geo(geo)
+            pool.add(p, geo, 100000, cadsd)
         return pool
 
     def sort(self):

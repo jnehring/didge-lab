@@ -1,6 +1,5 @@
 #from cad.calc.didgmo import PeakFile, didgmo_high_res
 from cad.cadsd.cadsd import CADSDResult
-from cad.calc.visualization import DidgeVisualizer, FFTVisualiser
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo
@@ -22,7 +21,7 @@ class Loss(ABC):
         pass
 
     @abstractmethod
-    def get_loss(self, geo, peak=None, fft=None):
+    def get_loss(self, geo, peak=None, fft=None) -> (float, CADSDResult):
         pass
     
 class TargetNoteLoss(Loss):
@@ -127,7 +126,7 @@ class ScaleLoss(Loss):
                 l = self.loss_per_frequency(f_peak, f_next_scale, i)
                 loss += l
                 logging.debug(f"l{i}: {l:.2f}, target freq: {f_next_scale:.2f}, actual freq: {f_peak:.2f}")
-            return loss
+            return loss, res
         except Exception as e:
             logging.error(e)
             logging.error(traceback.format_exc())
@@ -140,7 +139,7 @@ class ScaleLoss(Loss):
             if key=="scale_frequencies":
                 value=[round(x, 2) for x in value]
             s+=f"{key}={value}\n"
-        return s
+        return s, res
         
 class AmpLoss(Loss):
     

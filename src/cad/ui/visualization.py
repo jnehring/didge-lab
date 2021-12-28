@@ -8,6 +8,7 @@ from cad.calc.didgmo import didgmo_bridge, didgmo_high_res
 import numpy as np
 import os
 from cad.cadsd.cadsd import CADSDResult
+from cad.calc.geo import geotools
 
 class DidgeVisualizer:
     
@@ -108,8 +109,10 @@ def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False):
         fftfile=os.path.join(output_dir, filename + "fft.png")
         plt.savefig(fftfile, dpi=500)
 
-        f=open(os.path.join(output_dir, filename + "peaks.txt"), "w")
-        f.write(cadsd_result.peaks.to_string())
+        report=geotools.print_geo_summary(geo, peak=cadsd_result.peaks)
+
+        f=open(os.path.join(output_dir, filename + "report.txt"), "w")
+        f.write(report)
         f.close()
 
 def visualize_geo_fft(geo, target=None):

@@ -340,8 +340,8 @@ class AddBubble(MutationParameterSet):
 
         for i in range(0, 5):
             self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))
-            self.mutable_parameters.append(MutationParameter(f"{i}width", 0.2, 0, 0.9))
-            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0, 1.2))
+            self.mutable_parameters.append(MutationParameter(f"{i}width", 0.5, 0.4, 0.9))
+            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0, 0,7))
     
     # return last index that is smaller than x
     def get_index(self, shape, x):
@@ -373,6 +373,7 @@ class AddBubble(MutationParameterSet):
         x=pos-0.5*width
         y=geotools.diameter_at_x(Geo(geo=shape), x)
         bubbleshape.append([x,y])
+
         for j in range(1, n_segments):
             x=pos-0.5*width + j*width/n_segments
 
@@ -386,8 +387,7 @@ class AddBubble(MutationParameterSet):
         x=pos+0.5*width
         y=geotools.diameter_at_x(Geo(geo=shape), x)
         bubbleshape.append([x,y])
-
-        while shape[i][0]<bubbleshape[-1][0]:
+        while shape[i][0]<=bubbleshape[-1][0]+1:
             i+=1
         
         bubbleshape.extend(shape[i:])
@@ -400,7 +400,7 @@ class AddBubble(MutationParameterSet):
         bubble_segment_width=geo.length()/self.get_value("n_bubbles")
         for i in range(self.get_value("n_bubbles")):
 
-            width=0.5*self.get_value(f"{i}width")*bubble_segment_width
+            width=self.get_value(f"{i}width")*bubble_segment_width
             height=self.get_value(f"{i}height")
 
             pos=self.get_value(f"{i}pos")
@@ -588,3 +588,31 @@ class ConeMutationParameter(MutationParameterSet):
             y+=self.d1
             geo.append([x,y])
         return Geo(geo=geo)
+
+class ConeBubble(MutationParameterSet):
+    def __init__(self, father_cone, father_bubble):
+        MutationParameterSet.__init__(self)
+        
+        self.father_cone=father_cone
+        self.father_bubble=father_bubble
+
+        for father in [father_cone, father_bubble]:
+            for param in father.mutable_parameters:
+                self.add_param(param.name, param.minimum, param.maximum, param.value, param.immutable)
+
+        self.after_mutate()
+    
+    def after_mutate(self):
+        for param in self.mutable_parameters:
+            try:
+                self.father_cone.set(param.name, param.value)
+                self.father_bubble.set(param.name, param.value)
+            except Exception as e:
+                continue
+            
+        self.father_cone.after_mutate()
+        self.father_bubble.after_mutate()
+
+    def make_geo(self):
+        self.father_bubble.geo=self.father_cone.make_geo()
+        return self.father_bubble.make_geo()

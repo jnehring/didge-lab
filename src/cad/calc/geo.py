@@ -120,12 +120,14 @@ class geotools:
         s=f"length:\t\t{geo.length():.2f}\n"
         s+=f"bell size:\t{geo.geo[-1][1]:.2f}\n"
         s+=f"num segments:\t{len(geo.geo)}\n"
-        s+=f"num peaks:\t{len(peak)}\n"
+
+        if peak is not None:
+            s+=f"num peaks:\t{len(peak)}\n"
         if loss != None:
             s+=f"loss:\t\t{loss:.2f}\n"
             
         s+=str(peak)
-        print(s)
+        return s
 
     @staticmethod
     def geo_to_json(geo):
