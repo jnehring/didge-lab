@@ -341,7 +341,7 @@ class AddBubble(MutationParameterSet):
         for i in range(0, 5):
             self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))
             self.mutable_parameters.append(MutationParameter(f"{i}width", 0.5, 0.4, 0.9))
-            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0, 0,7))
+            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0.1, 0,5))
     
     # return last index that is smaller than x
     def get_index(self, shape, x):
@@ -616,3 +616,44 @@ class ConeBubble(MutationParameterSet):
     def make_geo(self):
         self.father_bubble.geo=self.father_cone.make_geo()
         return self.father_bubble.make_geo()
+
+class IringaShape(MutationParameterSet):
+
+    def __init__(self):
+        MutationParameterSet.__init__(self)
+
+        self.d1=32
+        self.add_param("length", 1500, 3000)
+        self.add_param("bell_size", 70, 120)
+        self.add_param("x0", 0.4, 0.7)
+        self.add_param("y0", 1.0, 1.3)
+
+        self.n_segments=8
+        #self.add_param("n_segments", 3, self.max_n_segments)
+
+        for i in range(1, self.n_segments):
+            self.add_param(f"x{i}", 0.1, 0.9)
+            self.add_param(f"y{i}", 0.1, 0.9)
+
+    def make_geo(self):
+        shape=[[0, self.d1]]
+        x0=self.get_value("length")*self.get_value("x0")
+        y0=self.d1*self.get_value("y0")
+        shape.append([x0,y0])
+
+        x_left=self.get_value("length")-x0
+        y_left=self.get_value("bell_size")-y0
+
+        x_sum=sum([self.get_value(f"x{i}") for i in range(1, self.n_segments)])
+        y_sum=sum([self.get_value(f"y{i}") for i in range(1, self.n_segments)])
+
+        for i in range(1, self.n_segments):
+            x=x0+self.get_value(f"x{i}")*x_left/x_sum
+            y=y0+self.get_value(f"y{i}")*y_left/y_sum
+            x0=x
+            y0=y
+            shape.append([x,y])
+        return Geo(geo=shape)        
+
+    def after_mutate(self):
+        pass

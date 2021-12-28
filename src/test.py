@@ -1,5 +1,6 @@
 from cad.calc.mutation import ExploringMutator
-from cad.calc.parameters import ConeBubble, ConeMutationParameter, AddBubble
+from cad.calc.geo import Geo
+from cad.calc.parameters import ConeBubble, ConeMutationParameter, AddBubble, BasicShapeParameters, MutationParameterSet
 # from cad.cadsd.cadsd import CADSDResult
 # import pickle
 # from cad.ui.ui import UserInterface, PeakWindow, StaticTextWindow
@@ -22,7 +23,9 @@ if os.path.exists(output_dir):
 
 print("writing files to " + os.path.abspath(output_dir))
 
-father_cone=ConeMutationParameter()
+
+father_cone=IringaShape()
+#father_cone=ConeMutationParameter()
 father_bubble=AddBubble(None)
 father=ConeBubble(father_cone, father_bubble)
 mutator=ExploringMutator()
