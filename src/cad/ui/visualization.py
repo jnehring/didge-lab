@@ -7,6 +7,7 @@ from cad.calc.conv import freq_to_note, note_name
 from cad.calc.didgmo import didgmo_bridge, didgmo_high_res
 import numpy as np
 import os
+from cad.cadsd.cadsd import CADSDResult
 
 class DidgeVisualizer:
     
@@ -88,6 +89,28 @@ def visualize_mutant_to_files(mutant, output_dir, filename):
     fftfile=os.path.join(output_dir, filename + "fft.png")
     plt.savefig(fftfile)
     return geofile, fftfile
+
+def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False):
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    plt.clf()
+    DidgeVisualizer.vis_didge(geo)
+    geofile=os.path.join(output_dir, filename + "geo.png")
+    plt.savefig(geofile, dpi=500)
+    plt.clf()
+
+    if not skip_cadsd:
+
+        cadsd_result=CADSDResult.from_geo(geo)
+        FFTVisualiser.vis_fft_and_target(cadsd_result.fft)
+        fftfile=os.path.join(output_dir, filename + "fft.png")
+        plt.savefig(fftfile, dpi=500)
+
+        f=open(os.path.join(output_dir, filename + "peaks.txt"), "w")
+        f.write(cadsd_result.peaks.to_string())
+        f.close()
 
 def visualize_geo_fft(geo, target=None):
     DidgeVisualizer.vis_didge(geo)

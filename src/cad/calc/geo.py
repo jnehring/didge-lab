@@ -1,5 +1,6 @@
 import copy
 import pandas as pd
+import math
 
 class Geo:
 
@@ -133,3 +134,28 @@ class geotools:
     @staticmethod
     def json_to_geo(geo_json):
         return Geo(geo=geo_json)
+
+    # return diameter of didge at position x
+    @staticmethod
+    def diameter_at_x(geo, x):
+
+        assert x<geo.length()
+
+        if x==0:
+            return geo.geo[0][1]
+
+        for i in range(len(geo.geo)):
+            if x<geo.geo[i][0]:
+                break
+
+        x1=geo.geo[i-1][0]
+        y1=geo.geo[i-1][1]
+        x2=geo.geo[i][0]
+        y2=geo.geo[i][1]
+
+        ydiff=(y2-y1)/2
+        xdiff=(x2-x1)
+
+        winkel=math.atan(ydiff/xdiff)
+        y=math.tan(winkel)*(x-x1)*2+y1
+        return y

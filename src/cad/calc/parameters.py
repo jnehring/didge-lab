@@ -126,7 +126,11 @@ class MutationParameterSet(ABC):
             df["max"].append(p.maximum)
             df["mutable"].append(self.is_mutable(p.name))
 
-        return str(pd.DataFrame(df))
+        df=pd.DataFrame(df)
+        for c in ["value", "min", "max"]:
+            df[c]=df[c].apply(lambda x : f"{x:.2f}")
+
+        return str(df)
 
         #return type(self).__name__ + "\n * " + "\n * ".join(str(x) for x in self.mutable_parameters + self.immutable_parameters)
 
@@ -159,9 +163,9 @@ class BasicShapeParameters(MutationParameterSet):
         
         shape.append([shape[-1][0] + self.get("bell_x").value, shape[-1][1]*self.get("bell_d").value])
         
-        scaling=self.get("max_d").value / max([x[1] for x in shape])
-        for i in range(1,len(shape)):
-            shape[i][1]*=scaling
+        # scaling=self.get("max_d").value / max([x[1] for x in shape])
+        # for i in range(1,len(shape)):
+        #     shape[i][1]*=scaling
 
         length=shape[-1][0]
         scaling=self.get_value("length")/length
@@ -333,18 +337,18 @@ class AddBubble(MutationParameterSet):
         
         self.geo=geo
         self.add_param("n_bubbles", 1, 5)
-        self.set("n_bubbles", 1)
 
         for i in range(0, 5):
             self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))
-            self.mutable_parameters.append(MutationParameter(f"{i}width", 400, 50, 450))
-            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0, 1.5))
+            self.mutable_parameters.append(MutationParameter(f"{i}width", 0.2, 0, 0.9))
+            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0, 1.2))
     
+    # return last index that is smaller than x
     def get_index(self, shape, x):
         for i in range(len(shape)):
             if shape[i][0]>x:
                 return i
-        return None
+        return len(shape)-1
 
     def get_y(self, shape, x):
         i=self.get_index(shape, x)
@@ -360,50 +364,56 @@ class AddBubble(MutationParameterSet):
 
     def make_bubble(self, shape, pos, width, height):
 
-        shape=self.geo.geo
         n_segments=11
-        pos=pos*(self.geo.length()-2*width) + width
-        
-        i=self.get_index(shape, pos)
 
-        xa=shape[i-1][0]
-        xe=shape[i][0]
-        ya=self.get_y(shape, pos-0.5*width)
-        ye=self.get_y(shape, pos+0.5*width)
-        alpha=math.atan(0.5*(ye-ya) / (xe-xa))
+        i=self.get_index(shape, pos-0.5*width)
 
-        bubbleshape=[]
+        bubbleshape=shape[0:i-1]
 
-        for i in range(1, n_segments+1):
-            x=pos-0.5*width + i*width/n_segments
-            y=ya + 2*(x-xa)*math.tan(alpha)
+        x=pos-0.5*width
+        y=geotools.diameter_at_x(Geo(geo=shape), x)
+        bubbleshape.append([x,y])
+        for j in range(1, n_segments):
+            x=pos-0.5*width + j*width/n_segments
 
-            #print(math.tan(alpha), 2*(x-xa))
-            factor=1+math.sin((i-1)*math.pi/(n_segments-1))*height
+            # get diameter at x
+            y=geotools.diameter_at_x(Geo(geo=shape), x)
+            factor=1+math.sin(j*math.pi/(n_segments))*height
             y*=factor
+
             bubbleshape.append([x,y])
 
-        newshape=[]
+        x=pos+0.5*width
+        y=geotools.diameter_at_x(Geo(geo=shape), x)
+        bubbleshape.append([x,y])
 
-        ia=self.get_index(shape, xa)
-        ie=self.get_index(shape, xe)
-
-        newshape.extend(shape[0:ia])
-        newshape.extend(bubbleshape)
-        newshape.extend(shape[ie:])
-        return newshape
-        # geo=Geo(geo=newshape)
-        # geo.sort_segments()
-        # return geo.shape
+        while shape[i][0]<bubbleshape[-1][0]:
+            i+=1
+        
+        bubbleshape.extend(shape[i:])
+        return bubbleshape
         
     def make_geo(self):
 
-        shape=self.geo.copy().geo
+        geo=self.geo.copy()
+        shape=geo.geo
+        bubble_segment_width=geo.length()/self.get_value("n_bubbles")
         for i in range(self.get_value("n_bubbles")):
-            pos=self.get_value(f"{i}pos")
-            width=self.get_value(f"{i}width")
+
+            width=0.5*self.get_value(f"{i}width")*bubble_segment_width
             height=self.get_value(f"{i}height")
+
+            pos=self.get_value(f"{i}pos")
+            
+            pos=pos*(self.geo.length()-2*bubble_segment_width) + width
+            if pos-width/2<bubble_segment_width*i:
+                pos=i*bubble_segment_width+width/2
+
+            if pos+width/2>bubble_segment_width*(i+1):
+                pos=(i+1)*bubble_segment_width-width/2
+
             shape=self.make_bubble(shape, pos, width, height)
+
         return Geo(geo=shape)
 
     def after_mutate(self):
@@ -551,3 +561,30 @@ class RandomDidgeParameters(MutationParameterSet):
                            
     def after_mutate(self):
         self.get("n_segments").toint()
+
+class ConeMutationParameter(MutationParameterSet):
+
+    def __init__(self):
+        MutationParameterSet.__init__(self)
+        self.add_param("length", 1200, 2800)
+        self.add_param("bell_width", 40, 120)
+        self.add_param("min_t", -10, 0)
+        self.add_param("max_t",0.01, 10)
+
+        self.d1=32
+        
+    def make_geo(self):
+        n_segments=20
+
+        geo=[]
+        min_t=self.get_value("min_t")
+        max_t=self.get_value("max_t")
+        t_diff=max_t-min_t
+        max_y=(math.pow(2, (t_diff*n_segments/(n_segments+1))+min_t))-math.pow(2, min_t)
+        for i in range(n_segments+1):
+            x=self.get_value("length")*i/n_segments
+            y=((math.pow(2, (t_diff*i/(n_segments+1))+min_t))-math.pow(2, min_t))/max_y
+            y*=(self.get_value("bell_width")-self.d1)
+            y+=self.d1
+            geo.append([x,y])
+        return Geo(geo=geo)

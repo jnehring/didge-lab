@@ -35,12 +35,12 @@ class ExploringMutator(Mutator):
             p=parameters.mutable_parameters[i]
             if p.immutable:
                 continue
-            p.value = p.minimum + random.random()*(p.maximum-p.minimum)
+            r=random.random()
+            p.value = p.minimum + r*(p.maximum-p.minimum)
 
 class FinetuningMutator(Mutator):
 
     def __init__(self, learning_rate=1):
-        #Mutator.__init__(self)
         self.learning_rate=learning_rate
 
     def mutate(self, parameters, i_iteration=1, n_total_iterations=1):

@@ -1,60 +1,72 @@
-from cad.calc.mutation import MutantPool, MutantPoolEntry
-from cad.calc.parameters import BasicShapeParameters, AddBubble
-from cad.cadsd.cadsd import CADSDResult
-import pickle
-from cad.ui.ui import UserInterface, PeakWindow, StaticTextWindow
-from cad.ui.fft_window import FFTWindow
-from cad.ui.explorer import Explorer
+from cad.calc.mutation import ExploringMutator
+from cad.calc.parameters import MutationParameterSet, AddBubble
+# from cad.cadsd.cadsd import CADSDResult
+# import pickle
+# from cad.ui.ui import UserInterface, PeakWindow, StaticTextWindow
+# from cad.ui.fft_window import FFTWindow
+# from cad.ui.explorer import Explorer
+from cad.calc.geo import Geo, geotools
+import math
+import random
+from cad.ui.visualization import visualize_geo_to_files
+import matplotlib.pyplot as plt
+import os
+import shutil
 
-pipeline="projects/pipelines/minisinger/"
-explorer=Explorer(pipeline)
-explorer.start_ui()
+random.seed(0)
 
+class ConeMutationParameter(MutationParameterSet):
 
-# generate_pickle=False
-# f="projects/temp/temp.pkl"
+    def __init__(self):
+        MutationParameterSet.__init__(self)
+        self.add_param("length", 1200, 2800)
+        self.add_param("bell_width", 40, 120)
+        self.add_param("min_t", -10, 0)
+        self.add_param("max_t",0.01, 10)
 
-# if generate_pickle:
-#     pool=pickle.load(open("projects/pipelines/evolve_penta/0.pkl", "rb"))
-#     mp=MutantPool()
-#     for i in range(len(pool.pool)):
-#         print(i)
-#         geo=pool.pool[i][0].geo
-#         cadsd_result=CADSDResult.from_geo(geo)
-#         me=MutantPoolEntry(None, geo, 5, cadsd_result)
-#         mp.add_entry(me)
-#     pickle.dump(mp, open(f, "wb"))
+        self.d1=32
+        
+    def make_geo(self):
+        n_segments=20
 
-# mp=pickle.load(open(f, "rb"))
+        geo=[]
+        min_t=self.get_value("min_t")
+        max_t=self.get_value("max_t")
+        t_diff=max_t-min_t
+        max_y=(math.pow(2, (t_diff*n_segments/(n_segments+1))+min_t))-math.pow(2, min_t)
+        for i in range(n_segments+1):
+            x=self.get_value("length")*i/n_segments
+            y=((math.pow(2, (t_diff*i/(n_segments+1))+min_t))-math.pow(2, min_t))/max_y
+            y*=(self.get_value("bell_width")-self.d1)
+            y+=self.d1
+            geo.append([x,y])
+        return Geo(geo=geo)
 
-# ui=UserInterface()
+output_dir="projects/temp/test"
 
-# peak=mp.get(0).cadsd_result.peaks
-# peak_window=PeakWindow(peak)
-# ui.add_window(peak_window)
+if os.path.exists(output_dir):
+    shutil.rmtree(output_dir)
 
-# ui.add_separator()
+print("writing files to " + os.path.abspath(output_dir))
 
-# fft=mp.get(0).cadsd_result.fft
-# ui.add_window(FFTWindow(fft))
+cone=ConeMutationParameter()
+mutator=ExploringMutator()
 
+for i in range(10):
 
+    # print(i)
+    mutant=cone.copy()
+    mutator.mutate(mutant)
+    mutant.after_mutate()
+    add_bubble=AddBubble(mutant.make_geo())
+    mutator.mutate(add_bubble)
+    add_bubble.after_mutate()
+    print(add_bubble)
+    
+    geo=add_bubble.make_geo()
+    visualize_geo_to_files(geo, output_dir, "cone" + str(i))
+    break
 
-# print(ui.render())
-#ui.add_window(PeakWindow(peak))
-
-# try:
-#     ui.start()
-#     ui.render()
-#     ui.wait_for_key()
-# finally:
-#     ui.end()
-
-
-# ed=EvolutionDisplay(3,3,1,1, "test")
-# #ed.disabled=True
-# try:
-#     ed.update_generation(1, mp)
-#     #char = ed.stdscr.getch()
-# finally:
-#     ed.end()
+#    if i==0:
+    
+    
