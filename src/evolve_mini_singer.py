@@ -24,7 +24,7 @@ loss=SingerLoss()
 pipeline=Pipeline("minisinger")
 pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool))
 pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))
-loss.weight_singer_loss=0.1
+loss.weight_singer_loss=0.3
 pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))
 
 pipeline.run()

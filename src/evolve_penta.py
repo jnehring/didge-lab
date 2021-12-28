@@ -15,7 +15,7 @@ App.init()
 App.init_logging()
 
 father_cone=ConeMutationParameter()
-father_cone.set_minmax("length", 1700, 2200)
+father_cone.set_minmax("length", 1700, 2700)
 father_cone.set_minmax("bell_width", 70, 105)
 
 father_bubble=AddBubble(None)

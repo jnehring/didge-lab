@@ -17,14 +17,17 @@ class EvolutionUI:
         self.infos={}
         self.mutant_pool=None
 
+        # subscribe to generation_started event
         def generation_started(i_generation, mutant_pool):
             self.mutant_pool=mutant_pool
+            self.mutant_pool.sort()
             if not self.is_initialized:
                 self.initialize()
             else:
                 self.update()
         App.subscribe("generation_started", generation_started)
 
+        # subscrube to iteration_finished event
         def iteration_finished(i_iteration):
             self.infos["iteration"]=i_iteration
             self.info_window.update_dict(self.infos)
@@ -45,13 +48,18 @@ class EvolutionUI:
             "loss": f"{mutant.loss:.2f}",
             "didge length": f"{round(geo.geo[-1][0])}mm",
             "bell size": f"{round(geo.geo[-1][1])}mm",
-            "n_segments": len(geo.geo)
+            "n_segments": len(geo.geo),
+            "n_threads": App.get_context("n_threads"),
+            "n_generation_size": App.get_context("n_generation_size"),
+            "n_poolsize": App.get_context("n_poolsize"),
+            "pipelines_dir": App.get_context("pipelines_dir")
         }
         self.info_window.update_dict(self.infos)
 
         self.peak_window.set_peak(mutant.cadsd_result.peaks.copy())
         self.fft_window.set_fft(mutant.cadsd_result.fft.copy())
 
+    # build user interface
     def initialize(self):
 
         self.header=StaticTextWindow("")
@@ -87,6 +95,7 @@ class EvolutionUI:
         self.menu_window.add_option('y', "last mutant", y)
         self.ui.add_window(self.menu_window)  
 
+        # keyboard input thread
         def thread_fct():
             try:
                 self.ui.start()
@@ -102,72 +111,4 @@ class EvolutionUI:
                 self.ui.end()
         self.ui_thread = threading.Thread(target=thread_fct, args=())
         self.ui_thread.start()
-
-    # def update_info(self):
-    #     if self.mutant_pool==None:
-    #         return
-        
-    #     geo=self.mutant_pool.get(self.visible_mutant_index)
-    #     info={
-    #         "iteration": App.get_context("i_iteration"),
-    #         "didge length": f"{round(geo.geo[-1][0])}mm",
-    #         "bell size": f"{round(geo.geo[-1][1])}mm",
-    #         "n_segments": len(geo.geo)
-    #     }
-    #     info_window=DictWindow(info, title="Info", n_columns=2)
-    #     if self.index_info<0:
-    #         self.index_info=self.ui.add_window(info_window)
-    #     else:
-    #         self.ui.replace_window(info_window, self.index_info)
-
-    # def update_info(self):
-    #     self.mode="showmutant"
-    #     self.ui.clear()
-        
-    #     f=os.path.join(self.pipeline_dir, f"{self.loaded_pipeline}.pkl")
-    #     self.mutant_pool=pickle.load(open(f, "rb"))
-    #     mutant=self.mutant_pool.get(self.visible_mutant_index)
-
-    #     peak=mutant.cadsd_result.peaks
-    #     fft=mutant.cadsd_result.fft
-    #     geo=mutant.geo
-
-    #     header=f"showing mutant {self.visible_mutant_index+1}/{self.mutant_pool.len()}\n\n"
-    #     self.ui.add_window(StaticTextWindow(header))
-
-    #     info={
-    #         "didge length": f"{round(geo.geo[-1][0])}mm",
-    #         "bell size": f"{round(geo.geo[-1][1])}mm",
-    #         "n_segments": len(geo.geo)
-    #     }
-    #     self.ui.add_window(DictWindow(info, title="Info", n_columns=1))
-    #     self.ui.add_separator()
-
-    #     peak_window=PeakWindow(peak)
-    #     self.ui.add_window(peak_window)
-
-    #     self.ui.add_separator()
-    #     self.ui.add_separator()
-    #     self.ui.add_window(FFTWindow(fft))
-        
-    #     mw=MenuWindow()
-
-    #     def x(args):
-    #         self.visible_mutant_index+=1
-    #         self.visible_mutant_index = self.visible_mutant_index%self.mutant_pool.len()
-    #         self.show_mutant_mode()
-    #     def y(args):
-    #         self.visible_mutant_index-=1
-    #         if self.visible_mutant_index<0:
-    #             self.visible_mutant_index=self.mutant_pool.len()-1
-    #         self.show_mutant_mode()
-    #     def back(args):
-    #         self.pickle_loader_mode()
-    #     mw.add_option('x', "next mutant", x)
-    #     mw.add_option('y', "last mutant", y)
-    #     mw.add_option('.', "go back", back)
-    #     self.menu=mw
-    #     self.ui.add_window(mw)  
-            
-    #     self.ui.display()
 
