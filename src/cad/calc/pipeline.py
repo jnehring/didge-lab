@@ -34,6 +34,8 @@ class Pipeline:
 
     def run(self):
 
+        logging.info("starting pipeline " + self.name)
+
         pool=None
 
         no_cache=App.get_config().no_cache

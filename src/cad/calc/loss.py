@@ -87,6 +87,7 @@ class ScaleLoss(Loss):
 
     def get_loss(self, geo, peaks=None, fft=None):
         
+        res=None
         try:
             assert type(geo) == Geo
 
@@ -128,10 +129,9 @@ class ScaleLoss(Loss):
                 logging.debug(f"l{i}: {l:.2f}, target freq: {f_next_scale:.2f}, actual freq: {f_peak:.2f}")
             return loss, res
         except Exception as e:
-            logging.error(e)
-            logging.error(traceback.format_exc())
             logging.error("problematic geo: " + str(geo.geo))
-            return 100000.0
+            App.log_exception(e)
+            return 100000.0, res
 
     def __str__(self):
         s = "ScaleLoss\n"

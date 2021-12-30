@@ -108,11 +108,11 @@ class MutantPool:
     @classmethod
     def create_from_father(cls, father : MutationParameterSet, n_poolsize : int, do_cadsd=False):
         pool=MutantPool()
+        cadsd=None
         for x in range(n_poolsize):
             p=father.copy()
             geo=p.make_geo()
-            cadsd=None
-            if do_cadsd:
+            if do_cadsd and cadsd is None:
                 cadsd=CADSDResult.from_geo(geo)
             pool.add(p, geo, 100000, cadsd)
         return pool
