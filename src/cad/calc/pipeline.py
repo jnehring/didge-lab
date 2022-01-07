@@ -24,7 +24,6 @@ class Pipeline:
         self.steps=[]
         self.name=name
         self.folder=os.path.join("projects/pipelines/", name)
-        self.ui=EvolutionUI()
         
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
@@ -33,6 +32,8 @@ class Pipeline:
         self.steps.append(step)
 
     def run(self):
+
+        logging.info("starting pipeline " + self.name)
 
         pool=None
 

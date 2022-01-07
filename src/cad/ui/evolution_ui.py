@@ -5,6 +5,21 @@ import pickle
 from cad.common.app import App
 import threading
 import logging
+import time
+
+# readable string representation of time in seconds 
+def format_time(t):
+    unit="s"
+    units=["m", "h", "d"]
+    mults=[60, 60, 24]
+
+    for i in range(len(units)):
+        if t>=mults[i]:
+            t/=mults[i]
+            unit=units[i]
+        else:
+            break
+    return f"{t:.2f}{unit}"
 
 class EvolutionUI:
 
@@ -16,9 +31,20 @@ class EvolutionUI:
         self.is_initialized=False
         self.infos={}
         self.mutant_pool=None
+        self.start_time=0
 
         # subscribe to generation_started event
         def generation_started(i_generation, mutant_pool):
+
+            if i_generation==0:
+                self.start_time=time.time()
+            else:
+                time_elapsed=time.time()-self.start_time
+                time_left=i_generation*time_elapsed/App.get_context("n_generations")
+                self.infos["time elapsed"] = format_time(time_elapsed)
+                self.infos["time left"] = format_time(time_left)
+                self.info_window.update_dict(self.infos)
+
             self.mutant_pool=mutant_pool
             self.mutant_pool.sort()
             if not self.is_initialized:
@@ -30,6 +56,8 @@ class EvolutionUI:
         # subscrube to iteration_finished event
         def iteration_finished(i_iteration):
             self.infos["iteration"]=i_iteration
+            time_elapsed=time.time()-self.start_time
+            self.infos["time elapsed"] = format_time(time_elapsed)
             self.info_window.update_dict(self.infos)
             self.ui.display()
         App.subscribe("iteration_finished", iteration_finished)
@@ -52,7 +80,9 @@ class EvolutionUI:
             "n_threads": App.get_context("n_threads"),
             "n_generation_size": App.get_context("n_generation_size"),
             "n_poolsize": App.get_context("n_poolsize"),
-            "pipelines_dir": App.get_context("pipelines_dir")
+            "pipelines_dir": App.get_context("pipelines_dir"),
+            "time elapsed": "0",
+            "time left": "na"
         }
         self.info_window.update_dict(self.infos)
 
@@ -97,18 +127,24 @@ class EvolutionUI:
 
         # keyboard input thread
         def thread_fct():
-            try:
-                self.ui.start()
-                while True:
+            error_count=0
+            while True:
+                try:
+                    self.ui.start()
                     key=self.ui.wait_for_key()
                     key=chr(key)
                     self.ui.print(key + "\n")
                     self.menu_window.key_pressed(key)
-            except Exception as e:
-                print(e)
-                logging.error(e)            
-            finally:
-                self.ui.end()
+                    error_count=0
+                except Exception as e:
+                    App.log_exception(e)
+                    error_count+=1
+                    if error_count==10:
+                        log.error("caught 10 exceptions in a row, stopping...")
+                        self.ui.end()
+                        break
+            #finally:
+            #    self.ui.end()
         self.ui_thread = threading.Thread(target=thread_fct, args=())
         self.ui_thread.start()
 

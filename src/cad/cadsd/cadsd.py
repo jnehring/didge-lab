@@ -1,6 +1,5 @@
 import pyximport; pyximport.install()
 import cad.cadsd._cadsd as cadsd
-#import cad.cadsd._cadsd_py as cadsd
 import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema
@@ -54,6 +53,6 @@ def get_impedance_spektrum(geo, from_freq, to_freq, stepsize):
 
 def get_highres_spektrum(geo):
 
-    df1=get_impedance_spektrum(geo, 30, 100, 0.1)
+    df1=get_impedance_spektrum(geo, 1, 100, 0.1)
     df2=get_impedance_spektrum(geo, 101, 1000, 1)
     return pd.concat([df1, df2])

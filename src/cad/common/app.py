@@ -1,6 +1,8 @@
 import configargparse
 import logging
 from threading import Lock
+import json
+import sys
 
 class App:
 
@@ -31,6 +33,27 @@ class App:
     @classmethod
     def init_logging(self):
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s', filename="log.txt")
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+    @classmethod
+    def start_message(self):
+        msg='''
+ _____  _     _              _           _     
+|  __ \(_)   | |            | |         | |    
+| |  | |_  __| | __ _  ___  | |     __ _| |__  
+| |  | | |/ _` |/ _` |/ _ \ | |    / _` | '_ \ 
+| |__| | | (_| | (_| |  __/ | |___| (_| | |_) |
+|_____/|_|\__,_|\__, |\___| |______\__,_|_.__/ 
+                 __/ |                         
+                |___/                          
+'''
+        logging.info(msg)
+
+    @classmethod
+    def full_init(self):
+        App.init()
+        App.init_logging()
+        App.start_message()
 
     @classmethod
     def get_config(cls, path="config.ini"):
@@ -64,3 +87,9 @@ class App:
         if topic not in App.subscribers:
             App.subscribers[topic]=[]
         App.subscribers[topic].append(fct)
+
+    @classmethod
+    def log_exception(cls, e : Exception):
+        ctx=json.dumps(App.context)
+        logging.error("An exception has occured. App context:\n" + ctx)
+        logging.exception(e)

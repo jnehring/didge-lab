@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import shutil
 from cad.common.app import App
+import json
 
 class Mutator(ABC):
 
@@ -73,13 +74,18 @@ class MutationJob:
         self.n_generations=n_generations
     
     def mutate(self, result_queue):
-        mutant=self.father.copy()
-        self.mutator.mutate(mutant, i_iteration=self.i_generation, n_total_iterations=self.n_generations)
-        mutant.after_mutate()
-        geo=mutant.make_geo()
-        mutant_loss, cadsd_result=self.loss.get_loss(geo)
-        me=MutantPoolEntry(mutant, geo, mutant_loss, cadsd_result)
-        result_queue.put((me, self.pool_index))
+        try:
+            mutant=self.father.copy()
+            self.mutator.mutate(mutant, i_iteration=self.i_generation, n_total_iterations=self.n_generations)
+            mutant.after_mutate()
+            geo=mutant.make_geo()
+            mutant_loss, cadsd_result=self.loss.get_loss(geo)
+            me=MutantPoolEntry(mutant, geo, mutant_loss, cadsd_result)
+            result_queue.put((me, self.pool_index))
+        except Exception as e:
+            logging.error("error processing geo " + json.dumps(geo.geo))
+            App.log_exception(e)
+
 
 class MutantPoolEntry:
 
@@ -108,11 +114,11 @@ class MutantPool:
     @classmethod
     def create_from_father(cls, father : MutationParameterSet, n_poolsize : int, do_cadsd=False):
         pool=MutantPool()
+        cadsd=None
         for x in range(n_poolsize):
             p=father.copy()
             geo=p.make_geo()
-            cadsd=None
-            if do_cadsd:
+            if do_cadsd and cadsd is None:
                 cadsd=CADSDResult.from_geo(geo)
             pool.add(p, geo, 100000, cadsd)
         return pool
@@ -154,12 +160,15 @@ def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size
         results=[]
         
         def process_mutator_queue():
-            while True:
-                job=processing_queue.get()
-                if job == finish_message:
-                    result_queue.put(finish_message)
-                    break
-                job.mutate(result_queue)
+            try:
+                while True:
+                    job=processing_queue.get()
+                    if job == finish_message:
+                        result_queue.put(finish_message)
+                        break
+                    job.mutate(result_queue)
+            except Exception as e:
+                App.log_exception(e)
 
         # fill processing queue
         for i_pool in range(pool.len()):
