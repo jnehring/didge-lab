@@ -14,6 +14,7 @@ import pandas as pd
 import logging
 import traceback
 import numpy as np
+from cad.common.app import App
 
 class Loss(ABC):
 
@@ -85,19 +86,19 @@ class ScaleLoss(Loss):
         decrease_factor=1
         return decrease_factor*abs(f1-f2)
 
-    def get_loss(self, geo, peaks=None, fft=None):
+    def get_loss(self, geo, cadsd_result=None):
         
         res=None
         try:
             assert type(geo) == Geo
 
-            if type(peaks) is not pd.DataFrame and peaks==None:
+            if cadsd_result is None:
 
-                res=CADSDResult.from_geo(geo)
-                peaks=res.peaks
+                cadsd_result=CADSDResult.from_geo(geo)
+                peaks=cadsd_result.peaks
 
-            if len(peaks) < self.n_peaks:
-                return 100000.0
+            if len(peaks) < self.n_peaks+1:
+                return 100000.0, None
 
             i_fundamental=0
             while peaks.iloc[i_fundamental]["note-number"]+12<self.fundamental:
@@ -109,8 +110,6 @@ class ScaleLoss(Loss):
             loss=2*self.loss_per_frequency(f_fundamental, f0, 0)
 
             logging.debug(f"l0: {loss:.2f}, target freq: {f_fundamental:.2f}, actual freq: {f0:.2f}")
-
-            
 
             start_index=1
             if self.octave:
@@ -127,11 +126,11 @@ class ScaleLoss(Loss):
                 l = self.loss_per_frequency(f_peak, f_next_scale, i)
                 loss += l
                 logging.debug(f"l{i}: {l:.2f}, target freq: {f_next_scale:.2f}, actual freq: {f_peak:.2f}")
-            return loss, res
+            return loss, cadsd_result
         except Exception as e:
             logging.error("problematic geo: " + str(geo.geo))
             App.log_exception(e)
-            return 100000.0, res
+            return 100000.0, cadsd_result
 
     def __str__(self):
         s = "ScaleLoss\n"
@@ -147,57 +146,44 @@ class AmpLoss(Loss):
         Loss.__init__(self)
         self.n_peaks=n_peaks
     
-    def get_loss(self, geo, peak=None, fft=None   ):
+    def get_loss(self, geo, cadsd_result=None):
         
         assert type(geo) == Geo
-        try:
-            fft=self.get_fft(geo, fft)
-        except Exception:
-            return 100000.0
-        if len(fft.peaks) < self.n_peaks:
-            return 100000.0
+
+        if cadsd_result==None:
+            cadsd_result=CADSDResult.from_geo(geo)
+        peaks=cadsd_result.peaks
+
+        if len(peaks) < self.n_peaks:
+            return 100000.0, None
 
         loss=0
-        a0=fft.peaks.loc[0]["amp"]
+        a0=peaks.iloc[0]["impedance"]
         for i in range(self.n_peaks):
-            amp=fft.peaks.loc[0]["amp"]/a0
+            amp=peaks.iloc[0]["impedance"]/a0
             if amp<0.1:
                 loss += 1/amp
                 
-        return loss
+        return loss, cadsd_result
     
 class CombinedLoss(Loss):
     
     def __init__(self, losses, weights):
         
         self.losses=losses
-        self.weights=weights
-        self.n_average_window=20000
-        self.averages=[[] for x in losses]
+        self.weights=weights        
         
-        
-    def get_loss(self, geo, peak=None, fft=None):
+    def get_loss(self, geo, cadsd_result=None):
         
         assert type(geo) == Geo
+
         loss=0.0
         for i in range(len(self.losses)):
-            thisloss=self.losses[i].get_loss(geo, peak=peak, fft=fft) * self.weights[i]
-            self.averages[i].append(thisloss)
-
-            if len(self.averages[i]) > self.n_average_window:
-                del self.averages[0]
+            thisloss, cadsd_result=self.losses[i].get_loss(geo, cadsd_result=cadsd_result)
+            thisloss *= self.weights[i]
             loss += thisloss
-        return loss
+        return loss, cadsd_result
 
-    def get_average_losses(self):
-
-        avg={}
-        for i in range(len(self.losses)):
-            m=statistics.mean(self.averages[i])
-            t=type(self.losses[i])
-            avg[t]=m
-        return avg
-            
 class SingerLoss(Loss):
 
     def __init__(self):

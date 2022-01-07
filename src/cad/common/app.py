@@ -2,6 +2,7 @@ import configargparse
 import logging
 from threading import Lock
 import json
+import sys
 
 class App:
 
@@ -32,6 +33,7 @@ class App:
     @classmethod
     def init_logging(self):
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s', filename="log.txt")
+        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     @classmethod
     def start_message(self):
@@ -87,7 +89,7 @@ class App:
         App.subscribers[topic].append(fct)
 
     @classmethod
-    def log_exception(e : Exception):
+    def log_exception(cls, e : Exception):
         ctx=json.dumps(App.context)
         logging.error("An exception has occured. App context:\n" + ctx)
         logging.exception(e)

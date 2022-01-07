@@ -127,17 +127,24 @@ class EvolutionUI:
 
         # keyboard input thread
         def thread_fct():
-            try:
-                self.ui.start()
-                while True:
+            error_count=0
+            while True:
+                try:
+                    self.ui.start()
                     key=self.ui.wait_for_key()
                     key=chr(key)
                     self.ui.print(key + "\n")
                     self.menu_window.key_pressed(key)
-            except Exception as e:
-                App.log_exception(e)
-            finally:
-                self.ui.end()
+                    error_count=0
+                except Exception as e:
+                    App.log_exception(e)
+                    error_count+=1
+                    if error_count==10:
+                        log.error("caught 10 exceptions in a row, stopping...")
+                        self.ui.end()
+                        break
+            #finally:
+            #    self.ui.end()
         self.ui_thread = threading.Thread(target=thread_fct, args=())
         self.ui_thread.start()
 
