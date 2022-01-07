@@ -30,7 +30,6 @@ class CADSDResult():
         s+=str(self.peaks)
         print(s)
 
-
 def get_peaks(fft):
     peaks = fft.iloc[argrelextrema(fft.impedance.values, np.greater_equal)[0]].copy()
     t=[freq_to_note_and_cent(x) for x in peaks["freq"]]
@@ -40,7 +39,7 @@ def get_peaks(fft):
 
 def get_impedance_spektrum(geo, from_freq, to_freq, stepsize):
 
-    segments=cadsd.Segment.create_segments_from_geo(geo)
+    segments=cadsd.create_segments_from_geo(geo)
     spektrum={
         "freq": [],
         "impedance": []
