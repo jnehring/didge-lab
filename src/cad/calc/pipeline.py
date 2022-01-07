@@ -33,24 +33,27 @@ class Pipeline:
 
     def run(self):
 
-        logging.info("starting pipeline " + self.name)
+        try:
+            logging.info("starting pipeline " + self.name)
 
-        pool=None
+            pool=None
 
-        no_cache=App.get_config().no_cache
-        for i in range(len(self.steps)):
+            no_cache=App.get_config().no_cache
+            for i in range(len(self.steps)):
 
-            App.context["current_pipeline_step"]=i
-            App.publish("start_pipeline_step", (i, type(self.steps).__name__))
+                App.context["current_pipeline_step"]=i
+                App.publish("start_pipeline_step", (i, type(self.steps).__name__))
 
-            pkl_file=os.path.join(self.folder, str(i) + ".pkl")
-            if not no_cache and os.path.exists(pkl_file):
-                logging.info(f"loading pipeline step {i} ({self.steps[i].name}) from cache")
-                pool=pickle.load(open(pkl_file, "rb"))
-            else:
-                logging.info(f"executing pipeline step {i} ({self.steps[i].name})")
-                pool=self.steps[i].execute(pool)
-                pickle.dump(pool, open(pkl_file, "wb"))
+                pkl_file=os.path.join(self.folder, str(i) + ".pkl")
+                if not no_cache and os.path.exists(pkl_file):
+                    logging.info(f"loading pipeline step {i} ({self.steps[i].name}) from cache")
+                    pool=pickle.load(open(pkl_file, "rb"))
+                else:
+                    logging.info(f"executing pipeline step {i} ({self.steps[i].name})")
+                    pool=self.steps[i].execute(pool)
+                    pickle.dump(pool, open(pkl_file, "wb"))
+        except Exception as e:
+            App.log_exception(e)
 
 class ExplorePipelineStep(PipelineStep):
 

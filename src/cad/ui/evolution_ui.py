@@ -23,8 +23,8 @@ def format_time(t):
 
 class EvolutionUI:
 
-    def __init__(self):
-        self.ui=UserInterface()
+    def __init__(self, dont_show=False):
+        self.ui=UserInterface(dont_show)
         self.visible_mutant_index=0
         self.mutant_pool=None
         self.index_info=-1
@@ -32,25 +32,29 @@ class EvolutionUI:
         self.infos={}
         self.mutant_pool=None
         self.start_time=0
+        self.dont_show=dont_show
 
         # subscribe to generation_started event
         def generation_started(i_generation, mutant_pool):
-
             if i_generation==0:
                 self.start_time=time.time()
             else:
                 time_elapsed=time.time()-self.start_time
-                time_left=i_generation*time_elapsed/App.get_context("n_generations")
+                time_left=App.get_context("n_generations")*time_elapsed/i_generation
+
                 self.infos["time elapsed"] = format_time(time_elapsed)
                 self.infos["time left"] = format_time(time_left)
+
                 self.info_window.update_dict(self.infos)
 
             self.mutant_pool=mutant_pool
             self.mutant_pool.sort()
+            
             if not self.is_initialized:
                 self.initialize()
             else:
                 self.update()
+
         App.subscribe("generation_started", generation_started)
 
         # subscrube to iteration_finished event
@@ -70,6 +74,7 @@ class EvolutionUI:
         geo=mutant.geo
         n_generations=App.get_context("n_generations")
         i_generation=App.get_context("i_generation")
+
         self.infos={
             "iteration": App.get_context("i_iteration"),
             "generation": f"{i_generation}/{n_generations}",
@@ -81,8 +86,6 @@ class EvolutionUI:
             "n_generation_size": App.get_context("n_generation_size"),
             "n_poolsize": App.get_context("n_poolsize"),
             "pipelines_dir": App.get_context("pipelines_dir"),
-            "time elapsed": "0",
-            "time left": "na"
         }
         self.info_window.update_dict(self.infos)
 
@@ -145,6 +148,8 @@ class EvolutionUI:
                         break
             #finally:
             #    self.ui.end()
-        self.ui_thread = threading.Thread(target=thread_fct, args=())
-        self.ui_thread.start()
+        
+        if not self.dont_show:
+            self.ui_thread = threading.Thread(target=thread_fct, args=())
+            self.ui_thread.start()
 

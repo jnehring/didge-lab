@@ -5,10 +5,11 @@ import shutil
 
 class UserInterface:
 
-    def __init__(self):
+    def __init__(self, dont_show=False):
         self.screen=None
         self.is_initialized=False
         self.windows=[]
+        self.dont_show=dont_show
 
     def start(self):
         if self.is_initialized:
@@ -40,9 +41,11 @@ class UserInterface:
         return content_str
 
     def display(self):
-        self.screen.erase()
-        self.screen.addstr(self.render())
-        self.screen.refresh()
+
+        if not self.dont_show:
+            self.screen.erase()
+            self.screen.addstr(self.render())
+            self.screen.refresh()
 
     def print(self, s):
         self.screen.addstr(s)
@@ -76,7 +79,8 @@ class DictWindow(Window):
         self.n_columns=n_columns
         self.update_dict(data)
 
-    def update_dict(self, data):        
+    def update_dict(self, data):
+
         n_columns=self.n_columns
         content_str=""
         column_width=int(np.floor((shutil.get_terminal_size().columns)/n_columns))-3
@@ -92,8 +96,7 @@ class DictWindow(Window):
 
                 pos=y*n_columns+x
                 
-                if pos>=len(labels):    
-
+                if pos>=len(labels):
                     continue
                 label=str(labels[pos])
                 value=str(data[label])
@@ -111,6 +114,7 @@ class DictWindow(Window):
 
             row += "\n"
             content_str += row 
+
         self.content_str=content_str
     
     def _render(self):
