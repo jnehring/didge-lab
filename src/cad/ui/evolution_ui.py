@@ -75,6 +75,8 @@ class EvolutionUI:
         n_generations=App.get_context("n_generations")
         i_generation=App.get_context("i_generation")
 
+        pipeline_step=str(App.get_context("current_pipeline_step")) + ": " + App.get_context("pipeline_step_name")
+
         self.infos={
             "iteration": App.get_context("i_iteration"),
             "generation": f"{i_generation}/{n_generations}",
@@ -86,6 +88,7 @@ class EvolutionUI:
             "n_generation_size": App.get_context("n_generation_size"),
             "n_poolsize": App.get_context("n_poolsize"),
             "pipelines_dir": App.get_context("pipelines_dir"),
+            "pipeline step": pipeline_step
         }
         self.info_window.update_dict(self.infos)
 

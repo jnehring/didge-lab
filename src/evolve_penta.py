@@ -16,7 +16,7 @@ try:
     App.full_init()
 
     father_cone=IringaShape()
-    father_cone.set_minmax("length", 2000, 2700)
+    father_cone.set_minmax("length", 1400, 2700)
     #father_cone.set_minmax("bell_width", 70, 105)
 
     father_bubble=AddBubble(None)
@@ -24,7 +24,8 @@ try:
     father=ConeBubble(father_cone, father_bubble)
 
     initial_pool=MutantPool.create_from_father(father, App.get_config().n_poolsize, do_cadsd=True)
-    loss=CombinedLoss([ScaleLoss(octave=True, n_peaks=10), AmpLoss(n_peaks=7)], [0.7, 0.3])
+    n_peaks=6
+    loss=CombinedLoss([ScaleLoss(octave=True, n_peaks=n_peaks), AmpLoss(n_peaks=n_peaks)], [0.9, 0.2])
     pipeline=Pipeline("penta_didge")
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))

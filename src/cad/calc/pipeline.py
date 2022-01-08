@@ -42,6 +42,7 @@ class Pipeline:
             for i in range(len(self.steps)):
 
                 App.context["current_pipeline_step"]=i
+                App.context["pipeline_step_name"]=self.steps[i].name
                 App.publish("start_pipeline_step", (i, type(self.steps).__name__))
 
                 pkl_file=os.path.join(self.folder, str(i) + ".pkl")

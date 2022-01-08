@@ -142,6 +142,8 @@ class PeakWindow(Window):
             self.set_peak(peak)
 
     def set_peak(self, peak):
+        peak["rel_imp"]=peak.impedance / peak.iloc[0]["impedance"]
+        peak.rel_imp=peak.rel_imp.apply(lambda x : f"{x:.2f}")
         peak.impedance=peak.impedance.apply(lambda x : f"{x:.2e}")
         peak["cent-diff"]=peak["cent-diff"].apply(lambda x : f"{x:.2f}")
         self.content=peak.to_string() + "\n"
