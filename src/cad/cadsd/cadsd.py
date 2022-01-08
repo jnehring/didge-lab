@@ -26,11 +26,18 @@ class CADSDResult():
         if loss != None:
             s+=f"loss:\t\t{loss:.2f}\n"
             
-        s+=str(self.peaks)
+        peaks=self.peaks.copy()
+        peaks.rel_imp=peaks.rel_imp.apply(lambda x : f"{x:.2f}")
+        peaks.impedance=peaks.impedance.apply(lambda x : f"{x:.2e}")
+        peaks["cent-diff"]=peaks["cent-diff"].apply(lambda x : f"{x:.2f}")
+        s+=str(peaks)
+        
         print(s)
 
 def get_peaks(fft):
     peaks = fft.iloc[argrelextrema(fft.impedance.values, np.greater_equal)[0]].copy()
+    peaks["rel_imp"]=peaks.impedance / peaks.iloc[0]["impedance"]
+    peaks=peaks[peaks.rel_imp>0.1]
     t=[freq_to_note_and_cent(x) for x in peaks["freq"]]
     peaks["note-number"], peaks["cent-diff"]=zip(*t)
     peaks["note-name"] = peaks["note-number"].apply(lambda x : note_name(x))

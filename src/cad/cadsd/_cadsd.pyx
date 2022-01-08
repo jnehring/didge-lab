@@ -33,8 +33,12 @@ def segment_from_geo(seg1, seg0):
     new_seg["a1"] = PI * d1 * d1 / 4
     new_seg["phi"] = math.atan ((d1 - d0) / (2 * L))
 
-    new_seg["l"] = (d1 - d0) / (2 * math.sin (new_seg["phi"]))
-    new_seg["x1"] = d1 / (2 * math.sin (new_seg["phi"]))
+    if d1-d0==0:
+        new_seg["l"] = npy.longdouble("nan")
+        new_seg["x1"] = npy.longdouble("nan")
+    else:
+        new_seg["l"] = (d1 - d0) / (2 * math.sin (new_seg["phi"]))
+        new_seg["x1"] = d1 / (2 * math.sin (new_seg["phi"]))
     new_seg["x0"] = new_seg["x1"] - new_seg["l"]
     new_seg["r0"] = p * c / new_seg["a0"]
 

@@ -25,7 +25,8 @@ try:
 
     initial_pool=MutantPool.create_from_father(father, App.get_config().n_poolsize, do_cadsd=True)
     n_peaks=6
-    loss=CombinedLoss([ScaleLoss(octave=True, n_peaks=n_peaks), AmpLoss(n_peaks=n_peaks)], [0.9, 0.2])
+    #loss=CombinedLoss([ScaleLoss(octave=True, n_peaks=n_peaks), AmpLoss(n_peaks=n_peaks)], [0.9, 0.2])
+    loss=ScaleLoss(octave=True, n_peaks=6)
     pipeline=Pipeline("penta_didge")
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))
