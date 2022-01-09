@@ -103,7 +103,7 @@ class OptimizeGeoStep(PipelineStep):
         for i in range(0, pool.len()):
             geo=pool.get(i).geo
             param=FinetuningParameters(geo)
-            mpe=MutantPoolEntry(param, geo, self.loss, pool.get(i).cadsd_result)
+            mpe=MutantPoolEntry(param, geo, pool.get(i).loss, pool.get(i).cadsd_result)
             new_pool.add_entry(mpe)
         pool=evolve_generations(new_pool, self.loss, mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step=self.name)
         return pool

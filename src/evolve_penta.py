@@ -1,6 +1,6 @@
-from cad.calc.pipeline import Pipeline, ExplorePipelineStep, FinetuningPipelineStep
+from cad.calc.pipeline import Pipeline, ExplorePipelineStep, FinetuningPipelineStep, OptimizeGeoStep
 from cad.common.app import App
-from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool, OptimizeGeoStep
+from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
 from cad.calc.parameters import ConeMutationParameter, AddBubble, ConeBubble, BasicShapeParameters, IringaShape
 from cad.calc.loss import ScaleLoss, AmpLoss, CombinedLoss
 import numpy as np
