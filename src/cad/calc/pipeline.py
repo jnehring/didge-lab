@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import pickle
 from cad.calc.loss import Loss
-from cad.calc.mutation import Mutator, evolve_generations
+from cad.calc.mutation import Mutator, evolve_generations, FinetuningMutator, MutantPoolEntry
 from cad.calc.parameters import MutationParameterSet, FinetuningParameters
 from cad.common.app import App
 import logging
@@ -85,4 +85,25 @@ class FinetuningPipelineStep(PipelineStep):
         n_generation_size=App.get_config(). n_generation_size
 
         pool=evolve_generations(pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="finetune")
+        return pool
+
+class OptimizeGeoStep(PipelineStep):
+    def __init__(self, loss : Loss):
+        super().__init__("OptimizeGeoStepgPipelineStep")
+        self.loss=loss
+
+    def execute(self,pool : MutantPool) -> MutantPool:
+
+        mutator=FinetuningMutator()
+        n_threads=App.get_config().n_threads
+        n_generations=App.get_config().n_generations
+        n_generation_size=App.get_config(). n_generation_size
+
+        new_pool=MutantPool()
+        for i in range(0, pool.len()):
+            geo=pool.get(i).geo
+            param=FinetuningParameters(geo)
+            mpe=MutantPoolEntry(param, geo, self.loss, pool.get(i).cadsd_result)
+            new_pool.add_entry(mpe)
+        pool=evolve_generations(new_pool, self.loss, mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step=self.name)
         return pool

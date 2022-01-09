@@ -1,6 +1,6 @@
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, FinetuningPipelineStep
 from cad.common.app import App
-from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
+from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool, OptimizeGeoStep
 from cad.calc.parameters import ConeMutationParameter, AddBubble, ConeBubble, BasicShapeParameters, IringaShape
 from cad.calc.loss import ScaleLoss, AmpLoss, CombinedLoss
 import numpy as np
@@ -30,7 +30,7 @@ try:
     pipeline=Pipeline("penta_didge")
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))
-    
+    pipeline.add_step(OptimizeGeoStep(loss))
     ui=EvolutionUI()
         
     pipeline.run()
