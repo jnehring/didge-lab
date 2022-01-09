@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import pickle
 from cad.calc.loss import Loss
-from cad.calc.mutation import Mutator, evolve_generations, FinetuningMutator, MutantPoolEntry
+from cad.calc.mutation import Mutator, evolve_generations, FinetuningMutator, MutantPoolEntry, evolve_explore
 from cad.calc.parameters import MutationParameterSet, FinetuningParameters
 from cad.common.app import App
 import logging
@@ -69,7 +69,7 @@ class ExplorePipelineStep(PipelineStep):
         n_generations=App.get_config().n_generations
         n_generation_size=App.get_config().n_generation_size
 
-        pool=evolve_generations(self.initial_pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="explore")
+        pool=evolve_explore(self.initial_pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="explore")
         return pool
 
 class FinetuningPipelineStep(PipelineStep):

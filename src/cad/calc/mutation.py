@@ -63,6 +63,7 @@ class FinetuningMutator(Mutator):
         elif p.value<p.minimum:
             p.value=p.minimum
 
+# this is the multithreaded job that executes one single mutation
 class MutationJob:
 
     def __init__(self, father, mutator, loss, pool_index, i_generation, n_generations):
@@ -85,7 +86,6 @@ class MutationJob:
         except Exception as e:
             logging.error("error processing geo " + json.dumps(geo.geo))
             App.log_exception(e)
-
 
 class MutantPoolEntry:
 
@@ -143,6 +143,100 @@ class MutantPool:
     def get(self, i):
         return self.pool[i]
 
+    def remove(self, i):
+        del self.pool[i]
+
+# evolve for exploration
+def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates="", pipeline_step=""):
+
+    finish_message="...finished..."
+
+    total=n_generations*pool.len()*n_generation_size
+
+    App.set_context("i_generation", i_generation)
+    App.set_context("i_iteration", 0)
+    App.publish("generation_started", (i_generation, pool))
+
+    processing_queue=Queue()
+    result_queue=Queue()
+    results=MutantPool()
+    
+    def process_mutator_queue():
+        try:
+            while True:
+                job=processing_queue.get()
+                if job == finish_message:
+                    result_queue.put(finish_message)
+                    break
+                job.mutate(result_queue)
+        except Exception as e:
+            App.log_exception(e)
+
+    # fill processing queue
+    for i_generation in range(n_generations):
+        for i_pool in range(pool.len()):
+            for i_mutation in range(n_generation_size):
+                mj=MutationJob(pool.get(i_pool).parameterset, mutator, loss, i_pool, i_generation, n_generations)
+                processing_queue.put(mj)
+    for i in range(n_threads):
+        processing_queue.put(finish_message)
+
+    # start worker threads to process this queue and write results to result_queue
+    processes=[]
+    for i in range(n_threads):
+        p = Process(target=process_mutator_queue, args=())
+        processes.append(p)
+        p.start()
+
+    i_iteration=0
+
+    # collect results in order to update progress bar
+    finished_count=0
+    while finished_count<n_threads:
+        result=result_queue.get()
+        if result!=finish_message:
+            App.publish("iteration_finished", (i_iteration,))
+
+            results.add_entry(result[0])
+            results.sort()
+            while len(results)>len(pool):
+                results.remove(results.len()-1)
+
+            if i_iteration == n_generation_size*len(pool):
+                i_iteration=0
+                i_generation+=1
+                App.publish("generation_started", (i_generation, results))
+                App.set_context("i_generation", i_generation)
+                App.set_context("i_iteration", 0)
+
+            i_iteration+=1
+            App.set_context("i_iteration", i_iteration)
+        else:
+            finished_count+=1
+
+    # all jobs are processed. now update mutant pool
+
+    # # collect all mutants
+    # result_pool={}
+    # for i in range(pool.len()):
+    #     result_pool[i]=[]
+
+    # for result in results:
+    #     result_pool[result[1]].append(result[0])
+    
+    # # add fathers and create new mutant pool
+    # pool_size=pool.len()
+    # new_pool=MutantPool()
+    # for index in range(pool_size):
+    #     result_pool[index].append(pool.get(index))
+    #     result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss)
+    #     new_pool.add_entry(result_pool[index][0])
+
+    # pool=new_pool
+    
+    return results
+
+# run multithreaded evolution for fine tunning
 def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates="", pipeline_step=""):
 
     finish_message="...finished..."
