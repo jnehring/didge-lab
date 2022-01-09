@@ -153,9 +153,9 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
 
     total=n_generations*pool.len()*n_generation_size
 
-    App.set_context("i_generation", i_generation)
+    App.set_context("i_generation", 0)
     App.set_context("i_iteration", 0)
-    App.publish("generation_started", (i_generation, pool))
+    App.publish("generation_started", (0, pool))
 
     processing_queue=Queue()
     result_queue=Queue()
@@ -189,6 +189,7 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
         p.start()
 
     i_iteration=0
+    i_generation=0
 
     # collect results in order to update progress bar
     finished_count=0
@@ -199,10 +200,10 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
 
             results.add_entry(result[0])
             results.sort()
-            while len(results)>len(pool):
+            while results.len()>pool.len():
                 results.remove(results.len()-1)
 
-            if i_iteration == n_generation_size*len(pool):
+            if i_iteration == n_generation_size*pool.len():
                 i_iteration=0
                 i_generation+=1
                 App.publish("generation_started", (i_generation, results))

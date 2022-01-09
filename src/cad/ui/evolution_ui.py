@@ -144,13 +144,13 @@ class EvolutionUI:
                     error_count=0
                 except Exception as e:
                     App.log_exception(e)
-                    error_count+=1
-                    if error_count==10:
-                        log.error("caught 10 exceptions in a row, stopping...")
-                        self.ui.end()
-                        break
-            #finally:
-            #    self.ui.end()
+                    # error_count+=1
+                    # if error_count==10:
+                    #     log.error("caught 10 exceptions in a row, stopping...")
+                    #     self.ui.end()
+                    #     break
+                finally:
+                    self.ui.end()
         
         if not self.dont_show:
             self.ui_thread = threading.Thread(target=thread_fct, args=())
