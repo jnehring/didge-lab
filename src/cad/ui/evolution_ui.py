@@ -24,6 +24,10 @@ def format_time(t):
 class EvolutionUI:
 
     def __init__(self, dont_show=False):
+
+        if not App.get_config().show_ui:
+            dont_show=True
+
         self.ui=UserInterface(dont_show)
         self.visible_mutant_index=0
         self.mutant_pool=None

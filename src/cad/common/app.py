@@ -65,6 +65,7 @@ class App:
             p.add('-n_generations', type=int, default=1000, help='number of generations')
             p.add('-n_generation_size', type=int, default=30, help='generation size')
             p.add('-pipelines_dir', type=str, default="projects/pipelines/", help='project directory')
+            p.add('-show_ui', type=bool, default=True, help='Show UI')
             options = p.parse_args()
 
             App.config=options
