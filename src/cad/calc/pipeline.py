@@ -20,10 +20,9 @@ class PipelineStep(ABC):
 
 class Pipeline:
 
-    def __init__(self, name):
+    def __init__(self):
         self.steps=[]
-        self.name=name
-        self.folder=os.path.join("projects/pipelines/", name)
+        self.folder=os.path.join("projects/pipelines/", App.get_config()["pipeline_name"])
         
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
@@ -34,11 +33,11 @@ class Pipeline:
     def run(self):
 
         try:
-            logging.info("starting pipeline " + self.name)
+            logging.info("starting pipeline " + App.get_config()["pipeline_name"])
 
             pool=None
 
-            no_cache=App.get_config().no_cache
+            no_cache=App.get_config()["no_cache"]
             for i in range(len(self.steps)):
 
                 App.context["current_pipeline_step"]=i
@@ -53,6 +52,8 @@ class Pipeline:
                     logging.info(f"executing pipeline step {i} ({self.steps[i].name})")
                     pool=self.steps[i].execute(pool)
                     pickle.dump(pool, open(pkl_file, "wb"))
+
+            App.publish("pipeline_finished")
         except Exception as e:
             App.log_exception(e)
 
@@ -65,9 +66,9 @@ class ExplorePipelineStep(PipelineStep):
         self.initial_pool=initial_pool
 
     def execute(self,pool : MutantPool) -> MutantPool:
-        n_threads=App.get_config().n_threads
-        n_generations=App.get_config().n_generations
-        n_generation_size=App.get_config().n_generation_size
+        n_threads=App.get_config()["n_threads"]
+        n_generations=App.get_config()["n_generations"]
+        n_generation_size=App.get_config()["n_generation_size"]
 
         pool=evolve_explore(self.initial_pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="explore")
         return pool
@@ -80,9 +81,9 @@ class FinetuningPipelineStep(PipelineStep):
 
     def execute(self,pool : MutantPool) -> MutantPool:
         
-        n_threads=App.get_config().n_threads
-        n_generations=App.get_config().n_generations
-        n_generation_size=App.get_config(). n_generation_size
+        n_threads=App.get_config()["n_threads"]
+        n_generations=App.get_config()["n_generations"]
+        n_generation_size=App.get_config()["n_generation_size"]
 
         pool=evolve_generations(pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="finetune")
         return pool
@@ -95,9 +96,9 @@ class OptimizeGeoStep(PipelineStep):
     def execute(self,pool : MutantPool) -> MutantPool:
 
         mutator=FinetuningMutator()
-        n_threads=App.get_config().n_threads
-        n_generations=App.get_config().n_generations
-        n_generation_size=App.get_config(). n_generation_size
+        n_threads=App.get_config()["n_threads"]
+        n_generations=App.get_config()["n_generations"]
+        n_generation_size=App.get_config()["n_generation_size"]
 
         new_pool=MutantPool()
         for i in range(0, pool.len()):

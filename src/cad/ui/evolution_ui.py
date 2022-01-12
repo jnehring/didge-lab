@@ -25,7 +25,7 @@ class EvolutionUI:
 
     def __init__(self, dont_show=False):
 
-        if not App.get_config().show_ui:
+        if App.get_config()["hide_ui"]:
             dont_show=True
 
         self.ui=UserInterface(dont_show)
@@ -69,6 +69,11 @@ class EvolutionUI:
             self.info_window.update_dict(self.infos)
             self.ui.display()
         App.subscribe("iteration_finished", iteration_finished)
+
+        # shut down when pipeline is finished
+        def pipeline_finished():
+            self.ui.end()
+        App.subscribe("pipeline_finished", pipeline_finished)
 
     def update(self):
         header_text=f"Evolution Display: Showing mutant {self.visible_mutant_index+1}/{self.mutant_pool.len()}\n"

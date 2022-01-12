@@ -97,8 +97,9 @@ class ScaleLoss(Loss):
                 cadsd_result=CADSDResult.from_geo(geo)
                 peaks=cadsd_result.peaks
 
+            loss=0
             if len(peaks) < self.n_peaks+1:
-                return 100000.0, None
+                loss += 1.5*(self.n_peaks+1-len(peaks))
 
             i_fundamental=0
             while peaks.iloc[i_fundamental]["note-number"]+12<self.fundamental:
@@ -107,7 +108,7 @@ class ScaleLoss(Loss):
             f_fundamental=note_to_freq(self.fundamental)
 
             f0=peaks.iloc[i_fundamental]["freq"]
-            loss=2*self.loss_per_frequency(f_fundamental, f0, 0)
+            loss+=2*self.loss_per_frequency(f_fundamental, f0, 0)
 
             logging.debug(f"l0: {loss:.2f}, target freq: {f_fundamental:.2f}, actual freq: {f0:.2f}")
 
@@ -120,12 +121,16 @@ class ScaleLoss(Loss):
                 logging.debug(f"l1: {l:.2f}, target freq: {f_fundamental*2:.2f}, actual freq: {f1:.2f}")
 
             for i in range(start_index,self.n_peaks):
+
+                if i_fundamental+i >= len(peaks)-1:
+                    break
                 f_peak=peaks.iloc[i_fundamental+i]["freq"]
                 # get closest key from scale
                 f_next_scale=min(self.scale_frequencies, key=lambda x:abs(x-f_peak))
                 l = self.loss_per_frequency(f_peak, f_next_scale, i)
                 loss += l
                 logging.debug(f"l{i}: {l:.2f}, target freq: {f_next_scale:.2f}, actual freq: {f_peak:.2f}")
+                    
             return loss, cadsd_result
         except Exception as e:
             logging.error("problematic geo: " + str(geo.geo))

@@ -27,7 +27,7 @@ class App:
     @classmethod
     def init(cls):
         # add config to context
-        for key, value in App.get_config().__dict__.items():
+        for key, value in App.get_config().items():
             App.set_context(key, value)
 
     @classmethod
@@ -65,23 +65,33 @@ class App:
             p.add('-n_generations', type=int, default=1000, help='number of generations')
             p.add('-n_generation_size', type=int, default=30, help='generation size')
             p.add('-pipelines_dir', type=str, default="projects/pipelines/", help='project directory')
-            p.add('-show_ui', type=bool, default=True, help='Show UI')
+            p.add('-pipeline_name', type=str, default="default", help='name of pipeline')
+            p.add('-hide_ui', action='store_true', default=False, help='not not show ui.')
+
             options = p.parse_args()
 
-            App.config=options
+            App.config=vars(options)
 
         return App.config
 
     @classmethod
+    def set_config(cls, key, value):
+        App.get_config()
+        App.config[key]=value
+
+    @classmethod
     def publish(cls, topic, args=None):
 
-        if topic not in App.subscribers:
-            return
-        for s in App.subscribers[topic]:
-            if args is None:
-                s()
-            else:
-                s(*args)
+        try:
+            if topic not in App.subscribers:
+                return
+            for s in App.subscribers[topic]:
+                if args is None:
+                    s()
+                else:
+                    s(*args)
+        except Exception as e:
+            App.log_exception(e)
 
     @classmethod
     def subscribe(cls, topic, fct):
