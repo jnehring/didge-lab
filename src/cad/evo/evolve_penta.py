@@ -26,7 +26,7 @@ try:
     father=ConeBubble(father_cone, father_bubble)
 
     initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], do_cadsd=True)
-    loss=ScaleLoss(octave=True, n_peaks=9)
+    loss=ScaleLoss(octave=True, n_peaks=7)
     pipeline=Pipeline()
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss))
