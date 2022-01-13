@@ -12,12 +12,12 @@ class LossLog:
             os.mkdir(logdir)
         self.logfile=os.path.join(logdir, "loss_log.txt")
         self.f=open(self.logfile, "w")
-        self.f=csv.writer(self.f)
+        self.writer=csv.writer(self.f)
 
         def generation_started(i_generation, mutant_pool):
             log=[i_generation]
             [log.append(x.loss) for x in mutant_pool.pool]
-            self.f.writerow(log)
+            self.writer.writerow(log)
         App.subscribe("generation_started", generation_started)
 
         def pipeline_finished():
