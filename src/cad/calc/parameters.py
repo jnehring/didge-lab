@@ -341,7 +341,7 @@ class AddBubble(MutationParameterSet):
         for i in range(0, 5):
             self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))
             self.mutable_parameters.append(MutationParameter(f"{i}width", 0.5, 0.4, 0.9))
-            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0.1, 0,5))
+            self.mutable_parameters.append(MutationParameter(f"{i}height", 1, 0.1, 0,25)) # vorher max 0.5
     
     # return last index that is smaller than x
     def get_index(self, shape, x):
@@ -368,7 +368,7 @@ class AddBubble(MutationParameterSet):
 
         i=self.get_index(shape, pos-0.5*width)
 
-        bubbleshape=shape[0:i-1]
+        bubbleshape=shape[0:i]
 
         x=pos-0.5*width
         y=geotools.diameter_at_x(Geo(geo=shape), x)
@@ -414,6 +414,7 @@ class AddBubble(MutationParameterSet):
 
             shape=self.make_bubble(shape, pos, width, height)
 
+        print(shape)
         return Geo(geo=shape)
 
     def after_mutate(self):

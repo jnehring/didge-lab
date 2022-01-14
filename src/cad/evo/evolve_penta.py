@@ -16,7 +16,7 @@ try:
     App.full_init()
 
     father_cone=IringaShape()
-    father_cone.set_minmax("length", 2000, 3000)
+    father_cone.set_minmax("length", 1500, 2500)
     #father_cone.set_minmax("bell_width", 70, 105)
 
     App.set_config("pipeline_name", "penta_didge")

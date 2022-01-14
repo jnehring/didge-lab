@@ -9,6 +9,7 @@ import numpy as np
 import os
 from cad.cadsd.cadsd import CADSDResult
 from cad.calc.geo import geotools
+import json
 
 class DidgeVisualizer:
     
@@ -91,7 +92,7 @@ def visualize_mutant_to_files(mutant, output_dir, filename):
     plt.savefig(fftfile)
     return geofile, fftfile
 
-def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False):
+def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False, cadsd_result=None):
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -104,7 +105,8 @@ def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False):
 
     if not skip_cadsd:
 
-        cadsd_result=CADSDResult.from_geo(geo)
+        if cadsd_result==None:
+            cadsd_result=CADSDResult.from_geo(geo)
         FFTVisualiser.vis_fft_and_target(cadsd_result.fft)
         fftfile=os.path.join(output_dir, filename + "fft.png")
         plt.savefig(fftfile, dpi=500)
@@ -113,6 +115,8 @@ def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False):
 
         f=open(os.path.join(output_dir, filename + "report.txt"), "w")
         f.write(report)
+        f.write("\n\n")
+        f.write(json.dumps(geo.geo))
         f.close()
 
 def visualize_geo_fft(geo, target=None):
