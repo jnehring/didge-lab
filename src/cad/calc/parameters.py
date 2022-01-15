@@ -414,7 +414,6 @@ class AddBubble(MutationParameterSet):
 
             shape=self.make_bubble(shape, pos, width, height)
 
-        print(shape)
         return Geo(geo=shape)
 
     def after_mutate(self):

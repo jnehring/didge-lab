@@ -114,11 +114,15 @@ class ScaleLoss(Loss):
 
             start_index=1
             if self.octave:
-                f1=peaks.iloc[i_fundamental+1]["freq"]
-                start_index=2
-                l=self.loss_per_frequency(f_fundamental*2, f1, 0)
-                loss+=l
-                logging.debug(f"l1: {l:.2f}, target freq: {f_fundamental*2:.2f}, actual freq: {f1:.2f}")
+
+                if len(peaks) >= i_fundamental+1:
+                    loss += 10000
+                else:
+                    f1=peaks.iloc[i_fundamental+1]["freq"]
+                    start_index=2
+                    l=self.loss_per_frequency(f_fundamental*2, f1, 0)
+                    loss+=l
+                    logging.debug(f"l1: {l:.2f}, target freq: {f_fundamental*2:.2f}, actual freq: {f1:.2f}")
 
             for i in range(start_index,self.n_peaks):
 
