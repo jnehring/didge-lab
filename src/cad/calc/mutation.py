@@ -84,7 +84,7 @@ class MutationJob:
             me=MutantPoolEntry(mutant, geo, mutant_loss, cadsd_result)
             result_queue.put((me, self.pool_index))
         except Exception as e:
-            logging.error("error processing geo " + json.dumps(geo.geo))
+            logging.error("error in cadsd while processing geo " + json.dumps(geo.geo))
             App.log_exception(e)
 
 class MutantPoolEntry:
@@ -119,7 +119,11 @@ class MutantPool:
             p=father.copy()
             geo=p.make_geo()
             if do_cadsd and cadsd is None:
-                cadsd=CADSDResult.from_geo(geo)
+                try:
+                    cadsd=CADSDResult.from_geo(geo)
+                except Exception as e:
+                    logging.error("Error processing geo " + json.dumps(geo.geo))
+                    raise e
             pool.add(p, geo, 100000, cadsd)
         return pool
 

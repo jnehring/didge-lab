@@ -372,7 +372,9 @@ class AddBubble(MutationParameterSet):
 
         x=pos-0.5*width
         y=geotools.diameter_at_x(Geo(geo=shape), x)
-        bubbleshape.append([x,y])
+
+        if shape[i-1][0]<x:
+            bubbleshape.append([x,y])
 
         for j in range(1, n_segments):
             x=pos-0.5*width + j*width/n_segments
@@ -387,10 +389,12 @@ class AddBubble(MutationParameterSet):
         x=pos+0.5*width
         y=geotools.diameter_at_x(Geo(geo=shape), x)
         bubbleshape.append([x,y])
+
         while shape[i][0]<=bubbleshape[-1][0]+1:
             i+=1
         
         bubbleshape.extend(shape[i:])
+
         return bubbleshape
         
     def make_geo(self):
