@@ -341,7 +341,7 @@ class AddBubble(MutationParameterSet):
         for i in range(0, 5):
             self.mutable_parameters.append(MutationParameter(f"{i}pos", 0.5, 0, 1))
             self.mutable_parameters.append(MutationParameter(f"{i}width", 0.5, 0.4, 0.9))
-            self.mutable_parameters.append(MutationParameter(f"{i}height", 0.125, 0.1, 1)) # vorher max 0.5
+            self.mutable_parameters.append(MutationParameter(f"{i}height", 0.3, 0.1, 0.5))
     
     # return last index that is smaller than x
     def get_index(self, shape, x):
@@ -402,6 +402,7 @@ class AddBubble(MutationParameterSet):
         geo=self.geo.copy()
         shape=geo.geo
         bubble_segment_width=geo.length()/self.get_value("n_bubbles")
+
         for i in range(self.get_value("n_bubbles")):
 
             width=self.get_value(f"{i}width")*bubble_segment_width
@@ -409,7 +410,12 @@ class AddBubble(MutationParameterSet):
 
             pos=self.get_value(f"{i}pos")
             
-            pos=pos*(self.geo.length()-2*bubble_segment_width) + width
+            min_pos=i*bubble_segment_width+width/2
+            max_pos=(i+1)*bubble_segment_width-width/2
+            
+            
+            pos=min_pos + pos*(max_pos-min_pos)
+
             if pos-width/2<bubble_segment_width*i:
                 pos=i*bubble_segment_width+width/2
 

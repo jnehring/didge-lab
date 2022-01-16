@@ -15,14 +15,20 @@ import matplotlib.pyplot as plt
 
 father_cone=IringaShape()
 father_cone.set_minmax("length", 1500, 2500)
+father_cone.set("length", 1500)
 #father_cone.set_minmax("bell_width", 70, 105)
 
 App.set_config("pipeline_name", "penta_didge")
 
+
 father_bubble=AddBubble(None)
-
+m=0.3
+for i in range(5):
+    father_bubble.set(str(i)+"height", m, max=m)
+    father_bubble.set(str(i)+"width", 0.9)
+father_bubble.set("n_bubbles", 5)
 father=ConeBubble(father_cone, father_bubble)
-
+print(father)
 em=ExploringMutator()
 mutant=father.copy()
 em.mutate(mutant)
@@ -39,11 +45,7 @@ mutant.after_mutate()
 #     print(mutant.make_geo().geo[0])    
 
 
-m=100
-for i in range(5):
-    father.set(str(i)+"height", m, max=m)
 
-print(father)
 geo=father.make_geo()
 DidgeVisualizer.vis_didge(geo)
 plt.savefig("geo.png")
