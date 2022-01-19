@@ -4,3 +4,4 @@
 *.fft
 projects/
 log.txt
+finished_evolutions/*/report
