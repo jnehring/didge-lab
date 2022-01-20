@@ -503,7 +503,7 @@ class FinetuningParameters(MutationParameterSet):
             self.set(f"x{i}", p[0])
             self.set(f"y{i}", p[1])
         self.get("x0").immutable=True
-        self.get("x1").immutable=True
+        self.get("y0").immutable=True
 
     def make_geo(self):
         geo=[]
