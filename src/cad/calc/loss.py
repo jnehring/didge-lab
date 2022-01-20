@@ -115,7 +115,7 @@ class ScaleLoss(Loss):
             start_index=1
             if self.octave:
 
-                if len(peaks) < i_fundamental+1:
+                if  i_fundamental+1 >= len(peaks):
                     loss += 10000
                 else:
                     f1=peaks.iloc[i_fundamental+1]["freq"]
