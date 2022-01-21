@@ -267,7 +267,8 @@ class ChordSingerLoss(ScaleLoss):
         
         amp_loss=sum([1/x for x in peaks.rel_imp[1:]])
 
-        final_loss=0.7*scale_loss + 0.3*amp_loss
+        # 0.7 / 0.3 produced large impedances but totally out of tune
+        final_loss=2*scale_loss + 0.1*amp_loss
 
         cadsd_result.peaks=original_peaks
         return final_loss, cadsd_result
