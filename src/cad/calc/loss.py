@@ -256,7 +256,8 @@ class ChordSingerLoss(ScaleLoss):
 
             cadsd_result=CADSDResult.from_geo(geo)
         peaks=cadsd_result.peaks
-        
+        original_peaks=peaks.copy()
+
         new_peaks=[]
         new_peaks.append(peaks[0:2])
         new_peaks.append(peaks[peaks.freq>500])
@@ -267,6 +268,8 @@ class ChordSingerLoss(ScaleLoss):
         amp_loss=sum([1/x for x in peaks.rel_imp[1:]])
 
         final_loss=0.7*scale_loss + 0.3*amp_loss
+
+        cadsd_result.peaks=original_peaks
         return final_loss, cadsd_result
 
 
