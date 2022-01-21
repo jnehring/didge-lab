@@ -95,7 +95,7 @@ class ScaleLoss(Loss):
             if cadsd_result is None:
 
                 cadsd_result=CADSDResult.from_geo(geo)
-                peaks=cadsd_result.peaks
+            peaks=cadsd_result.peaks
 
             loss=0
             if len(peaks) < self.n_peaks+1:
@@ -242,4 +242,33 @@ class SingerLoss(Loss):
 
         final_loss=self.weight_base_note_loss*base_note_loss + self.weight_overtone_loss*overtone_loss + self.weight_singer_loss*singer_loss
         return final_loss, res
+
+
+class ChordSingerLoss(ScaleLoss):
+    
+    # default: d minor pentatonic with 5 toots
+    def __init__(self, scale=[0,3,7], fundamental=-31, n_peaks=5, octave=True):
+        ScaleLoss.__init__(self, scale, fundamental, len(scale)-1, octave)
+
+    def get_loss(self, geo, cadsd_result=None):
+
+        if cadsd_result is None:
+
+            cadsd_result=CADSDResult.from_geo(geo)
+        peaks=cadsd_result.peaks
+        
+        new_peaks=[]
+        new_peaks.append(peaks[0:2])
+        new_peaks.append(peaks[peaks.freq>500])
+        cadsd_result.peaks=pd.concat(new_peaks)
+
+        scale_loss,cadsd_result=ScaleLoss.get_loss(self, geo, cadsd_result=cadsd_result)
+        
+        amp_loss=sum([1/x for x in peaks.rel_imp[1:]])
+
+        final_loss=0.7*scale_loss + 0.3*amp_loss
+        return final_loss, cadsd_result
+
+
+
 
