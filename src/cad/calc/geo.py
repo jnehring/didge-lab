@@ -1,10 +1,11 @@
 import copy
 import pandas as pd
 import math
+from cad.cadsd.cadsd import CADSD
 
 class Geo:
 
-    def __init__(self, infile=None, geo=None):
+    def __init__(self, geo=None, infile=None):
         self.geo=[]
 
         if infile != None:
@@ -12,6 +13,8 @@ class Geo:
 
         if geo != None:
             self.geo=geo
+
+        self.cadsd=CADSD(self)
 
     @classmethod
     def make_cone(cls, length, d1, d2, n_segments):
@@ -92,6 +95,9 @@ class Geo:
 
     def sort_segments(self):
         self.geo=sorted(self.geo, key=lambda x : x[0])
+
+    def get_cadsd(self):
+        return self.cadsd
 
 class geotools:
 

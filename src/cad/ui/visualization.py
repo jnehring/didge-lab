@@ -7,7 +7,7 @@ from cad.calc.conv import freq_to_note, note_name
 from cad.calc.didgmo import didgmo_bridge, didgmo_high_res
 import numpy as np
 import os
-from cad.cadsd.cadsd import CADSDResult
+from cad.cadsd.cadsd import CADSD
 from cad.calc.geo import geotools
 import json
 
@@ -161,3 +161,67 @@ def visualize_scales_multiple_shapes(geos, loss, no_grafic=False):
         df=pd.DataFrame(df)
         sns.lineplot(data=df)
         plt.show()
+
+#def draw_impedance_spektrum(cadsd):
+
+
+#def joint_spektra(cadsd):
+
+    # ground_spectrum=cadsd.get_ground_spektrum()
+    # impedance_spectrum=cadsd.get_impedance_spektrum().copy()
+
+    # df=[]
+    # for freq, imp in ground_spectrum.items():
+    #     df.append([freq, imp, "ground"])
+
+    # df=pd.DataFrame(df, columns=["freq", "impedance", "series"])
+    # impedance_spectrum["series"]="impedance"
+    # df=pd.concat([df, impedance_spectrum], ignore_index=True)
+
+    # sns.set(rc={'figure.figsize':(15,5)})
+    # sns.lineplot(data=df, x="freq", y="impedance", hue="series")
+
+
+def make_didge_report(geos, cadsds, output_dir):
+ 
+    assert cadsds==None or len(geos) == len(cadsds)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for i in range(len(geos)):
+
+        filename=str(i)
+        geo=geos[i]
+
+        cadsd=cadsds[i] if cadsds != None else CADSD(geo)
+
+        plt.clf()
+        DidgeVisualizer.vis_didge(geo)
+        geofile=os.path.join(output_dir, filename + "geo.png")
+        plt.savefig(geofile, dpi=500)
+        plt.clf()
+
+        # FFTVisualiser.vis_fft_and_target(cadsd.get_impedance_spektrum())
+        #joint_spektra(cadsd)
+        plt.clf()
+        impedance_spectrum=cadsd.get_impedance_spektrum()
+        sns.set(rc={'figure.figsize':(15,5)})
+        sns.lineplot(data=impedance_spectrum, x="freq", y="impedance")
+        fftfile=os.path.join(output_dir, filename + "impedance_spektrum.png")
+        plt.savefig(fftfile, dpi=500)
+
+        plt.clf()
+        ground_spectrum=cadsd.get_ground_spektrum()
+        sns.set(rc={'figure.figsize':(15,5)})
+        sns.lineplot(data=ground_spectrum, x="freq", y="impedance")
+        fftfile=os.path.join(output_dir, filename + "ground_spectrum.png")
+        plt.savefig(fftfile, dpi=500)
+
+        report=geotools.print_geo_summary(geo, peak=cadsd.get_overblow_notes())
+
+        f=open(os.path.join(output_dir, filename + "report.txt"), "w")
+        f.write(report)
+        f.write("\n\n")
+        f.write(json.dumps(geo.geo))
+        f.close()
