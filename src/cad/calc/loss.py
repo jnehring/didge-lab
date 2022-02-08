@@ -4,33 +4,21 @@ from cad.cadsd.cadsd import CADSD
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 import math
 
-class Loss():
-
-    def __init__(self, geo : Geo, loss: float):
-        self.geo=geo
-        self.loss=float
-
-    def get_geo(self):
-        return self.geo
-
-    def get_cadsd(self):
-        return self.geo.cadsd
-
-    def get_loss(self):
-        return self.loss
-
 class LossFunction(ABC):
 
     def __init__(self):
         pass
 
     @abstractmethod
-    def get_loss(self, geo) -> Loss:
+    def get_loss(self, geo) -> float:
         pass
+
+    def __call__(self, geo):
+        return self.get_loss(geo)
 
 class TootTuningHelper():
 
-    def __init__(self, scale, fundamental, filter_rel_imp=0.2):
+    def __init__(self, scale, fundamental, filter_rel_imp=0.1):
         self.scale=scale
         self.fundamental=fundamental
         self.filter_rel_imp=filter_rel_imp
@@ -49,7 +37,7 @@ class TootTuningHelper():
 
     # get a list of all peaks and their deviations from tuning
     def get_tuning_deviations(self, geo):
-        peaks=geo.get_cadsd().get_overblow_notes()
+        peaks=geo.get_cadsd().get_notes()
         peaks=peaks[peaks.rel_imp>self.filter_rel_imp]
         deviations=[]
         for f1 in peaks.freq:
@@ -72,7 +60,6 @@ class PentaLossFunction(LossFunction):
     def get_loss(self, geo):
         
         tuning_deviations=self.toot_tuning.get_tuning_deviations(geo)
-
         peaks=geo.get_cadsd().get_overblow_notes()
         peaks["dev"]=tuning_deviations
         print(peaks)

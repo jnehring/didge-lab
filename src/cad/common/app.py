@@ -3,25 +3,23 @@ import logging
 from threading import Lock
 import json
 import sys
+import os
 
 class App:
 
     config=None
     context={}
     subscribers={}
-    context_lock=Lock()
 
     @classmethod
     def set_context(cls, key, value):
-        App.context_lock.acquire()
         App.context[key]=value
-        App.context_lock.release()
 
     @classmethod
-    def get_context(cls, key):
-        App.context_lock.acquire()
+    def get_context(cls, key, default=None):
+        if not key in App.context:
+            return default
         val=App.context[key]
-        App.context_lock.release()
         return val
 
     @classmethod
@@ -32,8 +30,30 @@ class App:
 
     @classmethod
     def init_logging(self):
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s', filename="log.txt")
-        logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+        logFormatter = logging.Formatter("%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s")
+        rootLogger = logging.getLogger()
+
+        log_dir="./"
+        fileHandler = logging.FileHandler(os.path.join(log_dir, "log.txt"))
+        fileHandler.setFormatter(logFormatter)
+        rootLogger.addHandler(fileHandler)
+
+        consoleHandler = logging.StreamHandler()
+        consoleHandler.setFormatter(logFormatter)
+        rootLogger.addHandler(consoleHandler)
+
+        level=self.get_config()["log_level"]
+        if level == "info":
+            rootLogger.setLevel(logging.INFO)
+        elif level == "debug":
+            rootLogger.setLevel(logging.DEBUG)
+        elif level == "error":
+            rootLogger.setLevel(logging.ERROR)
+        elif level == "warn":
+            rootLogger.setLevel(logging.WARN)
+
+        # logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s', filename="log.txt")
+        # logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     @classmethod
     def start_message(self):
@@ -67,6 +87,7 @@ class App:
             p.add('-pipelines_dir', type=str, default="projects/pipelines/", help='project directory')
             p.add('-pipeline_name', type=str, default="default", help='name of pipeline')
             p.add('-hide_ui', action='store_true', default=False, help='not not show ui.')
+            p.add('-log_level', type=str, choices=["info", "error", "debug", "warn"], default="info", help='log level ')
 
             options = p.parse_args()
 
@@ -82,6 +103,7 @@ class App:
     @classmethod
     def publish(cls, topic, args=None):
 
+        logging.debug(f"app.publish topic={topic}, args={args}")
         try:
             if topic not in App.subscribers:
                 return

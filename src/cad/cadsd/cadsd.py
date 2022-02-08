@@ -3,7 +3,7 @@ import cad.cadsd._cadsd as cadsd
 import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema
-from cad.calc.conv import freq_to_note_and_cent, note_name
+from cad.calc.conv import freq_to_note_and_cent, note_name, note_to_freq
 
 class CADSD():
 
@@ -223,7 +223,7 @@ class CADSD():
         self.all_spektra_df=pd.DataFrame(self.all_spektra_df)
         return self.all_spektra_df
 
-    def set_additional_metrics(self, key, value):
+    def set_additional_metric(self, key, value):
         self.additional_metrics[key]=value
 
     def get_additional_metric(self, key):
@@ -235,6 +235,8 @@ class CADSD():
     def has_additional_metric(self, key):
         return key in self.additional_metrics
 
+# volume of the didgeridoo ground tone
+# computed as the mean of the ground spektrum
 def cadsd_volume(cadsd):
 
     if cadsd.has_additional_metric("volume"):
@@ -245,12 +247,49 @@ def cadsd_volume(cadsd):
     cadsd.set_additional_metric("volume", vol)
     return vol
 
-def cadsd_tonal_balance(cadsd):
+# area under the ground spektrum
+# divided in one bin per octave
+def cadsd_octave_tonal_balance(geo, fundamental_note=-31):
 
-    if cadsd.has_additional_metric("tonal_balance"):
-        return cadsd.get_additional_metric("tonal_balance")
+    cadsd=geo.get_cadsd()
+    key=f"oct_tonal_balance_fundamental={fundamental_note}"
+    if cadsd.has_additional_metric(key):
+        return cadsd.get_additional_metric(key)
 
-    n_bins=5
+    frequencies=[]
+    f=note_to_freq(fundamental_note)/2
+    df=cadsd.get_all_spektra_df()
+    max_f=df.freq.max()
+    while f<max_f:
+        frequencies.append(f)
+        f*=2
+    frequencies.append(max_f)
+
+    bins=[]
+
+    for i in range(len(frequencies)-1):
+        f1=frequencies[i]
+        f2=frequencies[i+1]
+        df_oct=df[(df.freq>=f1) & (df.freq<=f2)]
+
+        vol=df_oct.ground.mean() / len(df_oct)
+        bins.append(vol)
+
+    m=sum(bins)
+    bins=[x/m for x in bins]
+
+    cadsd.set_additional_metric(key, bins)
+    return bins
+
+# area under the ground spektrum
+# divided in n equally spaced n_bins
+def cadsd_abs_tonal_balance(geo, n_bins=3):
+
+    cadsd=geo.get_cadsd()
+    key=f"abs_tonal_balance_nbins={n_bins}"
+    if cadsd.has_additional_metric(key):
+        return cadsd.get_additional_metric(key)
+
     bins=[0 for i in range(n_bins)]
     df=cadsd.get_all_spektra_df()
     ground=list(df.ground)
@@ -264,5 +303,5 @@ def cadsd_tonal_balance(cadsd):
     m=sum(bins)
     bins=[x/m for x in bins]
 
-    cadsd.set_additional_metric("tonal_balance", bins)
+    cadsd.set_additional_metric(key, key)
     return bins

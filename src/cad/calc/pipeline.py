@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import os
 import pickle
-from cad.calc.loss import Loss
+from cad.calc.loss import LossFunction
 from cad.calc.mutation import Mutator, evolve_generations, FinetuningMutator, MutantPoolEntry, evolve_explore
 from cad.calc.parameters import MutationParameterSet, FinetuningParameters
 from cad.common.app import App
@@ -59,7 +59,7 @@ class Pipeline:
 
 class ExplorePipelineStep(PipelineStep):
 
-    def __init__(self, mutator : Mutator, loss : Loss, initial_pool : MutantPool):
+    def __init__(self, mutator : Mutator, loss : LossFunction, initial_pool : MutantPool):
         super().__init__("ExplorePipelineStep")
         self.mutator=mutator
         self.loss=loss
@@ -74,7 +74,7 @@ class ExplorePipelineStep(PipelineStep):
         return pool
 
 class FinetuningPipelineStep(PipelineStep):
-    def __init__(self, mutator : Mutator, loss : Loss):
+    def __init__(self, mutator : Mutator, loss : LossFunction):
         super().__init__("FinetuningPipelineStep")
         self.mutator=mutator
         self.loss=loss
@@ -88,8 +88,16 @@ class FinetuningPipelineStep(PipelineStep):
         pool=evolve_generations(pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="finetune")
         return pool
 
+class PipelineStartStep(PipelineStep):
+    def __init__(self, pool):
+        super().__init__("PipelineStart")
+        self.pool=pool
+
+    def execute(self, x):
+        return self.pool
+
 class OptimizeGeoStep(PipelineStep):
-    def __init__(self, loss : Loss):
+    def __init__(self, loss : LossFunction):
         super().__init__("OptimizeGeoStepgPipelineStep")
         self.loss=loss
 
@@ -104,7 +112,7 @@ class OptimizeGeoStep(PipelineStep):
         for i in range(0, pool.len()):
             geo=pool.get(i).geo
             param=FinetuningParameters(geo)
-            mpe=MutantPoolEntry(param, geo, pool.get(i).loss, pool.get(i).cadsd_result)
+            mpe=MutantPoolEntry(param, geo, pool.get(i).loss)
             new_pool.add_entry(mpe)
         pool=evolve_generations(new_pool, self.loss, mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step=self.name)
         return pool

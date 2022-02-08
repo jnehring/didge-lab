@@ -23,8 +23,6 @@ class MbeyaShape(MutationParameterSet):
         self.d1=32
         self.add_param("l_gerade", 500, 1500)
         self.add_param(("d_gerade", 0.9, 1.5))
-		
-		self.add_param(("d_gerade", 0.9, 1.5))
 
 
 

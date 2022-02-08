@@ -10,6 +10,7 @@ from tqdm import tqdm
 import numpy as np
 from abc import ABC, abstractmethod
 import pandas as pd
+import logging
 
 class MutationParameter:
     
@@ -314,9 +315,12 @@ class EvolveGeoParameter(MutationParameterSet):
             y=self.geo.geo[i][1]
             self.mutable_parameters.append(MutationParameter(f"x{i}", x, x*0.3, x*3))
             self.mutable_parameters.append(MutationParameter(f"y{i}", y, y*0.3, y*3))
+
+        self.mutated_geo=None
         
     def make_geo(self):
-
+        if self.mutated_geo is not None:
+            return self.mutated_geo
         shape=[[self.geo.geo[0][0], self.geo.geo[0][1]]]
         for i in range(1, len(self.geo.geo)):
             x=self.get_value(f"x{i}")
@@ -325,9 +329,11 @@ class EvolveGeoParameter(MutationParameterSet):
 
         geo=Geo(geo=shape)
         geo.sort_segments()
-        return geo
+        self.mutated_geo=geo
+        return self.mutated_geo
 
     def after_mutate(self):
+        self.mutated_geo=None
         pass
 
 class AddBubble(MutationParameterSet):

@@ -2,7 +2,6 @@ from cad.calc.didgmo import PeakFile, didgmo_high_res, cleanup
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo
-from cad.cadsd.cadsd import CADSDResult
 from cad.calc.parameters import BasicShapeParameters, MutationParameterSet
 from IPython.display import clear_output
 import math
@@ -26,13 +25,17 @@ import json
 
 class Mutator(ABC):
 
+    def mutate(self, parameter):
+        self._mutate(parameter)
+        parameter.after_mutate()
+
     @abstractmethod
-    def mutate(self, parameter, i_iteration=1, n_total_iterations=1):
+    def _mutate():
         pass
 
 class ExploringMutator(Mutator):
 
-    def mutate(self, parameters, i_iteration=1, n_total_iterations=1):
+    def _mutate(self, parameters):
         for i in range(len(parameters.mutable_parameters)):
             p=parameters.mutable_parameters[i]
             if p.immutable:
@@ -45,7 +48,7 @@ class FinetuningMutator(Mutator):
     def __init__(self, learning_rate=1):
         self.learning_rate=learning_rate
 
-    def mutate(self, parameters, i_iteration=1, n_total_iterations=1):
+    def _mutate(self, parameters):
         p=None
         while p == None:
             index=random.randrange(0, len(parameters.mutable_parameters))
@@ -53,6 +56,9 @@ class FinetuningMutator(Mutator):
             if p.immutable:
                 p=None
         
+        i_iteration=App.get_context("i_iteration", default=1)
+        n_total_iterations=App.get_context("n_total_iterations", default=1)
+
         if random.random()>0.5:
             p.value += (p.maximum-p.value)*self.learning_rate*random.random()*i_iteration/n_total_iterations
         else:
@@ -77,11 +83,10 @@ class MutationJob:
     def mutate(self, result_queue):
         try:
             mutant=self.father.copy()
-            self.mutator.mutate(mutant, i_iteration=self.i_generation, n_total_iterations=self.n_generations)
-            mutant.after_mutate()
+            self.mutator.mutate(mutant)
             geo=mutant.make_geo()
-            mutant_loss, cadsd_result=self.loss.get_loss(geo)
-            me=MutantPoolEntry(mutant, geo, mutant_loss, cadsd_result)
+            mutant_loss=self.loss.get_loss(geo)
+            me=MutantPoolEntry(mutant, geo, mutant_loss)
             result_queue.put((me, self.pool_index))
         except Exception as e:
             logging.error("error in cadsd while processing geo " + json.dumps(geo.geo))
@@ -89,11 +94,10 @@ class MutationJob:
 
 class MutantPoolEntry:
 
-    def __init__(self, parameterset, geo, loss, cadsd_result):
+    def __init__(self, parameterset, geo, loss):
         self.parameterset=parameterset
         self.loss=loss
         self.geo=geo
-        self.cadsd_result=cadsd_result
 
 class MutantPool:
 
@@ -107,24 +111,17 @@ class MutantPool:
     def add_entry(self, entry):
         self.pool.append(entry)
 
-    def add(self, parameterset, geo, loss, cadsd_result):
-        e=MutantPoolEntry(parameterset, geo, loss, cadsd_result)
+    def add(self, parameterset, geo, loss):
+        e=MutantPoolEntry(parameterset, geo,loss )
         self.add_entry(e)
 
     @classmethod
-    def create_from_father(cls, father : MutationParameterSet, n_poolsize : int, do_cadsd=False):
+    def create_from_father(cls, father : MutationParameterSet, n_poolsize : int, loss, do_cadsd=False):
         pool=MutantPool()
-        cadsd=None
         for x in range(n_poolsize):
             p=father.copy()
             geo=p.make_geo()
-            if do_cadsd and cadsd is None:
-                try:
-                    cadsd=CADSDResult.from_geo(geo)
-                except Exception as e:
-                    logging.error("Error processing geo " + json.dumps(geo.geo))
-                    raise e
-            pool.add(p, geo, 100000, cadsd)
+            pool.add(p, geo, loss(geo))
         return pool
 
     def sort(self):
@@ -168,7 +165,9 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
     def process_mutator_queue():
         try:
             while True:
+                logging.info("x")
                 job=processing_queue.get()
+                logging.info("x")
                 if job == finish_message:
                     result_queue.put(finish_message)
                     break
@@ -219,26 +218,6 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
         else:
             finished_count+=1
 
-    # all jobs are processed. now update mutant pool
-
-    # # collect all mutants
-    # result_pool={}
-    # for i in range(pool.len()):
-    #     result_pool[i]=[]
-
-    # for result in results:
-    #     result_pool[result[1]].append(result[0])
-    
-    # # add fathers and create new mutant pool
-    # pool_size=pool.len()
-    # new_pool=MutantPool()
-    # for index in range(pool_size):
-    #     result_pool[index].append(pool.get(index))
-    #     result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss)
-    #     new_pool.add_entry(result_pool[index][0])
-
-    # pool=new_pool
-    
     return results
 
 # run multithreaded evolution for fine tunning
@@ -257,7 +236,6 @@ def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size
         processing_queue=Queue()
         result_queue=Queue()
         results=[]
-        
         def process_mutator_queue():
             try:
                 while True:

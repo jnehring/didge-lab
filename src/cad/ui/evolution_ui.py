@@ -101,8 +101,10 @@ class EvolutionUI:
         }
         self.info_window.update_dict(self.infos)
 
-        self.peak_window.set_peak(mutant.cadsd_result.peaks.copy())
-        self.fft_window.set_fft(mutant.cadsd_result.fft.copy())
+        self.peak_window.set_peak(mutant.geo.get_cadsd().get_notes().copy())
+
+        spektra=mutant.geo.get_cadsd().get_all_spektra_df()
+        self.fft_window.set_fft(spektra.copy())
 
     # build user interface
     def initialize(self):
