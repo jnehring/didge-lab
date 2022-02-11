@@ -34,13 +34,22 @@ try:
                 tuning_deviations[i]*=tuning_deviations[i]
             tuning_loss=sum(tuning_deviations)
 
+            n_notes=len(tuning_deviations)
+            n_note_loss=0
+            if n_notes<3:
+                n_note_loss=0.1
+            elif n_notes==4:
+                n_note_loss=-0.1
+            elif n_notes>4:
+                n_note_loss=-0.2
+
             balance_loss=0
             balance=cadsd_octave_tonal_balance(geo)
 
             for i in range(len(balance)):
                 balance_loss += abs(balance[i]-self.target_balance[i])
 
-            return balance_loss + tuning_loss
+            return balance_loss + tuning_loss + n_note_loss
 
     loss=MbeyaLoss(open_didge_balance)    
     father=MbeyaShape()
@@ -48,7 +57,7 @@ try:
 
     pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500, generation_size=600))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=100))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500))
     pipeline.add_step(OptimizeGeoStep(loss, n_generations=500))
 
