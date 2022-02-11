@@ -73,7 +73,7 @@ class Pipeline:
 
 class ExplorePipelineStep(PipelineStep):
 
-    def __init__(self, mutator : Mutator, loss : LossFunction, initial_pool : MutantPool, n_generations=None, n_generation_size=None):
+    def __init__(self, mutator : Mutator, loss : LossFunction, initial_pool : MutantPool, n_generations=None, generation_size=None):
         super().__init__("ExplorePipelineStep")
         self.mutator=mutator
         self.loss=loss
@@ -90,7 +90,7 @@ class ExplorePipelineStep(PipelineStep):
         return pool
 
 class FinetuningPipelineStep(PipelineStep):
-    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, n_generation_size=None):
+    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, generation_size=None):
         super().__init__("FinetuningPipelineStep")
         self.mutator=mutator
         self.loss=loss
@@ -115,7 +115,7 @@ class PipelineStartStep(PipelineStep):
         return self.pool
 
 class OptimizeGeoStep(PipelineStep):
-    def __init__(self, loss : LossFunction, n_generations=None, n_generation_size=None):
+    def __init__(self, loss : LossFunction, n_generations=None, generation_size=None):
         super().__init__("OptimizeGeoStepgPipelineStep")
         self.loss=loss
         self.n_generations=n_generations
