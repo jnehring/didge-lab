@@ -48,7 +48,7 @@ try:
 
     pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500, generation_size=600))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500))
     pipeline.add_step(OptimizeGeoStep(loss, n_generations=500))
 
