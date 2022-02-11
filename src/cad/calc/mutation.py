@@ -89,7 +89,10 @@ class MutationJob:
             me=MutantPoolEntry(mutant, geo, mutant_loss)
             result_queue.put((me, self.pool_index))
         except Exception as e:
-            logging.error("error in cadsd while processing geo " + json.dumps(geo.geo))
+            msg="error in cadsd while processing geo "
+            if geo is not None:
+                msg += json.dumps(geo.geo)
+            logging.error(msg)
             App.log_exception(e)
 
 class MutantPoolEntry:
@@ -165,9 +168,7 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
     def process_mutator_queue():
         try:
             while True:
-                logging.info("x")
                 job=processing_queue.get()
-                logging.info("x")
                 if job == finish_message:
                     result_queue.put(finish_message)
                     break

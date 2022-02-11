@@ -784,10 +784,10 @@ class MbeyaShape(MutationParameterSet):
             pos=shape[-1][0]*self.get_value("bubble_pos")
             width=self.get_value("bubble_width")
             height=self.get_value("bubble_height")
-            if pos-width/2<0:
-                pos=width/2
-            if pos+width/2>shape[-1][0]:
-                pos=shape[-1][0]-width/2
+            if pos-width/2<-10:
+                pos=width/2 + 10
+            if pos+width/2+10>shape[-1][0]:
+                pos=shape[-1][0]-width/2 - 10
             shape=self.make_bubble(shape, pos, width, height)
 
         return Geo(shape)

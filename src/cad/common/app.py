@@ -4,12 +4,14 @@ from threading import Lock
 import json
 import sys
 import os
+from datetime import datetime
 
 class App:
 
     config=None
     context={}
     subscribers={}
+    output_folder=None
 
     @classmethod
     def set_context(cls, key, value):
@@ -29,12 +31,11 @@ class App:
             App.set_context(key, value)
 
     @classmethod
-    def init_logging(self):
+    def init_logging(self, filename="./log.txt"):
         logFormatter = logging.Formatter("%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s")
         rootLogger = logging.getLogger()
 
-        log_dir="./"
-        fileHandler = logging.FileHandler(os.path.join(log_dir, "log.txt"))
+        fileHandler = logging.FileHandler(filename)
         fileHandler.setFormatter(logFormatter)
         rootLogger.addHandler(fileHandler)
 
@@ -70,9 +71,11 @@ class App:
         logging.info(msg)
 
     @classmethod
-    def full_init(self):
+    def full_init(self, name="default"):
         App.init()
-        App.init_logging()
+        outfolder=App.get_output_folder()
+        log_file=os.path.join(outfolder, "log.txt")
+        App.init_logging(filename=log_file)
         App.start_message()
 
     @classmethod
@@ -85,6 +88,7 @@ class App:
             p.add('-n_generations', type=int, default=1000, help='number of generations')
             p.add('-n_generation_size', type=int, default=30, help='generation size')
             p.add('-pipelines_dir', type=str, default="projects/pipelines/", help='project directory')
+            p.add('-output_folder', type=str, default="output", help='output folder')
             p.add('-pipeline_name', type=str, default="default", help='name of pipeline')
             p.add('-hide_ui', action='store_true', default=False, help='not not show ui.')
             p.add('-log_level', type=str, choices=["info", "error", "debug", "warn"], default="info", help='log level ')
@@ -126,3 +130,25 @@ class App:
         ctx=json.dumps(App.context)
         logging.error("An exception has occured. App context:\n" + ctx)
         logging.exception(e)
+
+    @classmethod
+    def get_output_folder(cls, suffix=""):
+
+        if App.output_folder is None:
+
+            f=App.get_config()["output_folder"]
+
+            if not os.path.exists(f):
+                os.mkdir(f)
+
+            my_date = datetime.now()
+
+            folder_name=my_date.strftime('%Y-%m-%dT%H-%M-%S')
+            folder_name += "_" + App.get_config()["pipeline_name"]
+            if len(suffix)>0:
+                folder_name += "_" + suffix
+
+            App.output_folder=os.path.join(f, folder_name)
+            os.mkdir(App.output_folder)
+
+        return App.output_folder

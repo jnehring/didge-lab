@@ -22,7 +22,7 @@ class Pipeline:
 
     def __init__(self):
         self.steps=[]
-        self.folder=os.path.join("projects/pipelines/", App.get_config()["pipeline_name"])
+        self.folder=os.path.join(App.get_output_folder(), "results")
         
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
