@@ -23,12 +23,9 @@ def format_time(t):
 
 class EvolutionUI:
 
-    def __init__(self, dont_show=False):
+    def __init__(self):
 
-        if App.get_config()["hide_ui"]:
-            dont_show=True
-
-        self.ui=UserInterface(dont_show)
+        self.ui=UserInterface(App.get_config()["hide_ui"])
         self.visible_mutant_index=0
         self.mutant_pool=None
         self.index_info=-1
@@ -36,7 +33,6 @@ class EvolutionUI:
         self.infos={}
         self.mutant_pool=None
         self.start_time=0
-        self.dont_show=dont_show
 
         # subscribe to generation_started event
         def generation_started(i_generation, mutant_pool):
@@ -59,7 +55,8 @@ class EvolutionUI:
             else:
                 self.update()
 
-        App.subscribe("generation_started", generation_started)
+        if not App.get_config()["hide_ui"]:
+            App.subscribe("generation_started", generation_started)
 
         # subscrube to iteration_finished event
         def iteration_finished(i_iteration):
@@ -70,13 +67,16 @@ class EvolutionUI:
             self.infos["time elapsed"] = format_time(time_elapsed)
             self.info_window.update_dict(self.infos)
             self.ui.display()
-        App.subscribe("iteration_finished", iteration_finished)
+
+        if not App.get_config()["hide_ui"]:
+            App.subscribe("iteration_finished", iteration_finished)
 
         # shut down when pipeline is finished
         def pipeline_finished():
             self.ui.killed=True
             self.ui.end()
-        App.subscribe("pipeline_finished", pipeline_finished)
+        if not App.get_config()["hide_ui"]:
+            App.subscribe("pipeline_finished", pipeline_finished)
 
     def update(self):
         header_text=f"Evolution Display: Showing mutant {self.visible_mutant_index+1}/{self.mutant_pool.len()}\n"
@@ -174,7 +174,7 @@ class EvolutionUI:
                 finally:
                     self.ui.end()
         
-        if not self.dont_show:
+        if not App.get_config()["hide_ui"]:
             self.ui_thread = threading.Thread(target=thread_fct, args=())
             self.ui_thread.start()
 

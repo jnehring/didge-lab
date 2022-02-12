@@ -1,36 +1,51 @@
 import configargparse
 import logging
-from threading import Lock
 import json
 import sys
 import os
 from datetime import datetime
 import warnings
+from multiprocessing import Manager, Lock
 warnings.filterwarnings('error')
+
 
 class App:
 
     config=None
-    context={}
+    manager=Manager()
+
+    context=manager.dict()
+    context_lock=Lock()
+
     subscribers={}
     output_folder=None
 
     @classmethod
     def set_context(cls, key, value):
-        App.context[key]=value
+        App.context_lock.acquire()
+        try:
+            App.context[key]=value
+        finally:
+            App.context_lock.release()
 
     @classmethod
     def get_context(cls, key, default=None):
-        if not key in App.context:
-            return default
-        val=App.context[key]
-        return val
+        App.context_lock.acquire()
+        try:
+            if not key in App.context:
+                return default
+            val=App.context[key]
+            return val
+        finally:
+           App.context_lock.release()
 
     @classmethod
     def init(cls):
         # add config to context
         for key, value in App.get_config().items():
             App.set_context(key, value)
+
+        App.set_context("state", "initializing")
 
     @classmethod
     def init_logging(self, filename="./log.txt"):
@@ -41,9 +56,11 @@ class App:
         fileHandler.setFormatter(logFormatter)
         rootLogger.addHandler(fileHandler)
 
-        consoleHandler = logging.StreamHandler()
-        consoleHandler.setFormatter(logFormatter)
-        rootLogger.addHandler(consoleHandler)
+        # print to console only if we have no user interface
+        if App.get_config()["hide_ui"]:
+            consoleHandler = logging.StreamHandler()
+            consoleHandler.setFormatter(logFormatter)
+            rootLogger.addHandler(consoleHandler)
 
         level=self.get_config()["log_level"]
         if level == "info":
@@ -54,9 +71,6 @@ class App:
             rootLogger.setLevel(logging.ERROR)
         elif level == "warn":
             rootLogger.setLevel(logging.WARN)
-
-        # logging.basicConfig(level=logging.INFO, format='%(asctime)s - {%(filename)s:%(lineno)d} - %(levelname)s: %(message)s', filename="log.txt")
-        # logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     @classmethod
     def start_message(self):
@@ -97,7 +111,9 @@ class App:
 
             options = p.parse_args()
 
-            App.config=vars(options)
+            App.config=App.manager.dict()
+            for key, value in vars(options).items():
+                App.config[key]=value
 
         return App.config
 

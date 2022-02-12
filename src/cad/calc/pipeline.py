@@ -50,29 +50,30 @@ class Pipeline:
 
         try:
             logging.info("starting pipeline " + App.get_config()["pipeline_name"])
+            App.set_context("state", "started")
 
             pool=None
 
             no_cache=App.get_config()["no_cache"]
             for i in range(len(self.steps)):
 
-                App.context["current_pipeline_step"]=i
-                App.context["pipeline_step_name"]=self.steps[i].name
-                App.context["pipeline_length"]=len(self.steps)
+                App.set_context("current_pipeline_step", i)
+                App.set_context("pipeline_step_name", self.steps[i].name)
+                App.set_context("pipeline_length", len(self.steps))
 
                 n_generation_size=App.get_config()["n_generation_size"]
                 if n_generation_size is None:
                     n_generation_size=self.steps[i].n_generation_size
                 if n_generation_size is None:
                     n_generation_size=100
-                App.context["n_generation_size"]=n_generation_size
+                App.set_context("n_generation_size", n_generation_size)
 
                 n_generations=App.get_config()["n_generations"]
                 if n_generations is None:
                     n_generations=self.steps[i].n_generations
                 if n_generations is None:
                     n_generations=100
-                App.context["n_generations"]=n_generations
+                App.set_context("n_generations", n_generations)
 
                 App.publish("start_pipeline_step", (i, type(self.steps).__name__))
 
@@ -94,6 +95,7 @@ class Pipeline:
 
             App.publish("pipeline_finished")
             logging.info("pipeline finished")
+            App.set_context("state", "finished")
         except Exception as e:
             App.log_exception(e)
 

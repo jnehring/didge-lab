@@ -153,8 +153,8 @@ class MutantPool:
 # evolve for exploration
 def evolve_explore(pool, loss, mutator, store_intermediates=""):
 
-    n_generations=App.context["n_generations"]
-    n_generation_size=App.context["n_generation_size"]
+    n_generations=App.get_context("n_generations")
+    n_generation_size=App.get_context("n_generation_size")
     n_threads=App.get_config()["n_threads"]
 
     finish_message="...finished..."
