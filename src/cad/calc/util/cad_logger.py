@@ -5,6 +5,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import logging
+import numpy as np
 
 class CADLogger:
 
@@ -66,11 +67,12 @@ class CADLogReader:
 
         #print(data["name"][0:5])
         df=pd.DataFrame(data)
+        df=df.dropna(subset=["iteration"])
         return df
 
 if __name__ == "__main__":
 
-    infile="output/2022-02-12T17-55-36_default/cadlogger.log"
+    infile="output/2022-02-12T22-03-55_default/cadlogger.log"
     df=CADLogReader(infile).to_dataframe()
     sns.lineplot(data=df)
     print(df)

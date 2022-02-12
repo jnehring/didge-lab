@@ -71,12 +71,9 @@ try:
 
     pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=2, generation_size=2))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=2))
-    pipeline.add_step(OptimizeGeoStep(loss, n_generations=2))
-    # pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=100))
-    # pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500))
-    # pipeline.add_step(OptimizeGeoStep(loss, n_generations=500))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=100))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500))
+    pipeline.add_step(OptimizeGeoStep(loss, n_generations=500))
 
     ui=EvolutionUI()
 
