@@ -6,3 +6,4 @@ projects/
 log.txt
 finished_evolutions/*/report
 cad/cadsd/_cadsd.c
+output/

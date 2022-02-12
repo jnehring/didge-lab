@@ -20,6 +20,7 @@ class FFTWindow(Window):
 
         maximum=df.impedance.max()
 
+        df.loc[df.impedance==0, "impedance"]=0.000001
         df.impedance=np.log2(df.impedance)
 
         mini=df.impedance.min()

@@ -5,6 +5,8 @@ import json
 import sys
 import os
 from datetime import datetime
+import warnings
+warnings.filterwarnings('error')
 
 class App:
 

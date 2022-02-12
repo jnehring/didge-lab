@@ -11,10 +11,12 @@ from cad.ui.evolution_ui import EvolutionUI
 
 class PipelineStep(ABC):
 
-    def __init__(self, name):
+    def __init__(self, name : str, n_generations : int = None, n_generation_size : int = None):
         self.name=name
         self.n_generations=None
         self.generation_size=None
+        self.n_generations=n_generations
+        self.n_generation_size=n_generation_size
 
     def get_n_generations(self):
         if self.n_generations is not None:
@@ -56,6 +58,18 @@ class Pipeline:
 
                 App.context["current_pipeline_step"]=i
                 App.context["pipeline_step_name"]=self.steps[i].name
+                App.context["pipeline_length"]=len(self.steps)
+
+                n_generation_size=self.steps[i].n_generation_size
+                if n_generation_size is None:
+                    n_generation_size=App.get_config()["n_generation_size"]
+                App.context["n_generation_size"]=n_generation_size
+
+                n_generations=self.steps[i].n_generations
+                if n_generations is None:
+                    n_generations=App.get_config()["n_generations"]
+                App.context["n_generations"]=n_generations
+
                 App.publish("start_pipeline_step", (i, type(self.steps).__name__))
 
                 pkl_file=os.path.join(self.folder, str(i) + ".pkl")
@@ -63,9 +77,16 @@ class Pipeline:
                     logging.info(f"loading pipeline step {i} ({self.steps[i].name}) from cache")
                     pool=pickle.load(open(pkl_file, "rb"))
                 else:
-                    logging.info(f"executing pipeline step {i} ({self.steps[i].name})")
+                    msg=f"executing pipeline step {i} ({self.steps[i].name})"
+                    msg += f", n_generations={n_generations}"
+                    msg += f", n_generation_size={n_generation_size}"
+                    msg += ", poolsize=" + str(App.get_config()["n_poolsize"])
+                    
+                    logging.info(msg)
                     pool=self.steps[i].execute(pool)
-                    pickle.dump(pool, open(pkl_file, "wb"))
+                    f=open(pkl_file, "wb")
+                    pickle.dump(pool, f)
+                    f.close()
 
             App.publish("pipeline_finished")
         except Exception as e:
@@ -74,41 +95,30 @@ class Pipeline:
 class ExplorePipelineStep(PipelineStep):
 
     def __init__(self, mutator : Mutator, loss : LossFunction, initial_pool : MutantPool, n_generations=None, generation_size=None):
-        super().__init__("ExplorePipelineStep")
+        super().__init__("ExplorePipelineStep", n_generations, generation_size)
         self.mutator=mutator
         self.loss=loss
         self.initial_pool=initial_pool
-        self.n_generations=n_generations
-        self.generation_size=generation_size
 
     def execute(self,pool : MutantPool) -> MutantPool:
         n_threads=App.get_config()["n_threads"]
-        n_generations=self.get_n_generations()
-        n_generation_size=self.get_generation_size()
 
-        pool=evolve_explore(self.initial_pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="explore")
+        pool=evolve_explore(self.initial_pool, self.loss, self.mutator)
         return pool
 
 class FinetuningPipelineStep(PipelineStep):
-    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, generation_size=None):
-        super().__init__("FinetuningPipelineStep")
+    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, n_generation_size=None):
+        super().__init__("FinetuningPipelineStep", n_generations, n_generation_size)
         self.mutator=mutator
         self.loss=loss
-        self.n_generations=n_generations
-        self.generation_size=generation_size
 
-    def execute(self,pool : MutantPool) -> MutantPool:
-        
-        n_threads=App.get_config()["n_threads"]
-        n_generations=self.get_n_generations()
-        n_generation_size=self.get_generation_size()
-
-        pool=evolve_generations(pool, self.loss, self.mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step="finetune")
+    def execute(self,pool : MutantPool) -> MutantPool:        
+        pool=evolve_generations(pool, self.loss, self.mutator)
         return pool
 
 class PipelineStartStep(PipelineStep):
-    def __init__(self, pool):
-        super().__init__("PipelineStart")
+    def __init__(self, pool, n_generations=None, generation_size=None):
+        super().__init__("PipelineStart", n_generations, generation_size)
         self.pool=pool
 
     def execute(self, x):
@@ -116,23 +126,17 @@ class PipelineStartStep(PipelineStep):
 
 class OptimizeGeoStep(PipelineStep):
     def __init__(self, loss : LossFunction, n_generations=None, generation_size=None):
-        super().__init__("OptimizeGeoStepgPipelineStep")
+        super().__init__("OptimizeGeoStepgPipelineStep", n_generations, generation_size)
         self.loss=loss
-        self.n_generations=n_generations
-        self.generation_size=generation_size
 
     def execute(self,pool : MutantPool) -> MutantPool:
 
         mutator=FinetuningMutator()
-        n_threads=App.get_config()["n_threads"]
-        n_generations=self.get_n_generations()
-        n_generation_size=self.get_generation_size()
-
         new_pool=MutantPool()
         for i in range(0, pool.len()):
             geo=pool.get(i).geo
             param=FinetuningParameters(geo)
             mpe=MutantPoolEntry(param, geo, pool.get(i).loss)
             new_pool.add_entry(mpe)
-        pool=evolve_generations(new_pool, self.loss, mutator, n_generations=n_generations, n_generation_size=n_generation_size, n_threads=n_threads, pipeline_step=self.name)
+        pool=evolve_generations(new_pool, self.loss, mutator)
         return pool

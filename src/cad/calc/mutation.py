@@ -151,7 +151,11 @@ class MutantPool:
         del self.pool[i]
 
 # evolve for exploration
-def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates="", pipeline_step=""):
+def evolve_explore(pool, loss, mutator, store_intermediates=""):
+
+    n_generations=App.context["n_generations"]
+    n_generation_size=App.context["n_generation_size"]
+    n_threads=App.get_config()["n_threads"]
 
     finish_message="...finished..."
 
@@ -201,7 +205,8 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
         result=result_queue.get()
         if result!=finish_message:
             App.publish("iteration_finished", (i_iteration,))
-
+            App.set_context("i_iteration", i_iteration)
+            
             results.add_entry(result[0])
             results.sort()
             while results.len()>pool.len():
@@ -222,7 +227,11 @@ def evolve_explore(pool, loss, mutator, n_generations=100, n_generation_size=100
     return results
 
 # run multithreaded evolution for fine tunning
-def evolve_generations(pool, loss, mutator, n_generations=100, n_generation_size=100, n_threads=20, store_intermediates="", pipeline_step=""):
+def evolve_generations(pool, loss, mutator, store_intermediates=""):
+
+    n_generations=App.context["n_generations"]
+    n_generation_size=App.context["n_generation_size"]
+    n_threads=App.get_config()["n_threads"]
 
     finish_message="...finished..."
 

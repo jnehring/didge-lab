@@ -12,6 +12,9 @@ import numpy as np
 from cad.calc.geo import Geo
 from cad.ui.evolution_ui import EvolutionUI
 from cad.calc.util.losslog import LossLog
+from cad.calc.util.cad_logger import CADLogger
+import logging
+
 try:
     App.full_init("evolve_penta")
 
@@ -49,7 +52,18 @@ try:
             for i in range(len(balance)):
                 balance_loss += abs(balance[i]-self.target_balance[i])
 
-            return balance_loss + tuning_loss + n_note_loss
+            final_loss=balance_loss + tuning_loss + n_note_loss
+
+            log={
+                "name": "loss",
+                "balance_loss": balance_loss,
+                "tuning_loss": tuning_loss,
+                "n_note_loss": n_note_loss,
+                "final_loss": final_loss
+            }
+            CADLogger.get_logger().log(log)
+
+            return final_loss
 
     loss=MbeyaLoss(open_didge_balance)    
     father=MbeyaShape()
@@ -57,9 +71,12 @@ try:
 
     pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=100))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500))
-    pipeline.add_step(OptimizeGeoStep(loss, n_generations=500))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=2, generation_size=2))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=2))
+    pipeline.add_step(OptimizeGeoStep(loss, n_generations=2))
+    # pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=100))
+    # pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500))
+    # pipeline.add_step(OptimizeGeoStep(loss, n_generations=500))
 
     ui=EvolutionUI()
 

@@ -63,7 +63,9 @@ class EvolutionUI:
 
         # subscrube to iteration_finished event
         def iteration_finished(i_iteration):
-            self.infos["iteration"]=i_iteration
+            n_iterations=App.get_context("n_generations") * App.get_config()["n_poolsize"]
+            i_iterations=App.get_context("i_iteration")
+            self.infos["iteration"]=f"{i_iterations}/{n_iterations}"
             time_elapsed=time.time()-self.start_time
             self.infos["time elapsed"] = format_time(time_elapsed)
             self.info_window.update_dict(self.infos)
@@ -81,15 +83,21 @@ class EvolutionUI:
 
         mutant=self.mutant_pool.get(self.visible_mutant_index)
         geo=mutant.geo
-        n_generations=App.get_context("n_generations")
         i_generation=App.get_context("i_generation")
 
-        pipeline_step=str(App.get_context("current_pipeline_step")) + ": " + App.get_context("pipeline_step_name")
-
+        pipeline_step=App.get_context("pipeline_step_name")
+        pipeline_step += " (" + str(App.get_context("current_pipeline_step"))
+        pipeline_step += "/" + str(App.get_context("pipeline_length")) + ")"
+        
+        n_generations=App.get_context("n_generations")
+        n_iterations=App.get_context("n_generations") * App.get_config()["n_poolsize"]
+        i_iterations=App.get_context("i_iteration")
         self.infos={
-            "iteration": App.get_context("i_iteration"),
+            "iteration": f"{i_iterations}/{n_iterations}",
             "generation": f"{i_generation}/{n_generations}",
             "loss": f"{mutant.loss:.2f}",
+            "pipeline_step": pipeline_step,
+            "pool size": App.get_config()["n_poolsize"],
             "didge length": f"{round(geo.geo[-1][0])}mm",
             "bell size": f"{round(geo.geo[-1][1])}mm",
             "n_segments": len(geo.geo),
