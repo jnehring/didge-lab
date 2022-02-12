@@ -74,6 +74,7 @@ class EvolutionUI:
 
         # shut down when pipeline is finished
         def pipeline_finished():
+            self.ui.killed=True
             self.ui.end()
         App.subscribe("pipeline_finished", pipeline_finished)
 
@@ -94,7 +95,7 @@ class EvolutionUI:
         i_iterations=App.get_context("i_iteration")
         self.infos={
             "iteration": f"{i_iterations}/{n_iterations}",
-            "generation": f"{i_generation}/{n_generations}",
+            "generation": f"{i_generation+1}/{n_generations}",
             "loss": f"{mutant.loss:.2f}",
             "pipeline_step": pipeline_step,
             "pool size": App.get_config()["n_poolsize"],
@@ -157,6 +158,8 @@ class EvolutionUI:
                 try:
                     self.ui.start()
                     key=self.ui.wait_for_key()
+                    if key == None:
+                        break
                     key=chr(key)
                     self.ui.print(key + "\n")
                     self.menu_window.key_pressed(key)

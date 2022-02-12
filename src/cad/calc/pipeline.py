@@ -60,14 +60,18 @@ class Pipeline:
                 App.context["pipeline_step_name"]=self.steps[i].name
                 App.context["pipeline_length"]=len(self.steps)
 
-                n_generation_size=self.steps[i].n_generation_size
+                n_generation_size=App.get_config()["n_generation_size"]
                 if n_generation_size is None:
-                    n_generation_size=App.get_config()["n_generation_size"]
+                    n_generation_size=self.steps[i].n_generation_size
+                if n_generation_size is None:
+                    n_generation_size=100
                 App.context["n_generation_size"]=n_generation_size
 
-                n_generations=self.steps[i].n_generations
+                n_generations=App.get_config()["n_generations"]
                 if n_generations is None:
-                    n_generations=App.get_config()["n_generations"]
+                    n_generations=self.steps[i].n_generations
+                if n_generations is None:
+                    n_generations=100
                 App.context["n_generations"]=n_generations
 
                 App.publish("start_pipeline_step", (i, type(self.steps).__name__))
@@ -89,6 +93,7 @@ class Pipeline:
                     f.close()
 
             App.publish("pipeline_finished")
+            logging.info("pipeline finished")
         except Exception as e:
             App.log_exception(e)
 

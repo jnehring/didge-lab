@@ -5,22 +5,24 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import logging
-import numpy as np
 
 class CADLogger:
 
     logger=None
+    filename="cadlogger.log"
 
     def __init__(self, logfile):
 
         self.logfile=logfile
         self.f=None
+        self.started=False
 
         def pipeline_finished():
             if self.f is not None:
                 self.f.close()
 
         def generation_started(x,y):
+            self.started=True
             if self.f is not None:
                 self.f.flush()
 
@@ -29,11 +31,14 @@ class CADLogger:
 
     def log(self, entry):
 
+        if not self.started:
+            return
+    
         if self.f is None:
             self.f=open(self.logfile, "w")
 
-        entry["iteration"]=App.get_context("i_iteration")
-        entry["generation"]=App.get_context("i_generation")
+        entry["iteration"]=App.context["i_iteration"]
+        entry["generation"]=App.context["i_generation"]
 
         self.f.write(json.dumps(entry) + "\n")
 
@@ -45,18 +50,25 @@ class CADLogger:
     def get_logger(cls):
         if CADLogger.logger is None:
             log_dir=App.get_output_folder()
-            filename=os.path.join(log_dir, "cadlogger.log")
+            filename=os.path.join(log_dir, CADLogger.filename)
             CADLogger.logger=CADLogger(filename)
         return CADLogger.logger
 
 class CADLogReader:
 
-    def __init__(self, logfile):
-        self.logfile=logfile
+    def __init__(self, logfile=None, latest=False):
+
+        if latest==True:
+            fs=os.listdir(App.get_config()["output_folder"])
+            sorted(fs)
+            self.logfile=os.path.join(App.get_config()["output_folder"], fs[-1], CADLogger.filename)
+        else:
+            self.logfile=logfile
 
     def to_dataframe(self):
         data=None
-        for line in open(self.logfile, "r").readlines():
+        f=open(self.logfile, "r")
+        for line in f.readlines():
             j=json.loads(line)
             if data is None:
                 data={}
@@ -64,16 +76,15 @@ class CADLogReader:
                     data[key]=[]
             for key, value in j.items():
                 data[key].append(value)
+        f.close()
 
-        #print(data["name"][0:5])
         df=pd.DataFrame(data)
         df=df.dropna(subset=["iteration"])
         return df
 
 if __name__ == "__main__":
 
-    infile="output/2022-02-12T22-03-55_default/cadlogger.log"
-    df=CADLogReader(infile).to_dataframe()
+    df=CADLogReader(latest=True).to_dataframe()
     sns.lineplot(data=df)
-    print(df)
+    plt.show()
     

@@ -2,6 +2,7 @@ import curses
 import numpy as np
 from abc import ABC, abstractmethod
 import shutil
+import time
 
 class UserInterface:
 
@@ -10,11 +11,13 @@ class UserInterface:
         self.is_initialized=False
         self.windows=[]
         self.dont_show=dont_show
+        self.killed=False
 
     def start(self):
         if self.is_initialized:
             return
         self.screen = curses.initscr()
+        self.screen.nodelay(1) 
         self.is_initialized=True
 
     def add_window(self, win):
@@ -31,7 +34,11 @@ class UserInterface:
         self.windows.append(StaticTextWindow("\n"))
 
     def wait_for_key(self):
-        return self.screen.getch()
+        while not self.killed:
+            x=self.screen.getch()
+            if x != -1:
+                return x
+            time.sleep(0.1)
 
     def render(self):
         content_str=[]
