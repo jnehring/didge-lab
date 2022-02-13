@@ -122,12 +122,6 @@ class DictWindow(Window):
             row += "\n"
             content_str += row 
 
-        if len(content_str)>100:
-
-            print(content_str)
-            import sys
-            sys.exit(0)
-
         self.content_str=content_str
     
     def _render(self):
