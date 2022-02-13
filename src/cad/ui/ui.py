@@ -92,8 +92,8 @@ class DictWindow(Window):
         content_str=""
         column_width=int(np.floor((shutil.get_terminal_size().columns)/n_columns))-3
 
-        if column_width>30:
-            column_width=30
+        # if column_width>30:
+        #     column_width=30
         labels=list(data.keys())
         n_rows=int(np.ceil(len(labels)/n_columns))
 
@@ -121,6 +121,12 @@ class DictWindow(Window):
 
             row += "\n"
             content_str += row 
+
+        if len(content_str)>100:
+
+            print(content_str)
+            import sys
+            sys.exit(0)
 
         self.content_str=content_str
     

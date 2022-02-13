@@ -87,7 +87,7 @@ class EvolutionUI:
         i_generation=App.get_context("i_generation")
 
         pipeline_step=App.get_context("pipeline_step_name")
-        pipeline_step += " (" + str(App.get_context("current_pipeline_step"))
+        pipeline_step += " (" + str(App.get_context("current_pipeline_step")+1)
         pipeline_step += "/" + str(App.get_context("pipeline_length")) + ")"
         
         n_generations=App.get_context("n_generations")
@@ -98,16 +98,14 @@ class EvolutionUI:
             "iteration": f"{i_iterations}/{n_iterations}",
             "generation": f"{i_generation+1}/{n_generations}",
             "loss": f"{loss:.2f}",
-            "pipeline_step": pipeline_step,
+            "pipeline step": pipeline_step,
             "pool size": App.get_config()["n_poolsize"],
             "didge length": f"{round(geo.geo[-1][0])}mm",
             "bell size": f"{round(geo.geo[-1][1])}mm",
             "n_segments": len(geo.geo),
             "n_threads": App.get_context("n_threads"),
             "n_generation_size": App.get_context("n_generation_size"),
-            "n_poolsize": App.get_context("n_poolsize"),
-            "pipelines_dir": App.get_context("pipelines_dir"),
-            "pipeline step": pipeline_step
+            "n_poolsize": App.get_context("n_poolsize")
         }
         self.info_window.update_dict(self.infos)
 
