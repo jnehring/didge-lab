@@ -60,7 +60,7 @@ class EvolutionUI:
 
         # subscrube to iteration_finished event
         def iteration_finished(i_iteration):
-            n_iterations=App.get_context("n_generations") * App.get_config()["n_poolsize"]
+            n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
             i_iterations=App.get_context("i_iteration")
             self.infos["iteration"]=f"{i_iterations}/{n_iterations}"
             time_elapsed=time.time()-self.start_time
@@ -91,7 +91,7 @@ class EvolutionUI:
         pipeline_step += "/" + str(App.get_context("pipeline_length")) + ")"
         
         n_generations=App.get_context("n_generations")
-        n_iterations=App.get_context("n_generations") * App.get_config()["n_poolsize"]
+        n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
         i_iterations=App.get_context("i_iteration")
         loss=mutant.loss["loss"]
         self.infos={
