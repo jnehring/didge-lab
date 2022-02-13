@@ -12,7 +12,7 @@ import numpy as np
 from cad.calc.geo import Geo
 from cad.ui.evolution_ui import EvolutionUI
 from cad.calc.util.losslog import LossLog
-from cad.calc.util.cad_logger import CADLogger
+from cad.calc.util.cad_logger import LossCADLogger
 import logging
 
 try:
@@ -21,6 +21,8 @@ try:
     geo=[[0,32], [800,32], [900,38], [970,42], [1050, 40], [1180, 48], [1350, 60], [1390, 68], [1500, 72]]
     geo=Geo(geo)
     open_didge_balance=cadsd_octave_tonal_balance(geo)
+
+    losslogger=LossCADLogger()
 
     class MbeyaLoss(LossFunction):
 

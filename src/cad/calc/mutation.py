@@ -85,11 +85,6 @@ class MutationJob:
             mutant=self.father.copy()
             self.mutator.mutate(mutant)
             geo=mutant.make_geo()
-            context={
-                "mutator": self.mutator,
-                "pool_index": self.pool_index,
-                "father": self.father
-            }
             mutant_loss=self.loss.get_loss(geo)
             me=MutantPoolEntry(mutant, geo, mutant_loss)
             result_queue.put((me, self.pool_index))
@@ -137,10 +132,10 @@ class MutantPool:
 
     def get_best_loss(self):
         self.sort()
-        return self.pool[0].loss
+        return self.pool[0].loss["loss"]
 
     def get_mean_loss(self):
-        return np.mean([x.loss for x in self.pool])
+        return np.mean([x.loss["loss"] for x in self.pool])
 
     def get_best_entry(self):
         self.sort()
@@ -219,6 +214,7 @@ def evolve_explore(pool, loss, mutator, store_intermediates=""):
 
             if i_iteration == n_generation_size*pool.len():
                 i_iteration=0
+                App.publish("generation_ended", (i_generation, results))
                 i_generation+=1
                 App.publish("generation_started", (i_generation, results))
                 App.set_context("i_generation", i_generation)
@@ -313,5 +309,7 @@ def evolve_generations(pool, loss, mutator, store_intermediates=""):
         
         if store_intermediates != "":
             pickle.dump(pool, open(store_intermediates, "wb"))
+
+        App.publish("generation_ended", (i_generation, pool))
 
     return pool

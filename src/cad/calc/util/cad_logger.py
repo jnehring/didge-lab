@@ -21,14 +21,6 @@ class CADLogger:
 
     def log(self, entry):
 
-        if App.get_context("state") == "initializing":
-            return
-
-        entry["iteration"]=i_iterations=App.get_context("i_iteration")
-        entry["generation"]=App.context["i_generation"]
-        entry["pipeline_step"]=App.context["current_pipeline_step"]
-        entry["pipeline_step_name"]=App.context["pipeline_step_name"]
-
         CADLogger.lock.acquire()
         try:
             f=open(self.logfile, "a")
@@ -46,6 +38,30 @@ class CADLogger:
             CADLogger.logger=CADLogger.manager.dict()
             CADLogger.logger["value"]=CADLogger(filename)
         return CADLogger.logger["value"]
+
+class LossCADLogger():
+
+    def __init__(self):
+
+        def generation_ended(i_generation, mutant_pool):
+
+            entry={
+                "generation": i_generation,
+                "pipeline_step": App.context["current_pipeline_step"],
+                "pipeline_step_name": App.context["pipeline_step_name"]
+            }
+            for i in range(mutant_pool.len()):
+                mpe=mutant_pool.get(i)
+                for key, value in mpe.loss.items():
+                    entry[key]=value
+                entry["pool_index"]=i
+
+                CADLogger.get_logger().log(entry)
+            
+
+        App.subscribe("generation_ended", generation_ended)
+
+
 
 class CADLogReader:
 
