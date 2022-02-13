@@ -115,9 +115,8 @@ class MutationParameterSet(ABC):
                 self.immutable_parameters[i].maximum = max
                 return
         raise Exception("cannot find parameter \"" + name + "\"")
-            
-    def __repr__(self):
-
+    
+    def to_pandas(self):
         df={"name": [], "value": [], "min": [], "max": [], "mutable": []}
         for p in self.mutable_parameters + self.immutable_parameters:
 
@@ -130,7 +129,11 @@ class MutationParameterSet(ABC):
         df=pd.DataFrame(df)
         for c in ["value", "min", "max"]:
             df[c]=df[c].apply(lambda x : f"{x:.2f}")
+        return df
+        
+    def __repr__(self):
 
+        df=self.to_pandas()
         return str(df)
 
         #return type(self).__name__ + "\n * " + "\n * ".join(str(x) for x in self.mutable_parameters + self.immutable_parameters)

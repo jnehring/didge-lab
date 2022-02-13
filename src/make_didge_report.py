@@ -10,8 +10,11 @@ import matplotlib.pyplot as plt
 import json
 import pandas as pd
 
-def visualize_geo(geo, output_dir, index):
+def visualize_geo(mpe, output_dir, index):
 
+    geo=mpe.geo
+    parameters=mpe.parameterset
+    
     praefix=str(index) + "_"
     spektra=geo.cadsd.get_all_spektra_df()
 
@@ -40,54 +43,57 @@ def visualize_geo(geo, output_dir, index):
 
 
     # general info
-    tex += "\\subsection{General information}\n"
+    tex += "\\subsection{Shape}\n"
     tex += "\\begin{centering}\n"
     df=[]
+    loss=mpe.loss
     df.append(["length", geo.length()])
     df.append(["bell size", geo.geo[-1][1]])
     df.append(["number segments", len(geo.geo)])
+    df.append(["loss", f"{loss:.2f}"])
     df=pd.DataFrame(df)
 
     # didge picture
-    tex += '''
-\\begin{figure}[!htb]
-\\center{\\includegraphics[width=\\textwidth]
-{''' + praefix + '''didge.png}}
-\end{figure}
-'''
-
     tex += df.to_latex(index=False, header=False)
-    tex += "\\end{centering}\n"
-    #tex += "\n\\vspace{2em}"
 
+    tex += '''
+\\begin{figure}[h!]
+{\\includegraphics[width=\\textwidth]
+{''' + praefix + '''didge.png}}
+\\caption{Didge ''' + str(index+1) + '''}
+\\end{figure}
+\\end{centering}\n
+'''
     # notes table
     tex += "\\subsection{Tuning}\n"
     tex += "\\begin{centering}\n"
     tex += geo.cadsd.get_notes().to_latex(index=False)
     tex += "\\end{centering}\n"
     
-    # impedance, ground and overblow images
+    # parameter
+    tex += "\\subsection{Evolution Parameters}\n"
     tex += "\\begin{centering}\n"
+    tex += parameters.to_pandas().to_latex(index=False)
+    tex += "\\end{centering}\n"
+    #tex += "\n\\vspace{2em}"
+
+    # impedance, ground and overblow images
     tex += "\\subsection{Sound Spektra}\n"
     tex += '''
-\\begin{figure}[!htb]
-\\center{\\includegraphics[width=\\textwidth]
-{''' + praefix + '''impedance.png}}
-\end{figure}
+\\begin{figure}[h!]
+{\\includegraphics[width=100mm]
+{''' + str(index) + '''_impedance.png}
+\\caption{Impedance Spektrum ''' + str(index+1) + '''}}
+\\end{figure}
+\\begin{figure}[h!]
+      \\begin{tabular}{cc}[h!]
+            \\includegraphics[width=75mm]{''' + str(index) + '''_ground.png} &  
+            \\includegraphics[width=75mm]{''' + str(index) + '''_overblow} \\\\
+      \\end{tabular}
+\\caption{Spektra ''' + str(index+1) + '''}
+\\end{figure}
 '''
-    tex += '''
-\\begin{figure}[!htb]
-\\center{\\includegraphics[width=\\textwidth]
-{''' + praefix + '''ground.png}}
-\end{figure}
-'''
-    tex += '''
-\\begin{figure}[!htb]
-\\center{\\includegraphics[width=\\textwidth]
-{''' + praefix + '''overblow.png}}
-\end{figure}
-'''
-    tex += "\\end{centering}\n"
+
     return tex
 
 if __name__ == "__main__":
@@ -121,7 +127,7 @@ if __name__ == "__main__":
 
         for i in range(0, pool.len()):
             mpe=pool.get(i)
-            t=visualize_geo(mpe.geo, outdir, i)
+            t=visualize_geo(mpe, outdir, i)
             tex.write(t)
             pbar.update(1)
 
@@ -131,16 +137,3 @@ if __name__ == "__main__":
         os.chdir(outdir)
         os.system("pdflatex report")
 
-
-# from cad.ui.explorer import Explorer
-# from cad.calc.parameters import *
-# from cad.common.app import App
-# from cad.calc.mutation import *
-
-
-# pipeline="projects/pipelines/penta_didge/"
-# App.set_context("pipeline_dir", pipeline)
-
-# explorer=Explorer(pipeline)
-# explorer.load("1", 0)
-# explorer.start_ui()
