@@ -145,7 +145,7 @@ class App:
 
     @classmethod
     def log_exception(cls, e : Exception):
-        ctx=json.dumps(App.context)
+        ctx=json.dumps(App.context.copy())
         logging.error("An exception has occured. App context:\n" + ctx)
         logging.exception(e)
 

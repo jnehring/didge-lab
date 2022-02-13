@@ -54,18 +54,12 @@ try:
 
             final_loss=balance_loss + tuning_loss + n_note_loss
 
-            log={
-                "name": "loss",
+            return {
+                "loss": final_loss,
                 "balance_loss": balance_loss,
                 "tuning_loss": tuning_loss,
-                "n_note_loss": n_note_loss,
-                "final_loss": final_loss
+                "n_note_loss": n_note_loss
             }
-
-            if context is not None and "pool_index" in context:
-                log["mutant_pool_index"]=context["pool_index"]
-            CADLogger.get_logger().log(log)
-
             return final_loss
 
     loss=MbeyaLoss(open_didge_balance)    

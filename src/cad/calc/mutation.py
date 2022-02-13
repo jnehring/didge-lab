@@ -90,15 +90,15 @@ class MutationJob:
                 "pool_index": pool_index,
                 "father": father
             }
-            mutant_loss=self.loss.get_loss(geo, context)
+            mutant_loss=self.loss.get_loss(geo)
             me=MutantPoolEntry(mutant, geo, mutant_loss)
             result_queue.put((me, self.pool_index))
         except Exception as e:
             msg="error in cadsd while processing geo "
             if geo is not None:
                 msg += json.dumps(geo.geo)
-            logging.error(msg)
             App.log_exception(e)
+            logging.error(msg)
 
 class MutantPoolEntry:
 
@@ -133,7 +133,7 @@ class MutantPool:
         return pool
 
     def sort(self):
-        self.pool = sorted(self.pool, key=lambda x : x.loss)
+        self.pool = sorted(self.pool, key=lambda x : x.loss["loss"])
 
     def get_best_loss(self):
         self.sort()
@@ -204,7 +204,7 @@ def evolve_explore(pool, loss, mutator, store_intermediates=""):
     i_iteration=0
     i_generation=0
 
-    # collect results in order to update progress bar
+    # collect results to update progress bar
     finished_count=0
     while finished_count<n_threads:
         result=result_queue.get()
@@ -306,7 +306,7 @@ def evolve_generations(pool, loss, mutator, store_intermediates=""):
         new_pool=MutantPool()
         for index in range(pool_size):
             result_pool[index].append(pool.get(index))
-            result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss)
+            result_pool[index]=sorted(result_pool[index], key=lambda x : x.loss["loss"])
             new_pool.add_entry(result_pool[index][0])
 
         pool=new_pool

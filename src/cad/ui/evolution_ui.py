@@ -93,10 +93,11 @@ class EvolutionUI:
         n_generations=App.get_context("n_generations")
         n_iterations=App.get_context("n_generations") * App.get_config()["n_poolsize"]
         i_iterations=App.get_context("i_iteration")
+        loss=mutant.loss["loss"]
         self.infos={
             "iteration": f"{i_iterations}/{n_iterations}",
             "generation": f"{i_generation+1}/{n_generations}",
-            "loss": f"{mutant.loss:.2f}",
+            "loss": f"{loss:.2f}",
             "pipeline_step": pipeline_step,
             "pool size": App.get_config()["n_poolsize"],
             "didge length": f"{round(geo.geo[-1][0])}mm",

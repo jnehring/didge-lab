@@ -10,11 +10,11 @@ class LossFunction(ABC):
         pass
 
     @abstractmethod
-    def get_loss(self, geo, context=None) -> float:
+    def get_loss(self, geo):
         raise Exception("this is abstract so we should never reach this code")
 
     def __call__(self, geo, context=None):
-        return self.get_loss(geo, context)
+        return self.get_loss(geo)
 
 class TootTuningHelper():
 
@@ -47,20 +47,20 @@ class TootTuningHelper():
             deviations.append(abs(f1-f2))
         return deviations
 
-class PentaLossFunction(LossFunction):
+# class PentaLossFunction(LossFunction):
 
-    def __init__(self, scale=[0,3,5,7,10], fundamental=-31, n_peaks=5, octave=True):
-        self.scale=scale
-        self.fundamental=fundamental
-        self.n_peaks=n_peaks
-        self.octave=octave
+#     def __init__(self, scale=[0,3,5,7,10], fundamental=-31, n_peaks=5, octave=True):
+#         self.scale=scale
+#         self.fundamental=fundamental
+#         self.n_peaks=n_peaks
+#         self.octave=octave
 
-        self.toot_tuning=TootTuningHelper(scale, fundamental)
+#         self.toot_tuning=TootTuningHelper(scale, fundamental)
 
-    def get_loss(self, geo, context=None):
+#     def get_loss(self, geo, context=None):
         
-        tuning_deviations=self.toot_tuning.get_tuning_deviations(geo)
-        peaks=geo.get_cadsd().get_overblow_notes()
-        peaks["dev"]=tuning_deviations
-        print(peaks)
+#         tuning_deviations=self.toot_tuning.get_tuning_deviations(geo)
+#         peaks=geo.get_cadsd().get_overblow_notes()
+#         peaks["dev"]=tuning_deviations
+#         print(peaks)
     
