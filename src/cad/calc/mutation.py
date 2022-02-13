@@ -85,7 +85,12 @@ class MutationJob:
             mutant=self.father.copy()
             self.mutator.mutate(mutant)
             geo=mutant.make_geo()
-            mutant_loss=self.loss.get_loss(geo)
+            context={
+                "mutator": mutator,
+                "pool_index": pool_index,
+                "father": father
+            }
+            mutant_loss=self.loss.get_loss(geo, context)
             me=MutantPoolEntry(mutant, geo, mutant_loss)
             result_queue.put((me, self.pool_index))
         except Exception as e:

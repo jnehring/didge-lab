@@ -29,13 +29,13 @@ try:
             self.tuning_helper=TootTuningHelper([0,3,7, 10], -31)
             self.target_balance=target_balance
 
-        def get_loss(self, geo):
+        def get_loss(self, geo, context=None):
 
             tuning_deviations=self.tuning_helper.get_tuning_deviations(geo)
             tuning_deviations[0]*=2
             for i in range(len(tuning_deviations)):
                 tuning_deviations[i]*=tuning_deviations[i]
-            tuning_loss=sum(tuning_deviations)
+            tuning_loss=sum(tuning_deviations)*10
 
             n_notes=len(tuning_deviations)
             n_note_loss=0
@@ -61,6 +61,9 @@ try:
                 "n_note_loss": n_note_loss,
                 "final_loss": final_loss
             }
+
+            if context is not None and "pool_index" in context:
+                log["mutant_pool_index"]=context["pool_index"]
             CADLogger.get_logger().log(log)
 
             return final_loss

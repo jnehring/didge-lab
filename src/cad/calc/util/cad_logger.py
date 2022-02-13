@@ -77,7 +77,8 @@ class CADLogReader:
 
 if __name__ == "__main__":
 
-    df=CADLogReader(latest=True).to_dataframe()
+    infile="finished_evolutions/mbeya_0/cadlogger.log"
+    df=CADLogReader(logfile=infile).to_dataframe()
     sns.lineplot(data=df)
     plt.show()
     

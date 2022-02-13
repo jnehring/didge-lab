@@ -1,4 +1,6 @@
-import pyximport; pyximport.install()
+# python setup.py build_ext --inplace
+
+#import pyximport; pyximport.install()
 import cad.cadsd._cadsd as cadsd
 import numpy as np
 import pandas as pd

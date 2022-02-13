@@ -10,11 +10,11 @@ class LossFunction(ABC):
         pass
 
     @abstractmethod
-    def get_loss(self, geo) -> float:
-        pass
+    def get_loss(self, geo, context=None) -> float:
+        raise Exception("this is abstract so we should never reach this code")
 
-    def __call__(self, geo):
-        return self.get_loss(geo)
+    def __call__(self, geo, context=None):
+        return self.get_loss(geo, context)
 
 class TootTuningHelper():
 
@@ -57,7 +57,7 @@ class PentaLossFunction(LossFunction):
 
         self.toot_tuning=TootTuningHelper(scale, fundamental)
 
-    def get_loss(self, geo):
+    def get_loss(self, geo, context=None):
         
         tuning_deviations=self.toot_tuning.get_tuning_deviations(geo)
         peaks=geo.get_cadsd().get_overblow_notes()

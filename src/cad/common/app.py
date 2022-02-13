@@ -4,9 +4,9 @@ import json
 import sys
 import os
 from datetime import datetime
-import warnings
 from multiprocessing import Manager, Lock
-warnings.filterwarnings('error')
+#import warnings
+#warnings.filterwarnings('error')
 
 
 class App:
