@@ -158,7 +158,7 @@ class EvolutionUI:
                 try:
                     self.ui.start()
                     key=self.ui.wait_for_key()
-                    if key == None:
+                    if key is None:
                         break
                     key=chr(key)
                     self.ui.print(key + "\n")

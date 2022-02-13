@@ -4,7 +4,6 @@
 *.fft
 projects/
 log.txt
-finished_evolutions/*/report*
-finished_evolutions/*/*/report*
+finished_evolutions
 cad/cadsd/_cadsd.c
 output/
