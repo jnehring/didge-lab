@@ -86,9 +86,9 @@ class MutationJob:
             self.mutator.mutate(mutant)
             geo=mutant.make_geo()
             context={
-                "mutator": mutator,
-                "pool_index": pool_index,
-                "father": father
+                "mutator": self.mutator,
+                "pool_index": self.pool_index,
+                "father": self.father
             }
             mutant_loss=self.loss.get_loss(geo, context)
             me=MutantPoolEntry(mutant, geo, mutant_loss)
