@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 import os
 import pickle
 from cad.calc.loss import LossFunction
-from cad.calc.mutation import Mutator, evolve_generations, FinetuningMutator, MutantPoolEntry, evolve_explore
-from cad.calc.parameters import MutationParameterSet, FinetuningParameters
+from cad.calc.mutation import Mutator, evolve_generations, FinetuningMutator, MutantPoolEntry, evolve_explore, ExploringMutator
+from cad.calc.parameters import MutationParameterSet, FinetuningParameters, AddPointOptimizer
 from cad.common.app import App
 import logging
 from cad.calc.mutation import MutantPool
@@ -114,8 +114,8 @@ class ExplorePipelineStep(PipelineStep):
         return pool
 
 class FinetuningPipelineStep(PipelineStep):
-    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, n_generation_size=None):
-        super().__init__("FinetuningPipelineStep", n_generations, n_generation_size)
+    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, generation_size=None):
+        super().__init__("FinetuningPipelineStep", n_generations, generation_size)
         self.mutator=mutator
         self.loss=loss
 
@@ -143,6 +143,42 @@ class OptimizeGeoStep(PipelineStep):
         for i in range(0, pool.len()):
             geo=pool.get(i).geo
             param=FinetuningParameters(geo)
+            mpe=MutantPoolEntry(param, geo, pool.get(i).loss)
+            new_pool.add_entry(mpe)
+        pool=evolve_generations(new_pool, self.loss, mutator)
+        return pool
+
+class AddPointOptimizerExplore(PipelineStep):
+
+    def __init__(self, loss : LossFunction, n_generations=None, generation_size=None):
+        super().__init__("AddPointOptimizerExplore", n_generations, generation_size)
+        self.loss=loss
+
+    def execute(self,pool : MutantPool) -> MutantPool:
+
+        mutator=ExploringMutator()
+        new_pool=MutantPool()
+        for i in range(0, pool.len()):
+            geo=pool.get(i).geo
+            param=AddPointOptimizer(geo)
+            mpe=MutantPoolEntry(param, geo, pool.get(i).loss)
+            new_pool.add_entry(mpe)
+        pool=evolve_generations(new_pool, self.loss, mutator)
+        return pool
+
+class AddPointOptimizerFinetune(PipelineStep):
+
+    def __init__(self, loss : LossFunction, n_generations=None, generation_size=None):
+        super().__init__("AddPointOptimizerFinetune", n_generations, generation_size)
+        self.loss=loss
+
+    def execute(self,pool : MutantPool) -> MutantPool:
+
+        mutator=FinetuningMutator()
+        new_pool=MutantPool()
+        for i in range(0, pool.len()):
+            geo=pool.get(i).geo
+            param=AddPointOptimizer(geo)
             mpe=MutantPoolEntry(param, geo, pool.get(i).loss)
             new_pool.add_entry(mpe)
         pool=evolve_generations(new_pool, self.loss, mutator)

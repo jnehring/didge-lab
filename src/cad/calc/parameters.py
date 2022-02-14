@@ -794,3 +794,37 @@ class MbeyaShape(MutationParameterSet):
             shape=self.make_bubble(shape, pos, width, height)
 
         return Geo(shape)
+
+class AddPointOptimizer(MutationParameterSet):
+
+    def __init__(self, geo):
+        MutationParameterSet.__init__(self)
+
+        self.geo=geo
+        self.n_points=1
+        for i in range(self.n_points):
+            self.add_param("x" + str(i), 0, 1, value=0.5)
+            self.add_param("y" + str(i), 0.5, 1.5, value=1.0)
+
+    def make_geo(self):
+
+        new_geo=self.geo.copy()
+        for i in range(self.n_points):
+            x=self.get_value(f"x{i}")
+            x=new_geo.length()*x
+
+            has_point_at_x=False
+            for s in new_geo.geo:
+                if s[0]==x:
+                    has_point_at_x=True
+                    break
+            if has_point_at_x:
+                continue
+
+            y=geotools.diameter_at_x(new_geo, x)
+            y*=self.get_value(f"y{i}")
+
+            new_geo.geo.append([x,y])
+            new_geo.sort_segments()
+
+        return new_geo

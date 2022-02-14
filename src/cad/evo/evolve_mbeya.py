@@ -1,4 +1,4 @@
-from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep
+from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
 from cad.calc.parameters import MbeyaShape
@@ -74,8 +74,13 @@ try:
     pipeline=Pipeline()
 
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50))
-    pipeline.add_step(OptimizeGeoStep(loss, n_generations=100))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
+    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=50, generation_size=30))
+    pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=50, generation_size=30))
+    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=50, generation_size=30))
+    pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=50, generation_size=30))
+    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=50, generation_size=30))
+    pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=50, generation_size=30))
 
     ui=EvolutionUI()
 
