@@ -2,7 +2,7 @@ from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, Pi
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
 from cad.calc.parameters import MbeyaShape
-from cad.calc.loss import LossFunction, TootTuningHelper
+from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss
 import numpy as np
 from cad.calc.geo import geotools
 from cad.cadsd.cadsd import CADSD, cadsd_octave_tonal_balance
@@ -51,16 +51,19 @@ try:
             balance_loss=0
             balance=cadsd_octave_tonal_balance(geo)
 
+            d_loss = diameter_loss(geo)
+
             for i in range(len(balance)):
                 balance_loss += abs(balance[i]-self.target_balance[i])
 
-            final_loss=balance_loss + tuning_loss + n_note_loss
+            final_loss=balance_loss + tuning_loss + n_note_loss + d_loss
 
             return {
                 "loss": final_loss,
                 "balance_loss": balance_loss,
                 "tuning_loss": tuning_loss,
-                "n_note_loss": n_note_loss
+                "n_note_loss": n_note_loss,
+                "diameter_loss": d_loss
             }
             return final_loss
 

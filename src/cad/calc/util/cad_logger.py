@@ -6,6 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import logging
 from multiprocessing import Manager, Lock
+import argparse
 
 class CADLogger:
 
@@ -125,13 +126,15 @@ def loss_report(infile, outfile=None):
     if outfile is not None:
         plt.savefig(outfile)
     #plt.show()
-    plt.clf()
 
 
 if __name__ == "__main__":
 
-    infile="output/2022-02-13T16-50-34_default/cadlogger.log"
-    loss_report(infile)
+    parser = argparse.ArgumentParser(description='Inspect CAD Logger')
+    parser.add_argument('-infile', type=str, required=True, help='input file')
+    args = parser.parse_args()
+
+    loss_report(args.infile)
     plt.show()
     #.to_dataframe()
     #sns.lineplot(data=df)

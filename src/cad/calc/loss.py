@@ -47,6 +47,20 @@ class TootTuningHelper():
             deviations.append(abs(f1-f2))
         return deviations
 
+# add loss if the didge gets smaller
+def diameter_loss(geo: Geo):
+
+    shape=geo.geo
+    loss=0
+    for i in range(1, len(shape)):
+        delta_y=shape[i-1][1]-shape[i][1]
+        if delta_y < 0:
+            #l=shape[i][0]-shape[i-1][0]
+            loss+=-1*delta_y
+
+    loss*=0.005
+    return loss
+
 # class PentaLossFunction(LossFunction):
 
 #     def __init__(self, scale=[0,3,5,7,10], fundamental=-31, n_peaks=5, octave=True):
