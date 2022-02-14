@@ -9,6 +9,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import json
 import pandas as pd
+from cad.calc.util.cad_logger import loss_report
+from pathlib import Path
+import sys
 
 def visualize_geo(mpe, output_dir, index):
 
@@ -46,18 +49,19 @@ def visualize_geo(mpe, output_dir, index):
     tex += "\\subsection{Shape}\n"
     tex += "\\begin{centering}\n"
     df=[]
-    loss=mpe.loss
     df.append(["length", geo.length()])
     df.append(["bell size", geo.geo[-1][1]])
     df.append(["number segments", len(geo.geo)])
-    df.append(["loss", f"{loss:.2f}"])
+
+    for key, value in mpe.loss.items():
+        df.append([key, f"{value:.2f}"])
     df=pd.DataFrame(df)
 
     # didge picture
     tex += df.to_latex(index=False, header=False)
 
     tex += '''
-\\begin{figure}[h!]
+\\begin{figure}[!ht]
 {\\includegraphics[width=\\textwidth]
 {''' + praefix + '''didge.png}}
 \\caption{Didge ''' + str(index+1) + '''}
@@ -72,6 +76,8 @@ def visualize_geo(mpe, output_dir, index):
     
     # parameter
     tex += "\\subsection{Evolution Parameters}\n"
+    t=type(parameters)
+    tex += "\n" + t.__module__ + "." + t.__name__ + "\n\n"
     tex += "\\begin{centering}\n"
     tex += parameters.to_pandas().to_latex(index=False)
     tex += "\\end{centering}\n"
@@ -80,13 +86,13 @@ def visualize_geo(mpe, output_dir, index):
     # impedance, ground and overblow images
     tex += "\\subsection{Sound Spektra}\n"
     tex += '''
-\\begin{figure}[h!]
+\\begin{figure}[!ht]
 {\\includegraphics[width=100mm]
 {''' + str(index) + '''_impedance.png}
 \\caption{Impedance Spektrum ''' + str(index+1) + '''}}
 \\end{figure}
-\\begin{figure}[h!]
-      \\begin{tabular}{cc}[h!]
+\\begin{figure}[!ht]
+      \\begin{tabular}{cc}
             \\includegraphics[width=75mm]{''' + str(index) + '''_ground.png} &  
             \\includegraphics[width=75mm]{''' + str(index) + '''_overblow} \\\\
       \\end{tabular}
@@ -100,6 +106,7 @@ if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add('-infile', type=str, required=True, help='input file')
+    p.add('-limit', type=int, default=-1, help='limit to first n shapes')
     options = p.parse_args()
 
     f=open(options.infile, "rb")
@@ -114,9 +121,9 @@ if __name__ == "__main__":
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    with tqdm(total=pool.len()) as pbar:
-        tex=open(os.path.join(outdir, "report.tex"), "w")
-        tex.write('''\\documentclass{article}
+    # open tex file
+    tex=open(os.path.join(outdir, "report.tex"), "w")
+    tex.write('''\\documentclass{article}
 
 \\usepackage{graphicx}
 \\usepackage{booktabs} 
@@ -125,7 +132,28 @@ if __name__ == "__main__":
 
 ''')
 
-        for i in range(0, pool.len()):
+    # add loss report
+    cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
+    if os.path.exists(cad_report):
+        cad_report_outfile=os.path.join(outdir, "loss_report.png")
+        loss_report(cad_report, cad_report_outfile)
+
+        tex.write('''
+\\section{Loss Report}
+\\begin{centering}\n
+\\begin{figure}[!ht]
+{\\includegraphics[width=100mm]{loss_report.png}}
+\\caption{Loss Report}
+\\end{figure}
+\\end{centering}\n
+''')
+
+    total=pool.len()
+    if options.limit>0 and options.limit < pool.len():
+        total=options.limit
+    with tqdm(total=total) as pbar:
+
+        for i in range(0, total):
             mpe=pool.get(i)
             t=visualize_geo(mpe, outdir, i)
             tex.write(t)
@@ -134,6 +162,7 @@ if __name__ == "__main__":
         tex.write("\\end{document}")
         tex.close()
 
-        os.chdir(outdir)
-        os.system("pdflatex report")
+    # create pdf
+    os.chdir(outdir)
+    os.system("pdflatex report")
 

@@ -61,40 +61,79 @@ class LossCADLogger():
 
         App.subscribe("generation_ended", generation_ended)
 
+def logfile_to_dataframe(infile):
+    data=None
+    f=open(infile, "r")
+    for line in f.readlines():
+        j=json.loads(line)
+        if data is None:
+            data={}
+            for key in j.keys():
+                data[key]=[]
+        for key, value in j.items():
+            data[key].append(value)
+    f.close()
 
+    df=pd.DataFrame(data)
+    #df=df.dropna(subset=["iteration"])
+    return df
 
-class CADLogReader:
+def loss_report(infile, outfile=None):
+    df=logfile_to_dataframe(infile)
 
-    def __init__(self, logfile=None, latest=False):
+    # averages loss over all iterations
+    df["id"]=df.pipeline_step.astype(str) + "_" + df.generation.astype(str)
 
-        if latest==True:
-            fs=os.listdir(App.get_config()["output_folder"])
-            sorted(fs)
-            self.logfile=os.path.join(App.get_config()["output_folder"], fs[-1], CADLogger.filename)
-        else:
-            self.logfile=logfile
+    loss_columns=[]
+    for c in df.columns:
+        if c.find("loss")>=0:
+            loss_columns.append(c)
 
-    def to_dataframe(self):
-        data=None
-        f=open(self.logfile, "r")
-        for line in f.readlines():
-            j=json.loads(line)
-            if data is None:
-                data={}
-                for key in j.keys():
-                    data[key]=[]
-            for key, value in j.items():
-                data[key].append(value)
-        f.close()
+    new_df=[]
+    generation_counter=0
+    for id in df.id.unique():
+        subdf=df[df.id==id] 
 
-        df=pd.DataFrame(data)
-        df=df.dropna(subset=["iteration"])
-        return df
+        first_row=subdf.iloc[0]
+
+        row=[first_row["generation"],
+            generation_counter,
+            first_row["pipeline_step"],
+            first_row["pipeline_step_name"]]
+        for c in loss_columns:
+            row.append(subdf[c].mean())
+        new_df.append(row)
+        generation_counter+=1
+
+    new_columns=["generation", "accumulative_generation", "pipeline_step", "pipeline_step_name"]
+    new_columns.extend(loss_columns)
+    new_df=pd.DataFrame(new_df, columns=new_columns)
+    
+    plt.clf()
+    plt.plot(new_df.accumulative_generation, new_df[loss_columns])
+    plt.legend(loss_columns)
+    plt.xlabel("accumulated generation")
+    plt.ylabel("loss")
+
+    # add vertical lines
+    for step in new_df.pipeline_step_name.unique():
+        maxx=new_df[new_df.pipeline_step_name==step].accumulative_generation.max()
+
+        if maxx < new_df.accumulative_generation.max():
+            plt.axvline(x=maxx)
+
+    if outfile is not None:
+        plt.savefig(outfile)
+    #plt.show()
+    plt.clf()
+
 
 if __name__ == "__main__":
 
-    infile="finished_evolutions/mbeya_0/cadlogger.log"
-    df=CADLogReader(logfile=infile).to_dataframe()
-    sns.lineplot(data=df)
+    infile="output/2022-02-13T16-50-34_default/cadlogger.log"
+    loss_report(infile)
     plt.show()
+    #.to_dataframe()
+    #sns.lineplot(data=df)
+    #plt.show()
     
