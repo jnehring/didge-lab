@@ -117,8 +117,8 @@ def loss_report(infile, outfile=None):
     plt.ylabel("loss")
 
     # add vertical lines
-    for step in new_df.pipeline_step_name.unique():
-        maxx=new_df[new_df.pipeline_step_name==step].accumulative_generation.max()
+    for step in new_df.pipeline_step.unique():
+        maxx=new_df[new_df.pipeline_step==step].accumulative_generation.max()
 
         if maxx < new_df.accumulative_generation.max():
             plt.axvline(x=maxx)
