@@ -51,7 +51,7 @@ try:
             balance_loss=0
             balance=cadsd_octave_tonal_balance(geo)
 
-            d_loss = diameter_loss(geo)
+            d_loss = diameter_loss(geo)*0.1
 
             for i in range(len(balance)):
                 balance_loss += abs(balance[i]-self.target_balance[i])
