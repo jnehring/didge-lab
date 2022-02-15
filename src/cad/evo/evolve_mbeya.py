@@ -37,7 +37,7 @@ try:
             tuning_deviations[0]*=2
             for i in range(len(tuning_deviations)):
                 tuning_deviations[i]*=tuning_deviations[i]
-            tuning_loss=sum(tuning_deviations)*10
+            tuning_loss=sum(tuning_deviations)*100
 
             n_notes=len(tuning_deviations)
             n_note_loss=0
@@ -56,11 +56,20 @@ try:
             for i in range(len(balance)):
                 balance_loss += abs(balance[i]-self.target_balance[i])
 
-            final_loss=balance_loss + tuning_loss + n_note_loss + d_loss
+            # final_loss=balance_loss + tuning_loss + n_note_loss + d_loss
+
+            # return {
+            #     "loss": final_loss,
+            #     "balance_loss": balance_loss,
+            #     "tuning_loss": tuning_loss,
+            #     "n_note_loss": n_note_loss,
+            #     "diameter_loss": d_loss
+            # }            
+            
+            final_loss=tuning_loss + n_note_loss + d_loss
 
             return {
                 "loss": final_loss,
-                "balance_loss": balance_loss,
                 "tuning_loss": tuning_loss,
                 "n_note_loss": n_note_loss,
                 "diameter_loss": d_loss
@@ -75,12 +84,14 @@ try:
 
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
-    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=50, generation_size=30))
-    pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=50, generation_size=30))
-    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=50, generation_size=30))
-    pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=50, generation_size=30))
-    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=50, generation_size=30))
-    pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=50, generation_size=30))
+
+    for i in range(10):
+        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 
     ui=EvolutionUI()
 

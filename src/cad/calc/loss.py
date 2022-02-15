@@ -3,6 +3,7 @@ from cad.calc.geo import Geo
 from cad.cadsd.cadsd import CADSD
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 import math
+import numpy as np
 
 class LossFunction(ABC):
 
@@ -44,7 +45,7 @@ class TootTuningHelper():
             f2=min(self.scale_frequencies, key=lambda x:abs(x-f1))
             f1=math.log(f1, 2)
             f2=math.log(f2, 2)
-            deviations.append(abs(f1-f2))
+            deviations.append(np.sqrt(abs(f1-f2)))
         return deviations
 
 # add loss if the didge gets smaller
