@@ -2,7 +2,7 @@ from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, Pi
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
 from cad.calc.parameters import MbeyaShape
-from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss
+from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss
 import numpy as np
 from cad.calc.geo import geotools
 from cad.cadsd.cadsd import CADSD, cadsd_octave_tonal_balance
@@ -33,11 +33,13 @@ try:
 
         def get_loss(self, geo, context=None):
 
+            fundamental=single_note_loss(-31, geo)*4
+            octave=single_note_loss(-19, geo, i_note=1)
+
             tuning_deviations=self.tuning_helper.get_tuning_deviations(geo)
-            tuning_deviations[0]*=2
             for i in range(len(tuning_deviations)):
                 tuning_deviations[i]*=tuning_deviations[i]
-            tuning_loss=sum(tuning_deviations)*100
+            tuning_loss=sum(tuning_deviations)*5
 
             n_notes=len(tuning_deviations)
             n_note_loss=0
@@ -66,13 +68,15 @@ try:
             #     "diameter_loss": d_loss
             # }            
             
-            final_loss=tuning_loss + n_note_loss + d_loss
+            final_loss=tuning_loss + n_note_loss + d_loss + fundamental + octave
 
             return {
                 "loss": final_loss,
                 "tuning_loss": tuning_loss,
                 "n_note_loss": n_note_loss,
-                "diameter_loss": d_loss
+                "diameter_loss": d_loss,
+                "fundamental_loss": fundamental,
+                "octave_loss": octave
             }
             return final_loss
 

@@ -17,6 +17,16 @@ class LossFunction(ABC):
     def __call__(self, geo, context=None):
         return self.get_loss(geo)
 
+def single_note_loss(note, geo, i_note=0, filter_rel_imp=0.1):
+    peaks=geo.get_cadsd().get_notes()
+    peaks=peaks[peaks.rel_imp>filter_rel_imp]
+    if len(peaks)<=i_note:
+        return 1000000
+    f_target=note_to_freq(note)
+    f_fundamental=peaks.iloc[i_note]["freq"]
+    return np.sqrt(abs(math.log(f_target, 2)-math.log(f_fundamental, 2)))
+
+
 class TootTuningHelper():
 
     def __init__(self, scale, fundamental, filter_rel_imp=0.1):

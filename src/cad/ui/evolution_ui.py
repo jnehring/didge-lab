@@ -93,11 +93,9 @@ class EvolutionUI:
         n_generations=App.get_context("n_generations")
         n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
         i_iterations=App.get_context("i_iteration")
-        loss=mutant.loss["loss"]
         self.infos={
             "iteration": f"{i_iterations}/{n_iterations}",
             "generation": f"{i_generation+1}/{n_generations}",
-            "loss": f"{loss:.2f}",
             "pipeline step": pipeline_step,
             "pool size": App.get_config()["n_poolsize"],
             "didge length": f"{round(geo.geo[-1][0])}mm",
@@ -107,6 +105,8 @@ class EvolutionUI:
             "n_generation_size": App.get_context("n_generation_size"),
             "n_poolsize": App.get_context("n_poolsize")
         }
+        for key, value in mutant.loss.items():
+            self.infos[key]=f"{value:.2f}"
         self.info_window.update_dict(self.infos)
 
         self.peak_window.set_peak(mutant.geo.get_cadsd().get_notes().copy())
