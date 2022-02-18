@@ -17,6 +17,7 @@ class CADSD():
         self.notes=None
         self.highres_impedance_spektrum=None
         self.all_spektra_df=None
+        self.ground_peaks=None
 
         self.sound_spektra=None
         self.fmax=800
@@ -77,6 +78,13 @@ class CADSD():
         self.highres_impedance_spektrum=pd.concat((df1, spektrum), ignore_index=True).sort_values("freq")
         return self.highres_impedance_spektrum
 
+    def get_ground_peaks(self):
+        if self.ground_peaks is not None:
+            return self.ground_peaks
+        ground=self.get_all_spektra_df()
+        self.ground_peaks=ground.iloc[argrelextrema(ground.impedance.values, np.greater_equal)[0]].copy()
+        return self.ground_peaks
+        
     def get_notes(self):        
 
         if self.notes is not None:

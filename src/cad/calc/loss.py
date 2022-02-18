@@ -52,11 +52,18 @@ class TootTuningHelper():
         peaks=peaks[peaks.rel_imp>self.filter_rel_imp]
         deviations=[]
         for f1 in peaks.freq:
-            f2=min(self.scale_frequencies, key=lambda x:abs(x-f1))
-            f1=math.log(f1, 2)
-            f2=math.log(f2, 2)
-            deviations.append(np.sqrt(abs(f1-f2)))
+            deviations.append(self.get_tuning_deviation_freq(f1))
+            # f2=min(self.scale_frequencies, key=lambda x:abs(x-f1))
+            # f1=math.log(f1, 2)
+            # f2=math.log(f2, 2)
+            # deviations.append(np.sqrt(abs(f1-f2)))
         return deviations
+    
+    def get_tuning_deviation_freq(self, freq):
+        f2=min(self.scale_frequencies, key=lambda x:abs(x-freq))
+        freq=math.log(freq, 2)
+        f2=math.log(f2, 2)
+        return np.sqrt(abs(freq-f2))
 
 # add loss if the didge gets smaller
 def diameter_loss(geo: Geo):
