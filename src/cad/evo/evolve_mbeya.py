@@ -44,11 +44,15 @@ try:
             n_notes=len(tuning_deviations)
             n_note_loss=0
             if n_notes<3:
-                n_note_loss=0.1
+                n_note_loss=0
             elif n_notes==4:
                 n_note_loss=-0.1
-            elif n_notes>4:
+            elif n_notes==5:
+                n_note_loss=-0.15
+            elif n_notes>5:
                 n_note_loss=-0.2
+            elif n_notes>6:
+                n_note_loss=-0.25
 
             balance_loss=0
             balance=cadsd_octave_tonal_balance(geo)
@@ -68,7 +72,7 @@ try:
             #     "diameter_loss": d_loss
             # }            
             
-            final_loss=tuning_loss + n_note_loss + d_loss + fundamental + octave
+            final_loss=tuning_loss + n_note_loss + d_loss + fundamental + octave + balance_loss
 
             return {
                 "loss": final_loss,
@@ -76,7 +80,8 @@ try:
                 "n_note_loss": n_note_loss,
                 "diameter_loss": d_loss,
                 "fundamental_loss": fundamental,
-                "octave_loss": octave
+                "octave_loss": octave,
+                "balance_loss": balance_loss
             }
             return final_loss
 
