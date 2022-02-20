@@ -13,11 +13,8 @@ from cad.calc.util.cad_logger import loss_report
 from pathlib import Path
 import sys
 
-def visualize_geo(mpe, output_dir, index):
+def visualize_geo(geo, output_dir, index, parameters=None):
 
-    geo=mpe.geo
-    parameters=mpe.parameterset
-    
     praefix=str(index) + "_"
     spektra=geo.cadsd.get_all_spektra_df()
 
@@ -73,14 +70,15 @@ def visualize_geo(mpe, output_dir, index):
     tex += "\\begin{centering}\n"
     tex += geo.cadsd.get_notes().to_latex(index=False)
     tex += "\\end{centering}\n"
-    
-    # parameter
-    tex += "\\subsection{Evolution Parameters}\n"
-    t=type(parameters)
-    tex += "\n" + t.__module__ + "." + t.__name__ + "\n\n"
-    tex += "\\begin{centering}\n"
-    tex += parameters.to_pandas().to_latex(index=False)
-    tex += "\\end{centering}\n"
+
+    if parameters is not None:
+        # parameter
+        tex += "\\subsection{Evolution Parameters}\n"
+        t=type(parameters)
+        tex += "\n" + t.__module__ + "." + t.__name__ + "\n\n"
+        tex += "\\begin{centering}\n"
+        tex += parameters.to_pandas().to_latex(index=False)
+        tex += "\\end{centering}\n"
     #tex += "\n\\vspace{2em}"
 
     # impedance, ground and overblow images
@@ -102,6 +100,54 @@ def visualize_geo(mpe, output_dir, index):
 
     return tex
 
+def didge_report(geos, output_dir, cad_report=None, parameters=None):
+
+    if parameters is not None:
+        assert(len(geos) == len(parameters))
+
+    # open tex file
+    tex=open(os.path.join(outdir, "report.tex"), "w")
+    tex.write('''\\documentclass{article}
+
+\\usepackage{graphicx}
+\\usepackage{booktabs} 
+
+\\begin{document}
+
+''')
+
+    if cad_report is not None:
+        # add loss report
+        if os.path.exists(cad_report):
+            cad_report_outfile=os.path.join(outdir, "loss_report.png")
+            loss_report(cad_report, cad_report_outfile)
+
+            tex.write('''
+    \\section{Loss Report}
+    \\begin{centering}\n
+    \\begin{figure}[!ht]
+    {\\includegraphics[width=100mm]{loss_report.png}}
+    \\caption{Loss Report}
+    \\end{figure}
+    \\end{centering}\n
+    ''')
+
+    with tqdm(total=len(geos)) as pbar:
+
+        for i in range(0, len(geos)):
+            p = parameters[i] if parameters is not None else None
+            t=visualize_geo(geos[i], outdir, i, parameters=p)
+            tex.write(t)
+            pbar.update(1)
+
+        tex.write("\\end{document}")
+        tex.close()
+
+    # create pdf
+    os.chdir(outdir)
+    os.system("pdflatex report")
+
+
 if __name__ == "__main__":
 
     p = configargparse.ArgParser()
@@ -121,48 +167,18 @@ if __name__ == "__main__":
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    # open tex file
-    tex=open(os.path.join(outdir, "report.tex"), "w")
-    tex.write('''\\documentclass{article}
-
-\\usepackage{graphicx}
-\\usepackage{booktabs} 
-
-\\begin{document}
-
-''')
-
-    # add loss report
     cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
-    if os.path.exists(cad_report):
-        cad_report_outfile=os.path.join(outdir, "loss_report.png")
-        loss_report(cad_report, cad_report_outfile)
 
-        tex.write('''
-\\section{Loss Report}
-\\begin{centering}\n
-\\begin{figure}[!ht]
-{\\includegraphics[width=100mm]{loss_report.png}}
-\\caption{Loss Report}
-\\end{figure}
-\\end{centering}\n
-''')
+    geos=[]
+    parameters=[]
 
     total=pool.len()
     if options.limit>0 and options.limit < pool.len():
         total=options.limit
-    with tqdm(total=total) as pbar:
 
-        for i in range(0, total):
-            mpe=pool.get(i)
-            t=visualize_geo(mpe, outdir, i)
-            tex.write(t)
-            pbar.update(1)
+    for i in range(total):
+        mpe=pool.get(i)
+        geos.append(mpe.geo)
+        parameters.append(mpe.parameterset)
 
-        tex.write("\\end{document}")
-        tex.close()
-
-    # create pdf
-    os.chdir(outdir)
-    os.system("pdflatex report")
-
+    didge_report(geos, outdir, cad_report, parameters=parameters)
