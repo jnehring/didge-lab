@@ -50,13 +50,17 @@ try:
             base_peak=ground_peaks[ground_peaks.freq==ground_peaks.freq.min()].iloc[0]["impedance"]
             singer_peaks=ground_peaks[(ground_peaks.freq>450) & (ground_peaks.freq<=800)]
 
-            singer_volume_loss=-5*min(len(singer_peaks), 2)
-            singer_tuning_loss=-5*min(len(singer_peaks), 2)
+            if len(singer_peaks)<2:
+                singer_volume_loss==-10
+                singer_tuning_loss==-10
+            else:
+                singer_tuning_loss=0
+                singer_volume_loss=0
 
             imp=0
             if len(singer_peaks)>2:
                 imp=list(singer_peaks.impedance.sort_values())[-2]
-    
+
             singer_peaks=singer_peaks[singer_peaks.impedance>=imp].copy()
             singer_peaks["rel_imp"]=singer_peaks.impedance/base_peak
             
@@ -64,6 +68,9 @@ try:
                 freq=row["freq"]
                 singer_tuning_loss += self.tuning_helper.get_tuning_deviation_freq(freq)/2
                 singer_volume_loss += -1*row["rel_imp"]
+
+            singer_tuning_loss*=3
+            singer_volume_loss*=5
 
             final_loss=tuning_loss + d_loss + fundamental + octave + singer_volume_loss + singer_tuning_loss
 

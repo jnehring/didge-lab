@@ -13,26 +13,33 @@ from cad.calc.util.cad_logger import loss_report
 from pathlib import Path
 import sys
 
-def visualize_geo(geo, output_dir, index, parameters=None):
+# possible values for contents: all,impedance,spektra,parameters,notes,general
+def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents="all", notes=None):
 
     praefix=str(index) + "_"
     spektra=geo.cadsd.get_all_spektra_df()
 
-    plt.clf()
-    sns.lineplot(data=spektra, x="freq", y="impedance").set_title("Impedance")
-    plt.savefig(os.path.join(output_dir, praefix + "impedance.png"))
+    def in_contents(what):
+        return contents == "all" or contents.find(what)>=0
 
-    plt.clf()
-    sns.lineplot(data=spektra, x="freq", y="ground").set_title("Ground Tone Spektrum")
-    plt.savefig(os.path.join(output_dir, praefix + "ground.png"))
+    if in_contents("impedance"):
+        plt.clf()
+        sns.lineplot(data=spektra, x="freq", y="impedance").set_title("Impedance")
+        plt.savefig(os.path.join(output_dir, praefix + "impedance.png"))
 
-    plt.clf()
-    sns.lineplot(data=spektra, x="freq", y="overblow").set_title("1st Overblow Spektrum")
-    plt.savefig(os.path.join(output_dir, praefix + "overblow.png"))
+    if in_contents("spektra"):
+        plt.clf()
+        sns.lineplot(data=spektra, x="freq", y="ground").set_title("Ground Tone Spektrum")
+        plt.savefig(os.path.join(output_dir, praefix + "ground.png"))
 
-    plt.clf()
-    DidgeVisualizer.vis_didge(geo)
-    plt.savefig(os.path.join(output_dir, praefix + "didge.png"))
+        plt.clf()
+        sns.lineplot(data=spektra, x="freq", y="overblow").set_title("1st Overblow Spektrum")
+        plt.savefig(os.path.join(output_dir, praefix + "overblow.png"))
+
+    if in_contents("geo"):
+        plt.clf()
+        DidgeVisualizer.vis_didge(geo)
+        plt.savefig(os.path.join(output_dir, praefix + "didge.png"))
 
     f=open(os.path.join(output_dir, praefix + "geo.txt"), "w")
     f.write(json.dumps(geo.geo))
@@ -41,37 +48,41 @@ def visualize_geo(geo, output_dir, index, parameters=None):
     # heading
     tex = "\\section{Didge Report No " + str(index) + "}\n\n"
 
-
     # general info
-    tex += "\\subsection{Shape}\n"
-    tex += "\\begin{centering}\n"
-    df=[]
-    df.append(["length", geo.length()])
-    df.append(["bell size", geo.geo[-1][1]])
-    df.append(["number segments", len(geo.geo)])
+    if in_contents("general"):
+        tex += "\\subsection{Shape}\n"
+        tex += "\\begin{centering}\n"
+        df=[]
+        df.append(["length", geo.length()])
+        df.append(["bell size", geo.geo[-1][1]])
+        df.append(["number segments", len(geo.geo)])
 
-    for key, value in mpe.loss.items():
-        df.append([key, f"{value:.2f}"])
-    df=pd.DataFrame(df)
-
-    # didge picture
-    tex += df.to_latex(index=False, header=False)
-
-    tex += '''
-\\begin{figure}[!ht]
+        if losses is not None:
+            for key, value in losses.items():
+                df.append([key, f"{value:.2f}"])
+        df=pd.DataFrame(df)
+        tex += df.to_latex(index=False, header=False)
+        tex += "\\end{centering}\n\n"
+        # didge picture
+    if in_contents("geo"):
+        tex += '''
+\\begin{centering}
+\\begin{figure}[!h]
 {\\includegraphics[width=\\textwidth]
 {''' + praefix + '''didge.png}}
 \\caption{Didge ''' + str(index+1) + '''}
 \\end{figure}
 \\end{centering}\n
 '''
-    # notes table
-    tex += "\\subsection{Tuning}\n"
-    tex += "\\begin{centering}\n"
-    tex += geo.cadsd.get_notes().to_latex(index=False)
-    tex += "\\end{centering}\n"
 
-    if parameters is not None:
+    if in_contents("notes"):
+        # notes table
+        tex += "\\subsection{Tuning}\n"
+        tex += "\\begin{centering}\n"
+        tex += geo.cadsd.get_notes().to_latex(index=False)
+        tex += "\\end{centering}\n"
+
+    if in_contents("parameters") and parameters is not None:
         # parameter
         tex += "\\subsection{Evolution Parameters}\n"
         t=type(parameters)
@@ -79,28 +90,32 @@ def visualize_geo(geo, output_dir, index, parameters=None):
         tex += "\\begin{centering}\n"
         tex += parameters.to_pandas().to_latex(index=False)
         tex += "\\end{centering}\n"
-    #tex += "\n\\vspace{2em}"
 
-    # impedance, ground and overblow images
-    tex += "\\subsection{Sound Spektra}\n"
-    tex += '''
-\\begin{figure}[!ht]
-{\\includegraphics[width=100mm]
-{''' + str(index) + '''_impedance.png}
-\\caption{Impedance Spektrum ''' + str(index+1) + '''}}
-\\end{figure}
-\\begin{figure}[!ht]
-      \\begin{tabular}{cc}
-            \\includegraphics[width=75mm]{''' + str(index) + '''_ground.png} &  
-            \\includegraphics[width=75mm]{''' + str(index) + '''_overblow} \\\\
-      \\end{tabular}
-\\caption{Spektra ''' + str(index+1) + '''}
-\\end{figure}
-'''
+    if in_contents("impedance"):
+        # impedance, ground and overblow images
+        tex += "\\subsection{Sound Spektra}\n"
+        tex += '''
+    \\begin{figure}[!h]
+    {\\includegraphics[width=100mm]
+    {''' + str(index) + '''_impedance.png}
+    \\caption{Impedance Spektrum ''' + str(index+1) + '''}}
+    \\end{figure}'''
+
+    if in_contents("spektra"):
+
+        tex += '''
+    \\begin{figure}[!h]
+        \\begin{tabular}{cc}
+                \\includegraphics[width=75mm]{''' + str(index) + '''_ground.png} &  
+                \\includegraphics[width=75mm]{''' + str(index) + '''_overblow} \\\\
+        \\end{tabular}
+    \\caption{Spektra ''' + str(index+1) + '''}
+    \\end{figure}
+    '''
 
     return tex
 
-def didge_report(geos, output_dir, cad_report=None, parameters=None):
+def didge_report(geos, outdir, cad_report=None, parameters=None, losses=None, contents="all", notes=None):
 
     if parameters is not None:
         assert(len(geos) == len(parameters))
@@ -111,6 +126,7 @@ def didge_report(geos, output_dir, cad_report=None, parameters=None):
 
 \\usepackage{graphicx}
 \\usepackage{booktabs} 
+\\usepackage[section]{placeins}
 
 \\begin{document}
 
@@ -136,7 +152,8 @@ def didge_report(geos, output_dir, cad_report=None, parameters=None):
 
         for i in range(0, len(geos)):
             p = parameters[i] if parameters is not None else None
-            t=visualize_geo(geos[i], outdir, i, parameters=p)
+            l = losses[i] if losses is not None else None
+            t=visualize_geo(geos[i], outdir, i, parameters=p, losses=l, contents=contents, notes=notes)
             tex.write(t)
             pbar.update(1)
 
@@ -144,9 +161,10 @@ def didge_report(geos, output_dir, cad_report=None, parameters=None):
         tex.close()
 
     # create pdf
+    current_dir=os.path.abspath(".")
     os.chdir(outdir)
     os.system("pdflatex report")
-
+    os.chdir(current_dir)
 
 if __name__ == "__main__":
 
@@ -171,6 +189,7 @@ if __name__ == "__main__":
 
     geos=[]
     parameters=[]
+    losses=[]
 
     total=pool.len()
     if options.limit>0 and options.limit < pool.len():
@@ -179,6 +198,7 @@ if __name__ == "__main__":
     for i in range(total):
         mpe=pool.get(i)
         geos.append(mpe.geo)
+        losses.append(mpe.loss)
         parameters.append(mpe.parameterset)
 
-    didge_report(geos, outdir, cad_report, parameters=parameters)
+    didge_report(geos, outdir, cad_report, parameters=parameters, losses=losses)
