@@ -80,12 +80,13 @@ try:
 
     loss=MatemaLoss()    
 
-    # l=loss.get_loss(geo)
-    # print(json.dumps(l, indent=4))
-    # sys.exit(0)
+    shape=MbeyaShape(n_bubbles=2, add_bubble_prob=0.4)
 
-    father=MbeyaShape()
-    initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
+    shape.set_minmax("opening_factor_y", 1.5, 2.0)
+    shape.set_minmax("d_pre_bell", 0, 10)
+    shape.set_minmax("bellsize", 3, 20)
+
+    initial_pool=MutantPool.create_from_father(shape, App.get_config()["n_poolsize"], loss)
 
     pipeline=Pipeline()
 

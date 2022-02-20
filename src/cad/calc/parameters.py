@@ -679,10 +679,13 @@ class IringaShape(MutationParameterSet):
 
 class MbeyaShape(MutationParameterSet):
 
-    def __init__(self):
+    def __init__(self, n_bubbles=1, add_bubble_prob=0.7):
         MutationParameterSet.__init__(self)
 
         self.d1=32
+        self.add_bubble_prob=add_bubble_prob
+        self.n_bubbles=n_bubbles
+
         # straight part
         self.add_param("l_gerade", 500, 1500)
         self.add_param("d_gerade", 0.9, 1.2)
@@ -699,10 +702,11 @@ class MbeyaShape(MutationParameterSet):
         self.add_param("bellsize", 5, 30)
 
         # bubble
-        self.add_param("add_bubble", 0, 1)
-        self.add_param("bubble_height", 0, 1)
-        self.add_param("bubble_pos", 0, 1)
-        self.add_param("bubble_width", 0, 300)
+        for i in range(self.n_bubbles):
+            self.add_param(f"add_bubble_{i}", 0, 1)
+            self.add_param(f"bubble_height_{i}", 0, 1)
+            self.add_param(f"bubble_pos_{i}", 0, 1)
+            self.add_param(f"bubble_width_{i}", 0, 300)
 
     def make_bubble(self, shape, pos, width, height):
 
@@ -783,15 +787,16 @@ class MbeyaShape(MutationParameterSet):
         shape.append(p)
 
         # add bubble
-        if self.get_value("add_bubble")>0.7:
-            pos=shape[-1][0]*self.get_value("bubble_pos")
-            width=self.get_value("bubble_width")
-            height=self.get_value("bubble_height")
-            if pos-width/2<-10:
-                pos=width/2 + 10
-            if pos+width/2+10>shape[-1][0]:
-                pos=shape[-1][0]-width/2 - 10
-            shape=self.make_bubble(shape, pos, width, height)
+        for i in range(self.n_bubbles):
+            if self.get_value(f"add_bubble_{i}")>self.add_bubble_prob:
+                pos=shape[-1][0]*self.get_value(f"bubble_pos_{i}")
+                width=self.get_value(f"bubble_width_{i}")
+                height=self.get_value(f"bubble_height_{i}")
+                if pos-width/2<-10:
+                    pos=width/2 + 10
+                if pos+width/2+10>shape[-1][0]:
+                    pos=shape[-1][0]-width/2 - 10
+                shape=self.make_bubble(shape, pos, width, height)
 
         return Geo(shape)
 
