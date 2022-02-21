@@ -35,7 +35,7 @@ try:
         def get_loss(self, geo, context=None):
             
             fundamental=single_note_loss(-31, geo)*4
-            octave=single_note_loss(-19, geo, i_note=1)
+            #octave=single_note_loss(-19, geo, i_note=1)
 
             tuning_deviations=self.tuning_helper.get_tuning_deviations(geo)
             for i in range(len(tuning_deviations)):
@@ -51,8 +51,8 @@ try:
             singer_peaks=ground_peaks[(ground_peaks.freq>450) & (ground_peaks.freq<=800)]
 
             if len(singer_peaks)<2:
-                singer_volume_loss==-10
-                singer_tuning_loss==-10
+                singer_volume_loss=10
+                singer_tuning_loss=10
             else:
                 singer_tuning_loss=0
                 singer_volume_loss=0
@@ -67,19 +67,19 @@ try:
             for ix, row in singer_peaks.iterrows():
                 freq=row["freq"]
                 singer_tuning_loss += self.tuning_helper.get_tuning_deviation_freq(freq)/2
-                singer_volume_loss += -1*row["rel_imp"]
+                singer_volume_loss += -1*min(row["rel_imp"],2)
 
-            singer_tuning_loss*=3
-            singer_volume_loss*=5
+            singer_tuning_loss*=4
+            singer_volume_loss*=4
 
-            final_loss=tuning_loss + d_loss + fundamental + octave + singer_volume_loss + singer_tuning_loss
+            final_loss=tuning_loss + d_loss + fundamental + singer_volume_loss + singer_tuning_loss
 
             return {
                 "loss": final_loss,
                 "tuning_loss": tuning_loss,
                 "diameter_loss": d_loss,
                 "fundamental_loss": fundamental,
-                "octave_loss": octave,
+                #"octave_loss": octave,
                 "singer_volume_loss": singer_volume_loss,
                 "singer_tuning_loss": singer_tuning_loss
             }
