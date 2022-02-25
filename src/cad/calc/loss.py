@@ -26,17 +26,47 @@ def single_note_loss(note, geo, i_note=0, filter_rel_imp=0.1):
     f_fundamental=peaks.iloc[i_note]["freq"]
     return np.sqrt(abs(math.log(f_target, 2)-math.log(f_fundamental, 2)))
 
+class ImpedanceVolumeLoss():
+
+    def __init__(self, min_freq=None, max_freq=None, num_peaks=None, target_volume=1e7):
+        self.min_freq=min_freq
+        self.max_freq=max_freq
+        self.num_peaks=num_peaks
+        self.target_volume=target_volume
+
+    def get_loss(self, geo):
+        peaks=geo.get_cadsd().get_notes()
+
+        if self.min_freq is not None:
+            peaks=peaks[(peaks.freq>=self.min_freq)]
+        if self.max_freq is not None:
+            peaks=peaks[(peaks.freq<=self.max_freq)]
+            
+        if self.num_peaks is not None:
+            if len(peaks)<self.num_peaks:
+                return 10
+            else:
+                peaks=peaks.loc[peaks.sort_values(by=["impedance"]).impedance[-1*self.num_peaks:].index]
+        
+        volume_loss=0
+        for imp in peaks.impedance:
+            imp=-1*(1-imp/self.target_volume)
+            volume_loss+=imp
+        return volume_loss
 
 class TootTuningHelper():
 
     def __init__(self, scale=None, fundamental=None, filter_rel_imp=0.1, frequencies=None, min_freq=None, max_freq=None):
 
+        self.filter_rel_imp=filter_rel_imp
+        self.min_freq=min_freq
+        self.max_freq=max_freq
+        self.min_freq=min_freq
+        self.max_freq=max_freq
+
         if scale is not None and fundamental is not None:
             self.scale=scale
             self.fundamental=fundamental
-            self.filter_rel_imp=filter_rel_imp
-            self.min_freq=min_freq
-            self.max_freq=max_freq
 
             self.scale_note_numbers=[]
             for i in range(len(scale)):

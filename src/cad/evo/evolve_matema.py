@@ -4,7 +4,7 @@ from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, Pi
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
 from cad.calc.parameters import MbeyaShape
-from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss
+from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss, ImpedanceVolumeLoss
 import numpy as np
 from cad.calc.geo import geotools
 from cad.cadsd.cadsd import CADSD, cadsd_octave_tonal_balance
@@ -39,6 +39,10 @@ try:
             self.singer_tuning_helper=TootTuningHelper(frequencies=frequencies, filter_rel_imp=0.9, min_freq=350)
             self.toot_tuning_helper=TootTuningHelper(fundamental=-31, scale=[0,3,7,10], filter_rel_imp=0.9, max_freq=350)
 
+            self.ground_impedance=ImpedanceVolumeLoss(min_freq=note_to_freq(-32), max_freq=note_to_freq(-30), num_peaks=1)
+            self.first_toot_impedance=ImpedanceVolumeLoss(min_freq=note_to_freq(-32), max_freq=250, num_peaks=1)
+            self.singer_toot_impedance=ImpedanceVolumeLoss(min_freq=250, num_peaks=1)
+
         def get_loss(self, geo, context=None):
             
             # fundamental loss
@@ -51,58 +55,36 @@ try:
                 tuning_deviations[i]*=tuning_deviations[i]
             tuning_loss=sum(tuning_deviations)*5
             has_toots_loss=0
-            if len(toot_peaks<2):
+            if len(toot_peaks)<2:
                 has_toots_loss=10    
 
             # singer tuning loss
             tuning_deviations, singer_peaks=self.singer_tuning_helper.get_tuning_deviations(geo, return_peaks=True)
             for i in range(len(tuning_deviations)):
                 tuning_deviations[i]*=tuning_deviations[i]
-            tuning_loss=sum(tuning_deviations)*5
+            singer_tuning_loss=sum(tuning_deviations)*5
 
             # diameter loss
             d_loss = diameter_loss(geo)*0.1
         
-            # singer loss
-            # ground_peaks=geo.get_cadsd().get_ground_peaks()
+            # volumes
+            ground_volume=self.ground_impedance.get_loss(geo)
+            first_toot_impedance=self.first_toot_impedance.get_loss(geo)
+            singer_toot_impedance=self.singer_toot_impedance.get_loss(geo)
 
-            # #base_peak=ground_peaks[ground_peaks.freq==ground_peaks.freq.min()].iloc[0]["impedance"]
-            # singer_peaks=ground_peaks[(ground_peaks.freq>250)]
-
-            # if len(singer_peaks)<2:
-            #     singer_volume_loss=10
-            #     singer_tuning_loss=10
-            # else:
-            #     singer_tuning_loss=0
-            #     singer_volume_loss=0
-
-            # imp=0
-            # if len(singer_peaks)>2:
-            #     imp=list(singer_peaks.impedance.sort_values())[-2]
-
-            # singer_peaks=singer_peaks[singer_peaks.impedance>=imp].copy()
-            # singer_peaks["rel_imp"]=singer_peaks.impedance/60
-            
-            # for ix, row in singer_peaks.iterrows():
-            #     freq=row["freq"]
-            #     singer_tuning_loss += self.tuning_helper.get_tuning_deviation_freq(freq)/2
-            #     singer_volume_loss += -1*min(row["rel_imp"],2)
-
-            # singer_tuning_loss
-            # singer_volume_loss*=1.5
-
-            final_loss=tuning_loss + d_loss + fundamental + singer_volume_loss + singer_tuning_loss + has_toots_loss
-
-            return {
-                "loss": final_loss,
+            losses= {
                 "tuning_loss": tuning_loss,
                 "diameter_loss": d_loss,
                 "fundamental_loss": fundamental,
                 "has_toots_loss": has_toots_loss,
-                "singer_volume_loss": singer_volume_loss,
-                "singer_tuning_loss": singer_tuning_loss
+                "singer_tuning_loss": singer_tuning_loss,
+                "ground_volume": ground_volume,
+                "first_toot_impedance": first_toot_impedance,
+                "singer_toot_impedance": singer_toot_impedance
             }
-            return final_loss
+            final_loss=sum(losses.values())
+            losses["loss"]=final_loss
+            return losses
 
     loss=MatemaLoss()    
 
