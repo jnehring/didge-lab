@@ -26,38 +26,82 @@ def single_note_loss(note, geo, i_note=0, filter_rel_imp=0.1):
     f_fundamental=peaks.iloc[i_note]["freq"]
     return np.sqrt(abs(math.log(f_target, 2)-math.log(f_fundamental, 2)))
 
+class ImpedanceVolumeLoss():
+
+    def __init__(self, min_freq=None, max_freq=None, num_peaks=None, target_volume=1e7):
+        self.min_freq=min_freq
+        self.max_freq=max_freq
+        self.num_peaks=num_peaks
+        self.target_volume=target_volume
+
+    def get_loss(self, geo):
+        peaks=geo.get_cadsd().get_notes()
+
+        if self.min_freq is not None:
+            peaks=peaks[(peaks.freq>=self.min_freq)]
+        if self.max_freq is not None:
+            peaks=peaks[(peaks.freq<=self.max_freq)]
+            
+        if self.num_peaks is not None:
+            if len(peaks)<self.num_peaks:
+                return 10
+            else:
+                peaks=peaks.loc[peaks.sort_values(by=["impedance"]).impedance[-1*self.num_peaks:].index]
+        
+        volume_loss=0
+        for imp in peaks.impedance:
+            imp=-1*(1-imp/self.target_volume)
+            volume_loss+=imp
+        return volume_loss
 
 class TootTuningHelper():
 
-    def __init__(self, scale, fundamental, filter_rel_imp=0.1):
-        self.scale=scale
-        self.fundamental=fundamental
+    def __init__(self, scale=None, fundamental=None, filter_rel_imp=0.1, frequencies=None, min_freq=None, max_freq=None):
+
         self.filter_rel_imp=filter_rel_imp
+        self.min_freq=min_freq
+        self.max_freq=max_freq
+        self.min_freq=min_freq
+        self.max_freq=max_freq
 
-        self.scale_note_numbers=[]
-        for i in range(len(scale)):
-            self.scale_note_numbers.append(scale[i]+fundamental)
+        if scale is not None and fundamental is not None:
+            self.scale=scale
+            self.fundamental=fundamental
 
-        n_octaves=10
-        self.scale_frequencies=[]
-        for note_number in self.scale_note_numbers:
-            for i in range(0, n_octaves):
-                transposed_note=note_number+12*i
-                freq=note_to_freq(transposed_note)
-                self.scale_frequencies.append(freq)
+            self.scale_note_numbers=[]
+            for i in range(len(scale)):
+                self.scale_note_numbers.append(scale[i]+fundamental)
 
+            n_octaves=10
+            self.scale_frequencies=[]
+            for note_number in self.scale_note_numbers:
+                for i in range(0, n_octaves):
+                    transposed_note=note_number+12*i
+                    freq=note_to_freq(transposed_note)
+                    self.scale_frequencies.append(freq)
+        elif frequencies is not None and len(frequencies)>0:
+            self.scale_frequencies=frequencies
+        else:
+            raise Exception("Please specify either scale+fundamental or a frequencies list")
     # get a list of all peaks and their deviations from tuning
-    def get_tuning_deviations(self, geo):
+    def get_tuning_deviations(self, geo, return_peaks=False):
         peaks=geo.get_cadsd().get_notes()
         peaks=peaks[peaks.rel_imp>self.filter_rel_imp]
+
+        if self.min_freq is not None:
+            peaks=peaks[peaks.freq>=self.min_freq]
+
+        if self.max_freq is not None:
+            peaks=peaks[peaks.freq<=self.max_freq]
+
         deviations=[]
         for f1 in peaks.freq:
             deviations.append(self.get_tuning_deviation_freq(f1))
-            # f2=min(self.scale_frequencies, key=lambda x:abs(x-f1))
-            # f1=math.log(f1, 2)
-            # f2=math.log(f2, 2)
-            # deviations.append(np.sqrt(abs(f1-f2)))
-        return deviations
+
+        if return_peaks:
+            return deviations, peaks
+        else:
+            return deviations
     
     def get_tuning_deviation_freq(self, freq):
         f2=min(self.scale_frequencies, key=lambda x:abs(x-freq))

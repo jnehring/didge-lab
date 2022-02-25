@@ -16,13 +16,3 @@ geo=Geo(geo)
 
 loss=MatemaLoss()
 print(loss.get_loss(geo))
-
-# ground=geo.get_cadsd().get_all_spektra_df()
-# peaks=ground.iloc[argrelextrema(ground.impedance.values, np.greater_equal)[0]].copy()
-
-# print(peaks)
-# freq=note_to_freq(-31)
-# for i in range(0, 5):
-#     print(i, freq)
-#     freq*=2
-# print(peaks)
