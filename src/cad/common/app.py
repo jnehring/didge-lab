@@ -5,6 +5,8 @@ import sys
 import os
 from datetime import datetime
 from multiprocessing import Manager, Lock
+import traceback
+
 #import warnings
 #warnings.filterwarnings('error')
 
@@ -145,6 +147,9 @@ class App:
         ctx=json.dumps(App.context.copy())
         logging.error("An exception has occured. App context:\n" + ctx)
         logging.exception(e)
+
+        if not App.get_config()["hide_ui"]:
+            print(traceback.format_exc())
 
     @classmethod
     def get_output_folder(cls, suffix=""):
