@@ -50,7 +50,6 @@ class UserInterface:
 
     def display(self):
 
-        logging.info(self.killed)
         if not self.dont_show and not self.killed:
             self.screen.erase()
             content=self.render()
