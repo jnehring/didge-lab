@@ -34,9 +34,8 @@ class MatemaLoss(LossFunction):
 
     def get_loss(self, geo, context=None):
         
-        peaks=geo.get_cadsd().get_notes()
+        peaks=geo.get_cadsd().get_notes().copy()
 
-        peaks["norm_imp"]=peaks["impedance"]/1e6
         deviations=[]
         
         tuning_loss=0
@@ -62,7 +61,7 @@ class MatemaLoss(LossFunction):
         losses["loss"]=final_loss
         return losses
 
-if __name__=="main":
+if __name__=="__main__":
     try:
         App.full_init("evolve_matema")
 
@@ -70,7 +69,6 @@ if __name__=="main":
         geo=Geo(geo)
 
         losslogger=LossCADLogger()
-
 
         loss=MatemaLoss()    
 
@@ -84,16 +82,16 @@ if __name__=="main":
 
         pipeline=Pipeline()
 
-        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
-        pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
+        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=2, generation_size=10))
+        # pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
 
-        for i in range(2):
-            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        # for i in range(2):
+        #     pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        #     pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        #     pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        #     pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        #     pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        #     pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 
         ui=EvolutionUI()
 

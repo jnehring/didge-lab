@@ -126,16 +126,13 @@ class App:
     def publish(cls, topic, args=None):
 
         logging.debug(f"app.publish topic={topic}, args={args}")
-        try:
-            if topic not in App.subscribers:
-                return
-            for s in App.subscribers[topic]:
-                if args is None:
-                    s()
-                else:
-                    s(*args)
-        except Exception as e:
-            App.log_exception(e)
+        if topic not in App.subscribers:
+            return
+        for s in App.subscribers[topic]:
+            if args is None:
+                s()
+            else:
+                s(*args)
 
     @classmethod
     def subscribe(cls, topic, fct):

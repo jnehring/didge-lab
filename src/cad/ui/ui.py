@@ -3,6 +3,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 import shutil
 import time
+import logging
 
 class UserInterface:
 
@@ -49,9 +50,17 @@ class UserInterface:
 
     def display(self):
 
-        if not self.dont_show:
+        logging.info(self.killed)
+        if not self.dont_show and not self.killed:
             self.screen.erase()
-            self.screen.addstr(self.render())
+            content=self.render()
+            try:
+                self.screen.addstr(content)
+            except Exception as e:
+                # otherwise the system crashes here sometimes with
+                # _curses.error: addwstr() returned ERR
+                # see https://stackoverflow.com/questions/54409924/curses-error-addwstr-returned-err-on-changing-nlines-to-1-on-newwin-method
+                pass
             self.screen.refresh()
 
     def print(self, s):
@@ -59,9 +68,9 @@ class UserInterface:
         
 
     def end(self):
+        self.killed=True
         if self.is_initialized:
             curses.endwin()
-        self.stop=True
 
 class Window(ABC):
 
