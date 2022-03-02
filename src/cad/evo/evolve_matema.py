@@ -27,10 +27,10 @@ class MatemaLoss(LossFunction):
 
         self.target_peaks=[
             73.416192,      # base note - D
-            # 146.832384,     # 1st toot - also D,
-            440
-            #367.080960,     # F#, 4th overtone
-            #880.994304      # A, 11th overtone
+            146.832384,     # 1st toot - also D,
+            #440,
+            367.080960,     # F#, 4th overtone
+            880.994304      # A, 11th overtone
         ]
 
     def get_loss(self, geo, context=None):
