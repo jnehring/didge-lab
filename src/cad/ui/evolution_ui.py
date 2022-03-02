@@ -33,6 +33,7 @@ class EvolutionUI:
         self.infos={}
         self.mutant_pool=None
         self.start_time=0
+        self.evolution_has_started=False
 
         # subscribe to generation_started event
         def generation_started(i_generation, mutant_pool):
@@ -55,25 +56,45 @@ class EvolutionUI:
             else:
                 self.update()
 
+            self.evolution_has_started=True
+
         if not App.get_config()["hide_ui"]:
             App.subscribe("generation_started", generation_started)
 
         # subscrube to iteration_finished event
-        def iteration_finished(i_iteration):
-            n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
-            i_iterations=App.get_context("i_iteration")
-            self.infos["iteration"]=f"{i_iterations}/{n_iterations}"
-            time_elapsed=time.time()-self.start_time
-            self.infos["time elapsed"] = format_time(time_elapsed)
-            self.info_window.update_dict(self.infos)
-            self.ui.display()
+        # def iteration_finished(i_iteration):
+        #     n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
+        #     i_iterations=App.get_context("i_iteration")
+        #     self.infos["iteration"]=f"{i_iterations}/{n_iterations}"
+        #     time_elapsed=time.time()-self.start_time
+        #     self.infos["time elapsed"] = format_time(time_elapsed)
+        #     self.info_window.update_dict(self.infos)
+        #     self.ui.display()
+        # if not App.get_config()["hide_ui"]:
+        #     App.subscribe("iteration_finished", iteration_finished)
+
+        def update_ui_timer():
+            while not self.ui.killed:
+                try:
+
+                    if self.evolution_has_started:
+                        n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
+                        i_iterations=App.get_context("i_iteration")
+                        self.infos["iteration"]=f"{i_iterations}/{n_iterations}"
+                        time_elapsed=time.time()-self.start_time
+                        self.infos["time elapsed"] = format_time(time_elapsed)
+                        self.info_window.update_dict(self.infos)
+                        self.ui.display()
+                    time.sleep(0.1)
+                except Exception as e:
+                    App.log_exception(e)
 
         if not App.get_config()["hide_ui"]:
-            App.subscribe("iteration_finished", iteration_finished)
+            self.update_ui_thread=threading.Thread(target=update_ui_timer)
+            self.update_ui_thread.start()
 
         # shut down when pipeline is finished
         def pipeline_finished():
-            self.ui.killed=True
             self.ui.end()
         if not App.get_config()["hide_ui"]:
             App.subscribe("pipeline_finished", pipeline_finished)

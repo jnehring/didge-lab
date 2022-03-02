@@ -5,6 +5,8 @@ import sys
 import os
 from datetime import datetime
 from multiprocessing import Manager, Lock
+import traceback
+
 #import warnings
 #warnings.filterwarnings('error')
 
@@ -126,16 +128,13 @@ class App:
     def publish(cls, topic, args=None):
 
         logging.debug(f"app.publish topic={topic}, args={args}")
-        try:
-            if topic not in App.subscribers:
-                return
-            for s in App.subscribers[topic]:
-                if args is None:
-                    s()
-                else:
-                    s(*args)
-        except Exception as e:
-            App.log_exception(e)
+        if topic not in App.subscribers:
+            return
+        for s in App.subscribers[topic]:
+            if args is None:
+                s()
+            else:
+                s(*args)
 
     @classmethod
     def subscribe(cls, topic, fct):
@@ -148,6 +147,9 @@ class App:
         ctx=json.dumps(App.context.copy())
         logging.error("An exception has occured. App context:\n" + ctx)
         logging.exception(e)
+
+        if not App.get_config()["hide_ui"]:
+            print(traceback.format_exc())
 
     @classmethod
     def get_output_folder(cls, suffix=""):

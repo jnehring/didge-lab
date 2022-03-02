@@ -167,3 +167,12 @@ class geotools:
         winkel=math.atan(ydiff/xdiff)
         y=math.tan(winkel)*(x-x1)*2+y1
         return y
+
+    @staticmethod
+    def fix_zero_length_segments(geo):
+        fix=None
+        new_geo=[geo.geo[0]]
+        for i in range(1, len(geo.geo)):
+            if geo.geo[i][0]-new_geo[-1][0] > 0:
+                new_geo.append(geo.geo[i])
+        return Geo(new_geo)

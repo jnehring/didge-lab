@@ -798,7 +798,9 @@ class MbeyaShape(MutationParameterSet):
                     pos=shape[-1][0]-width/2 - 10
                 shape=self.make_bubble(shape, pos, width, height)
 
-        return Geo(shape)
+        geo=Geo(shape)
+        geo=geotools.fix_zero_length_segments(geo)
+        return geo
 
 class AddPointOptimizer(MutationParameterSet):
 

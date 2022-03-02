@@ -181,6 +181,8 @@ def evolve_explore(pool, loss, mutator, store_intermediates=""):
             App.log_exception(e)
 
     # fill processing queue
+    n=n_generation_size*pool.len()*n_generations
+    logging.info(f"generate {n} mutation jobs")
     for i_generation in range(n_generations):
         for i_pool in range(pool.len()):
             for i_mutation in range(n_generation_size):
