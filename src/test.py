@@ -88,7 +88,6 @@ from cad.evo.evolve_matema import MatemaLoss
 mutant_pool=pickle.load(open("output/2022-03-01T16-10-06_default/results/3.pkl", "rb"))
 geo=mutant_pool.get(0).geo
 
-print(geo.get_cadsd().get_notes())
 loss=MatemaLoss()
 l=loss.get_loss(geo)
 print(json.dumps(l, indent=4))

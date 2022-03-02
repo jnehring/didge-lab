@@ -27,11 +27,24 @@ class MatemaLoss(LossFunction):
 
         self.target_peaks=[
             73.416192,      # base note - D
-            146.832384,     # 1st toot - also D,
-            #440,
-            367.080960,     # F#, 4th overtone
-            880.994304      # A, 11th overtone
+            #146.832384,     # 1st toot - also D,
+            440,
+            #367.080960,     # F#, 4th overtone
+            #880.994304      # A, 11th overtone
         ]
+
+        scale=[0,3,7,10]
+        freq=note_to_freq(self.base_note)
+        self.scale_peaks=[freq]
+        i=0
+        while freq<1000:
+            oct=np.floor(i/len(scale))
+            note=self.base_note + oct*12 + scale[i%len(scale)]
+            freq=note_to_freq(note)
+            #print(i, oct*12, scale[i%len(scale), note)
+            i+=1
+            self.scale_peaks.append(math.log(freq, 2))
+        
 
     def get_loss(self, geo, context=None):
 
@@ -40,24 +53,34 @@ class MatemaLoss(LossFunction):
 
         peaks=geo.get_cadsd().get_notes().copy()
 
-        tuning_loss=0
-        volume_loss=0
+        singer_tuning_loss=0
+        singer_volume_loss=0
         for target_freq in self.target_peaks:
             peaks["diff"]=abs(peaks.freq-target_freq)
             closest_peak=peaks[peaks["diff"]==peaks["diff"].min()].iloc[0]
 
             f1=math.log(target_freq, 2)
             f2=math.log(closest_peak["freq"], 2)
-            tuning_loss += math.sqrt(abs(f1-f2))
+            singer_tuning_loss += math.sqrt(abs(f1-f2))
 
-            volume_loss += math.sqrt(closest_peak["impedance"]/1e6)
+            singer_volume_loss += math.sqrt(closest_peak["impedance"]/1e6)
+        singer_tuning_loss*=10
 
-        tuning_loss*=10
+        # tune all other overtones
+        toot_tuning_loss=0
+        notes=geo.get_cadsd().get_notes()
+        notes=notes[notes.rel_imp>0.15]
+        for ix, note in notes.iterrows():
+            f1=math.log(note["freq"], 2)
+            f2=min(self.scale_peaks, key=lambda x:abs(x-f1))
+            toot_tuning_loss += math.sqrt(abs(f1-f2))
+        toot_tuning_loss*=5
         #volume_loss/=10
 
         losses={
-            "tuning_loss": tuning_loss,
-            "volume_loss": volume_loss,
+            "toot_tuning_loss": toot_tuning_loss,
+            "singer_tuning_loss": singer_tuning_loss,
+            "singer_volume_loss": singer_volume_loss,
             "fundamental_loss": fundamental_loss
         }
         final_loss=sum(losses.values())
