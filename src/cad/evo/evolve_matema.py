@@ -63,8 +63,8 @@ class MatemaLoss(LossFunction):
             f2=math.log(closest_peak["freq"], 2)
             singer_tuning_loss += math.sqrt(abs(f1-f2))
 
-            singer_volume_loss += math.sqrt(closest_peak["impedance"]/1e6)
-        singer_tuning_loss*=10
+            singer_volume_loss += math.sqrt(1/(closest_peak["impedance"]/1e6))
+        singer_tuning_loss*=4
 
         # tune all other overtones
         toot_tuning_loss=0
@@ -74,7 +74,7 @@ class MatemaLoss(LossFunction):
             f1=math.log(note["freq"], 2)
             f2=min(self.scale_peaks, key=lambda x:abs(x-f1))
             toot_tuning_loss += math.sqrt(abs(f1-f2))
-        toot_tuning_loss*=5
+        toot_tuning_loss*=3
         #volume_loss/=10
 
         losses={
