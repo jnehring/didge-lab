@@ -47,10 +47,14 @@ class ImpedanceVolumeLoss():
                 return 10
             else:
                 peaks=peaks.loc[peaks.sort_values(by=["impedance"]).impedance[-1*self.num_peaks:].index]
-        
+
+        print(peaks)
+
         volume_loss=0
         for imp in peaks.impedance:
+            print(imp)
             imp=-1*(1-imp/self.target_volume)
+            print(imp)
             volume_loss+=imp
         return volume_loss
 

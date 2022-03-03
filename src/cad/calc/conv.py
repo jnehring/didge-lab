@@ -21,3 +21,8 @@ def freq_to_note_and_cent(freq):
     note=round(note_fuzzy)
     diff=note-note_fuzzy
     return note, diff*100
+
+# get wavelength of soundwave with frequency freq in mm
+def freq_to_wavelength(freq):
+    c=343.2
+    return 1000*c/freq
