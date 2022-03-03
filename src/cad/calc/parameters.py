@@ -130,6 +130,12 @@ class MutationParameterSet(ABC):
         for c in ["value", "min", "max"]:
             df[c]=df[c].apply(lambda x : f"{x:.2f}")
         return df
+
+    def read_csv(self, infile):
+        df=pd.read_csv(infile)
+        self.mutable_parameters=[]
+        for ix, row in df.iterrows():
+            self.add_param(row["name"], row["min"], row["max"], value=row["value"], immutable=not row["mutable"])
         
     def __repr__(self):
 
@@ -929,7 +935,7 @@ class MatemaShape(MutationParameterSet):
         shape.append(p)
 
         # opening part
-        n_seg=self.get_value("n_opening_segments")
+        n_seg=math.ceil(self.get_value("n_opening_segments"))
         seg_x=[]
         seg_y=[]
         for i in range(int(n_seg)):
@@ -970,5 +976,6 @@ class MatemaShape(MutationParameterSet):
                 shape=self.make_bubble(shape, pos, width, height)
 
         geo=Geo(shape)
+
         geo=geotools.fix_zero_length_segments(geo)
         return geo

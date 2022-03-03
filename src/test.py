@@ -22,13 +22,15 @@ import pickle
 import json
 from cad.evo.evolve_matema import MatemaLoss
 
+
 shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
+shape.read_csv("test.csv")
 
-ol=1847.567267735626
-shape.set_minmax("length", ol, ol)
+# ol=1847.567267735626
+# shape.set_minmax("length", ol, ol)
 
-em=ExploringMutator()
-for i in range(20):
-    mutant=shape.copy()
-    em.mutate(mutant)
-    print(mutant.make_geo().geo[-1])
+# em=ExploringMutator()
+# for i in range(20):
+#     mutant=shape.copy()
+#     em.mutate(mutant)
+#     print(mutant.make_geo().geo[-1])
