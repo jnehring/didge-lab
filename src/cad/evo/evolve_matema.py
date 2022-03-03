@@ -99,6 +99,7 @@ if __name__=="__main__":
         shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
 
         ol=1847.567267735626
+        ol-=30 # die reflektion entsteht nach ca 1/3 des belldurchmessers
         shape.set_minmax("length", ol, ol)
         shape.set("length", ol)
 

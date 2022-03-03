@@ -856,7 +856,7 @@ class MatemaShape(MutationParameterSet):
         self.add_param("d_gerade", 0.9, 1.2)
 
         # opening part
-        self.add_param("n_opening_segments", 0, 8)
+        self.add_param("n_opening_segments", 1, 8)
         self.add_param("opening_factor_x", -2, 2)
         self.add_param("opening_factor_y", -2, 2)
         self.add_param("opening_length", 0.2, 0.3)
@@ -962,7 +962,7 @@ class MatemaShape(MutationParameterSet):
 
         p=[shape[-1][0] + l_bell, shape[-1][1]+self.get_value("bellsize")]
         shape.append(p)
-
+        
         # add bubble
         for i in range(self.n_bubbles):
             if self.get_value(f"add_bubble_{i}")>self.add_bubble_prob:
