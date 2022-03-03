@@ -85,7 +85,7 @@ class EvolutionUI:
                         self.infos["time elapsed"] = format_time(time_elapsed)
                         self.info_window.update_dict(self.infos)
                         self.ui.display()
-                    time.sleep(0.1)
+                    time.sleep(0.2)
                 except Exception as e:
                     App.log_exception(e)
 
@@ -100,6 +100,7 @@ class EvolutionUI:
             App.subscribe("pipeline_finished", pipeline_finished)
 
     def update(self):
+
         header_text=f"Evolution Display: Showing mutant {self.visible_mutant_index+1}/{self.mutant_pool.len()}\n"
         self.header.set_text(header_text)
 
@@ -181,18 +182,11 @@ class EvolutionUI:
                     if key is None:
                         break
                     key=chr(key)
-                    self.ui.print(key + "\n")
+                    # self.ui.print(key + "\n")
                     self.menu_window.key_pressed(key)
                     error_count=0
                 except Exception as e:
                     App.log_exception(e)
-                    # error_count+=1
-                    # if error_count==10:
-                    #     log.error("caught 10 exceptions in a row, stopping...")
-                    #     self.ui.end()
-                    #     break
-                finally:
-                    self.ui.end()
         
         if not App.get_config()["hide_ui"]:
             self.ui_thread = threading.Thread(target=thread_fct, args=())

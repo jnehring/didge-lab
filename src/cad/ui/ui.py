@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 import shutil
 import time
 import logging
+from cad.common.app import App
 
 class UserInterface:
 
@@ -63,10 +64,17 @@ class UserInterface:
             self.screen.refresh()
 
     def print(self, s):
-        self.screen.addstr(s)
-        
+        try:
+            self.screen.addstr(s)
+        except Exception as e:
+            # otherwise the system crashes here sometimes with
+            # _curses.error: addwstr() returned ERR
+            # see https://stackoverflow.com/questions/54409924/curses-error-addwstr-returned-err-on-changing-nlines-to-1-on-newwin-method
+            App.log_exception(e)
+
 
     def end(self):
+        logging.info("stopping user interface")
         self.killed=True
         if self.is_initialized:
             curses.endwin()
