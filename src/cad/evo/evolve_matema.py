@@ -3,7 +3,7 @@
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
-from cad.calc.parameters import MbeyaShape
+from cad.calc.parameters import MatemaShape
 from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss, ImpedanceVolumeLoss
 import numpy as np
 from cad.calc.geo import geotools
@@ -27,10 +27,8 @@ class MatemaLoss(LossFunction):
 
         self.target_peaks=[
             73.416192,      # base note - D
-            #146.832384,     # 1st toot - also D,
-            440,
-            #367.080960,     # F#, 4th overtone
-            #880.994304      # A, 11th overtone
+            698.4564628660078/2,
+            880.0
         ]
 
         scale=[0,3,7,10]
@@ -98,11 +96,15 @@ if __name__=="__main__":
 
         loss=MatemaLoss()    
 
-        shape=MbeyaShape(n_bubbles=2, add_bubble_prob=0.4)
+        shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
 
-        shape.set_minmax("opening_factor_y", 1.5, 2.0)
-        shape.set_minmax("d_pre_bell", 0, 10)
-        shape.set_minmax("bellsize", 3, 20)
+        ol=1847.567267735626
+        shape.set_minmax("length", ol, ol)
+        shape.set("length", ol)
+
+        # shape.set_minmax("opening_factor_y", 1.5, 2.0)
+        # shape.set_minmax("d_pre_bell", 0, 10)
+        # shape.set_minmax("bellsize", 3, 20)
 
         initial_pool=MutantPool.create_from_father(shape, App.get_config()["n_poolsize"], loss)
 

@@ -20,7 +20,7 @@ class CADSD():
         self.ground_peaks=None
 
         self.sound_spektra=None
-        self.fmax=800
+        self.fmax=1000
 
         self.additional_metrics={}
 
