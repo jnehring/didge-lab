@@ -27,8 +27,9 @@ class MatemaLoss(LossFunction):
 
         self.target_peaks=[
             73.416192,      # base note - D
-            698.4564628660078/2,
-            880.0
+            440
+            #698.4564628660078/2,
+            #880.0
         ]
 
         scale=[0,3,7,10]

@@ -859,12 +859,12 @@ class MatemaShape(MutationParameterSet):
         self.add_param("n_opening_segments", 1, 8)
         self.add_param("opening_factor_x", -2, 2)
         self.add_param("opening_factor_y", -2, 2)
-        self.add_param("opening_length", 0.2, 0.3)
+        self.add_param("opening_length", 0.2, 1.0)
 
         # bell
-        self.add_param("d_pre_bell", 40, 50)
-        self.add_param("l_bell", 0.005, 0.03)
-        self.add_param("bellsize", 5, 30)
+        self.add_param("d_pre_bell", 30, 40)
+        self.add_param("l_bell", 0.005, 0.2)
+        self.add_param("bellsize", 5, 20)
 
         self.add_param("length", 1200, 2500)
 

@@ -165,6 +165,7 @@ class PeakWindow(Window):
             self.set_peak(peak)
 
     def set_peak(self, peak):
+        peak=peak.sort_values(by=["freq"])
         peak.rel_imp=peak.rel_imp.apply(lambda x : f"{x:.2f}")
         peak.impedance=peak.impedance.apply(lambda x : f"{x:.2e}")
         peak["cent-diff"]=peak["cent-diff"].apply(lambda x : f"{x:.2f}")

@@ -26,15 +26,17 @@ from cad.evo.evolve_matema import MatemaLoss
 # shape.read_csv("test.csv")
 # shape.make_geo()
 
-infile="output/2022-03-03T11-00-29_default/results/1.pkl"
+infile="output/2022-03-03T12-03-10_default/results/5.pkl"
 
 mutant=pickle.load(open(infile, "rb"))
-mutant.get(5).parameterset.to_pandas().to_csv("test.csv")
 
-print(mutant.get(8).parameterset)
+print(mutant.get(9).geo.get_cadsd().get_notes())
+# mutant.get(0).parameterset.to_pandas().to_csv("test.csv")
 
-for i in range(10):
-   print(i, mutant.get(i).geo.geo[-1][0])
+# print(mutant.get(8).parameterset)
+
+# for i in range(10):
+#    print(i, mutant.get(i).geo.geo[-1][0])
 
 # shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
 # shape.read_csv("test.csv")
