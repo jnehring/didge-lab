@@ -86,6 +86,7 @@ class App:
                  __/ |                         
                 |___/                          
 '''
+        msg += "Starting " + " ".join(sys.argv)
         logging.info(msg)
 
     @classmethod
