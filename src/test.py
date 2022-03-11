@@ -21,16 +21,17 @@ from cad.calc.loss import LossFunction, TootTuningHelper, single_note_loss, diam
 import pickle
 import json
 from cad.evo.evolve_matema import MatemaLoss
+from cad.calc.parameters import MatemaShape
 
-# shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
-# shape.read_csv("test.csv")
-# shape.make_geo()
+father=MatemaShape(n_bubbles=3, add_bubble_prob=0.2)
+father.set_minmax("length", 2200, 3000)
+mutator=ExploringMutator()
 
-infile="output/2022-03-03T12-03-10_default/results/5.pkl"
+for i in range(10):
+    mutant=father.copy()
+    mutator.mutate(mutant)
+    print(mutant.make_geo().geo[-1])
 
-mutant=pickle.load(open(infile, "rb"))
-
-print(mutant.get(9).geo.get_cadsd().get_notes())
 # mutant.get(0).parameterset.to_pandas().to_csv("test.csv")
 
 # print(mutant.get(8).parameterset)

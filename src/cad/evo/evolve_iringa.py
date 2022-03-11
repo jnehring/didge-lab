@@ -42,15 +42,15 @@ try:
 
         def get_loss(self, geo, context=None):
 
-            fundamental=single_note_loss(self.base_note, geo)*4
-            octave=single_note_loss(self.base_note+12, geo, i_note=1)
+            fundamental=single_note_loss(self.base_note, geo)*8
+            octave=single_note_loss(self.base_note+12, geo, i_note=1)*4
 
             toot_tuning_loss=0
             toot_volume_loss=0
             notes=geo.get_cadsd().get_notes()
             notes=notes[notes.rel_imp>0.10]
 
-            num_toots_loss=0.5*max(9-len(notes), 1)
+            num_toots_loss=max(6-len(notes), 1)
 
             for ix, note in notes.iterrows():
                 f1=math.log(note["freq"], 2)
@@ -58,9 +58,10 @@ try:
                 toot_tuning_loss += math.sqrt(abs(f1-f2))
                 toot_volume_loss += math.sqrt(1/(note["impedance"]/1e6))
 
-            toot_tuning_loss*=3
-            toot_tuning_loss /= num_toots_loss
-            toot_volume_loss /= num_toots_loss
+            toot_tuning_loss/=len(notes)
+            toot_volume_loss/=len(notes)
+            toot_tuning_loss*=15
+            toot_volume_loss*=3
 
             d_loss = diameter_loss(geo)*0.1
 
@@ -77,9 +78,9 @@ try:
             return losses
 
     loss=IringaLoss()
-    father=MatemaShape(n_bubbles=3, add_bubble_prob=0.2)
+    father=MatemaShape(n_bubbles=5, add_bubble_prob=0.15)
 
-    father.set_minmax("length", 2200, 3000)
+    father.set_minmax("length", 1500, 3000)
     initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 
     pipeline=Pipeline()
@@ -87,7 +88,7 @@ try:
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
     pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
 
-    for i in range(4):
+    for i in range(15):
         pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
         pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 
