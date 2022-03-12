@@ -82,6 +82,44 @@ def logfile_to_dataframe(infile):
 def loss_report(infile, outfile=None):
     df=logfile_to_dataframe(infile)
 
+    generations_per_step={}
+    offset=0
+    for step in df.pipeline_step.unique():
+        num_steps=df[df.pipeline_step==step].generation.max()+1
+        generations_per_step[step]=offset
+        offset += num_steps
+    df["accumulated_step"]=df.pipeline_step.apply(lambda x : generations_per_step[x])
+    
+    loss_columns=[]
+    for c in df.columns:
+        if c.find("loss")>=0:
+            loss_columns.append(c)
+
+    new_df={"step": [], "loss": [], "label": [], "pool_index": []}
+    for c in loss_columns:
+        new_df["step"].extend(df.accumulated_step)
+        new_df["loss"].extend(df[c])
+        new_df["label"].extend([c]*len(df))
+        new_df["pool_index"].extend(df.pool_index)
+    new_df=pd.DataFrame(new_df)
+
+    #new_df.plot(x="step", y="loss")
+    # print(new_df)
+    plt.clf()
+    sns.lineplot(data=new_df, x="step", y="loss", hue="label")
+
+    # add vertical lines
+    for step, maxx in generations_per_step.items():
+        #if maxx < new_df.accumulative_generation.max():
+        plt.axvline(x=maxx)
+
+    if outfile is not None:
+        plt.savefig(outfile)
+
+
+def loss_report_old(infile, outfile=None):
+    df=logfile_to_dataframe(infile)
+
     # averages loss over all iterations
     df["id"]=df.pipeline_step.astype(str) + "_" + df.generation.astype(str)
 
