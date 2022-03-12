@@ -22,13 +22,30 @@ import pickle
 import json
 from cad.evo.evolve_matema import MatemaLoss
 
-shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
+# shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
+# shape.read_csv("test.csv")
+# shape.make_geo()
 
-ol=1847.567267735626
-shape.set_minmax("length", ol, ol)
+infile="output/2022-03-03T12-03-10_default/results/5.pkl"
 
-em=ExploringMutator()
-for i in range(20):
-    mutant=shape.copy()
-    em.mutate(mutant)
-    print(mutant.make_geo().geo[-1])
+mutant=pickle.load(open(infile, "rb"))
+
+print(mutant.get(9).geo.get_cadsd().get_notes())
+# mutant.get(0).parameterset.to_pandas().to_csv("test.csv")
+
+# print(mutant.get(8).parameterset)
+
+# for i in range(10):
+#    print(i, mutant.get(i).geo.geo[-1][0])
+
+# shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
+# shape.read_csv("test.csv")
+
+# ol=1847.567267735626
+# shape.set_minmax("length", ol, ol)
+
+# em=ExploringMutator()
+# for i in range(20):
+#     mutant=shape.copy()
+#     em.mutate(mutant)
+#     print(mutant.make_geo().geo[-1])

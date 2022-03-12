@@ -27,8 +27,9 @@ class MatemaLoss(LossFunction):
 
         self.target_peaks=[
             73.416192,      # base note - D
-            349.228231433,
-            880.0
+            698.4564628660078
+            #698.4564628660078/2,
+            #880.0
         ]
 
         scale=[0,3,7,10]
@@ -63,6 +64,9 @@ class MatemaLoss(LossFunction):
 
             singer_volume_loss += math.sqrt(1/(closest_peak["impedance"]/1e6))
         singer_tuning_loss*=4
+        singer_volume_loss*=2
+
+        d_loss=diameter_loss(geo)
 
         # tune all other overtones
         toot_tuning_loss=0
@@ -79,7 +83,8 @@ class MatemaLoss(LossFunction):
             "toot_tuning_loss": toot_tuning_loss,
             "singer_tuning_loss": singer_tuning_loss,
             "singer_volume_loss": singer_volume_loss,
-            "fundamental_loss": fundamental_loss
+            "fundamental_loss": fundamental_loss,
+            "diameter_loss": d_loss
         }
         final_loss=sum(losses.values())
         losses["loss"]=final_loss
@@ -98,7 +103,8 @@ if __name__=="__main__":
 
         shape=MatemaShape(n_bubbles=2, add_bubble_prob=0.4)
 
-        ol=1847.567267735626
+        ol=1596.9499307417518
+        ol-=30 # die reflektion entsteht nach ca 1/3 des belldurchmessers
         shape.set_minmax("length", ol, ol)
         shape.set("length", ol)
 

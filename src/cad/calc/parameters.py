@@ -130,6 +130,12 @@ class MutationParameterSet(ABC):
         for c in ["value", "min", "max"]:
             df[c]=df[c].apply(lambda x : f"{x:.2f}")
         return df
+
+    def read_csv(self, infile):
+        df=pd.read_csv(infile)
+        self.mutable_parameters=[]
+        for ix, row in df.iterrows():
+            self.add_param(row["name"], row["min"], row["max"], value=row["value"], immutable=not row["mutable"])
         
     def __repr__(self):
 
@@ -850,15 +856,15 @@ class MatemaShape(MutationParameterSet):
         self.add_param("d_gerade", 0.9, 1.2)
 
         # opening part
-        self.add_param("n_opening_segments", 0, 8)
+        self.add_param("n_opening_segments", 1, 8)
         self.add_param("opening_factor_x", -2, 2)
         self.add_param("opening_factor_y", -2, 2)
-        self.add_param("opening_length", 0.2, 0.3)
+        self.add_param("opening_length", 0.2, 1.0)
 
         # bell
-        self.add_param("d_pre_bell", 40, 50)
-        self.add_param("l_bell", 0.005, 0.03)
-        self.add_param("bellsize", 5, 30)
+        self.add_param("d_pre_bell", 30, 40)
+        self.add_param("l_bell", 0.005, 0.2)
+        self.add_param("bellsize", 5, 20)
 
         self.add_param("length", 1200, 2500)
 
@@ -929,7 +935,7 @@ class MatemaShape(MutationParameterSet):
         shape.append(p)
 
         # opening part
-        n_seg=self.get_value("n_opening_segments")
+        n_seg=math.ceil(self.get_value("n_opening_segments"))
         seg_x=[]
         seg_y=[]
         for i in range(int(n_seg)):
@@ -956,7 +962,7 @@ class MatemaShape(MutationParameterSet):
 
         p=[shape[-1][0] + l_bell, shape[-1][1]+self.get_value("bellsize")]
         shape.append(p)
-
+        
         # add bubble
         for i in range(self.n_bubbles):
             if self.get_value(f"add_bubble_{i}")>self.add_bubble_prob:
@@ -970,5 +976,6 @@ class MatemaShape(MutationParameterSet):
                 shape=self.make_bubble(shape, pos, width, height)
 
         geo=Geo(shape)
+
         geo=geotools.fix_zero_length_segments(geo)
         return geo

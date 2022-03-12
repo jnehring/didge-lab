@@ -32,10 +32,6 @@ if __name__ == "__main__":
     for i in range(limit):
         print("-"*20)
         print(f"mutant {i}")
-        print("-"*20)
-        print("shape")
         geo=mutant_pool.get(i).geo
-        print(geo.geo)
-        print()
-        print("notes")
+        print("shape", str(geo.geo[-1]))
         print(geo.get_cadsd().get_notes())

@@ -6,6 +6,7 @@ from cad.common.app import App
 import threading
 import logging
 import time
+import atexit
 
 # readable string representation of time in seconds 
 def format_time(t):
@@ -61,18 +62,6 @@ class EvolutionUI:
         if not App.get_config()["hide_ui"]:
             App.subscribe("generation_started", generation_started)
 
-        # subscrube to iteration_finished event
-        # def iteration_finished(i_iteration):
-        #     n_iterations=App.get_context("n_generation_size") * App.get_config()["n_poolsize"]
-        #     i_iterations=App.get_context("i_iteration")
-        #     self.infos["iteration"]=f"{i_iterations}/{n_iterations}"
-        #     time_elapsed=time.time()-self.start_time
-        #     self.infos["time elapsed"] = format_time(time_elapsed)
-        #     self.info_window.update_dict(self.infos)
-        #     self.ui.display()
-        # if not App.get_config()["hide_ui"]:
-        #     App.subscribe("iteration_finished", iteration_finished)
-
         def update_ui_timer():
             while not self.ui.killed:
                 try:
@@ -85,7 +74,7 @@ class EvolutionUI:
                         self.infos["time elapsed"] = format_time(time_elapsed)
                         self.info_window.update_dict(self.infos)
                         self.ui.display()
-                    time.sleep(0.1)
+                    time.sleep(0.2)
                 except Exception as e:
                     App.log_exception(e)
 
@@ -94,12 +83,16 @@ class EvolutionUI:
             self.update_ui_thread.start()
 
         # shut down when pipeline is finished
-        def pipeline_finished():
+        def shutdown():
             self.ui.end()
         if not App.get_config()["hide_ui"]:
-            App.subscribe("pipeline_finished", pipeline_finished)
+            App.subscribe("pipeline_finished", shutdown)
+
+        # register a shutdown hook to close ui when application closes
+        atexit.register(shutdown)
 
     def update(self):
+
         header_text=f"Evolution Display: Showing mutant {self.visible_mutant_index+1}/{self.mutant_pool.len()}\n"
         self.header.set_text(header_text)
 
@@ -181,18 +174,11 @@ class EvolutionUI:
                     if key is None:
                         break
                     key=chr(key)
-                    self.ui.print(key + "\n")
+                    # self.ui.print(key + "\n")
                     self.menu_window.key_pressed(key)
                     error_count=0
                 except Exception as e:
                     App.log_exception(e)
-                    # error_count+=1
-                    # if error_count==10:
-                    #     log.error("caught 10 exceptions in a row, stopping...")
-                    #     self.ui.end()
-                    #     break
-                finally:
-                    self.ui.end()
         
         if not App.get_config()["hide_ui"]:
             self.ui_thread = threading.Thread(target=thread_fct, args=())

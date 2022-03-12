@@ -2,7 +2,7 @@
  
 import matplotlib.pyplot as plt
 import numpy as np
-from cad.calc.conv import note_to_freq, freq_to_wavelength
+from cad.calc.conv import note_to_freq, freq_to_wavelength, note_name
 
 # return the distances of the maxima of the wave from the origin
 def get_maxima(note):
@@ -45,16 +45,17 @@ def comp_tones(n1, n2):
 #comp_tones(3,7)
 
 n1=8
-n2=12
+#n2=0
 
-print("note 1", n1, "freq", note_to_freq(n1))
-print("note 2", n2, "freq", note_to_freq(n2))
+print("note 1", n1, note_name(n1), "freq", note_to_freq(n1))
+#print("note 2", n2, note_name(n2), "freq", note_to_freq(n2))
 
 m1=get_maxima(n1)
-m2=get_maxima(n2)
+#m2=get_maxima(n2)
 
-ol=(m1[7]+ m2[9])/2
-print("optimal length ", ol)
+print(m1)
+#ol=(m1[7]+ m2[9])/2
+#print("optimal length ", ol)
 
 
 #plt.show()
