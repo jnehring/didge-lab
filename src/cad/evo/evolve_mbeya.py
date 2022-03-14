@@ -94,14 +94,10 @@ try:
 
     pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=200, generation_size=70))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
 
     for i in range(10):
-        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
         pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
         pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 

@@ -28,7 +28,7 @@ try:
             LossFunction.__init__(self)
 
             self.base_note=-31
-            scale=[0,2,3,7,9,10]
+            scale=[0,3,5,7,10]
             freq=note_to_freq(self.base_note)
             self.scale_peaks=[freq]
             i=0

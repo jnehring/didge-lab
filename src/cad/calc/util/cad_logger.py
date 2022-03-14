@@ -82,6 +82,62 @@ def logfile_to_dataframe(infile):
 def loss_report(infile, outfile=None):
     df=logfile_to_dataframe(infile)
 
+    offset=-1
+    accumulated_step=[]
+
+    for pi in df.pool_index:
+        if pi==0:
+            offset+=1
+        accumulated_step.append(offset)
+    df["accumulated_step"]=accumulated_step
+
+    # steps=df.pipeline_step.unique()
+
+    # for step in steps:
+    #     num_steps=df[df.pipeline_step==step].generation.max()+1
+    #     generations_per_step[step]=offset
+    #     offset += num_steps
+    # df["accumulated_step"]=df.pipeline_step.apply(lambda x : generations_per_step[x])
+    
+    loss_columns=[]
+    for c in df.columns:
+        if c.find("loss")>=0:
+            loss_columns.append(c)
+
+    pool_size=len(df[0:100]["pool_index"].unique())
+
+    losses={}
+    for c in loss_columns:
+        losses[c]={
+            "y_top": [],
+            "y_low": [],
+            "y_medium": []
+        }
+
+    x=[]
+    i=0
+    offset=0
+    while offset<len(df):
+
+        for c in loss_columns:
+
+            l=df[i:i+pool_size][c]
+            losses[c]["y_medium"].append(l.mean())
+
+        x.append(i)
+        i+=1
+        offset=i*pool_size
+
+    charts=[x["y_medium"] for x in losses.values()]
+    plt.clf()
+
+    for chart in charts:
+        plt.plot(x, chart)
+    plt.legend(loss_columns)
+
+def loss_report_old(infile, outfile=None):
+    df=logfile_to_dataframe(infile)
+
     # averages loss over all iterations
     df["id"]=df.pipeline_step.astype(str) + "_" + df.generation.astype(str)
 
