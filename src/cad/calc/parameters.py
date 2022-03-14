@@ -587,61 +587,6 @@ class RandomDidgeParameters(MutationParameterSet):
     def after_mutate(self):
         self.get("n_segments").toint()
 
-class ConeMutationParameter(MutationParameterSet):
-
-    def __init__(self):
-        MutationParameterSet.__init__(self)
-        self.add_param("length", 1200, 2800)
-        self.add_param("bell_width", 40, 120)
-        self.add_param("min_t", -10, 0)
-        self.add_param("max_t",0.01, 10)
-
-        self.d1=32
-        
-    def make_geo(self):
-        n_segments=20
-
-        geo=[]
-        min_t=self.get_value("min_t")
-        max_t=self.get_value("max_t")
-        t_diff=max_t-min_t
-        max_y=(math.pow(2, (t_diff*n_segments/(n_segments+1))+min_t))-math.pow(2, min_t)
-        for i in range(n_segments+1):
-            x=self.get_value("length")*i/n_segments
-            y=((math.pow(2, (t_diff*i/(n_segments+1))+min_t))-math.pow(2, min_t))/max_y
-            y*=(self.get_value("bell_width")-self.d1)
-            y+=self.d1
-            geo.append([x,y])
-        return Geo(geo=geo)
-
-class ConeBubble(MutationParameterSet):
-    def __init__(self, father_cone, father_bubble):
-        MutationParameterSet.__init__(self)
-        
-        self.father_cone=father_cone
-        self.father_bubble=father_bubble
-
-        for father in [father_cone, father_bubble]:
-            for param in father.mutable_parameters:
-                self.add_param(param.name, param.minimum, param.maximum, param.value, param.immutable)
-
-        self.after_mutate()
-    
-    def after_mutate(self):
-        for param in self.mutable_parameters:
-            try:
-                self.father_cone.set(param.name, param.value)
-                self.father_bubble.set(param.name, param.value)
-            except Exception as e:
-                continue
-            
-        self.father_cone.after_mutate()
-        self.father_bubble.after_mutate()
-
-    def make_geo(self):
-        self.father_bubble.geo=self.father_cone.make_geo()
-        return self.father_bubble.make_geo()
-
 class IringaShape(MutationParameterSet):
 
     def __init__(self):
@@ -978,4 +923,20 @@ class MatemaShape(MutationParameterSet):
         geo=Geo(shape)
 
         geo=geotools.fix_zero_length_segments(geo)
+        return geo
+
+
+class KizimkaziShape(MatemaShape):
+
+    def __init__(self, length):
+        MatemaShape.__init__(self)
+        self.length=length
+        self.set("length", length, min=length, max=length)
+
+    def make_geo(self):
+        geo=super(KizimkaziShape, self).make_geo()
+        new_length=self.length-geo.geo[-1][1]*1/3
+        ratio=new_length/self.length
+        for i in range(len(geo.geo)):
+            geo.geo[i][0]*=ratio
         return geo

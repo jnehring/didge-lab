@@ -1,9 +1,9 @@
-# kizimkazi has many toots
+# kizimkazi has two singer notes
 
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
-from cad.calc.parameters import MbeyaShape
+from cad.calc.parameters import KizimkaziShape
 from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss
 import numpy as np
 from cad.calc.geo import geotools
@@ -16,6 +16,7 @@ from cad.ui.evolution_ui import EvolutionUI
 from cad.calc.util.losslog import LossLog
 from cad.calc.util.cad_logger import LossCADLogger
 import logging
+import sys
 
 try:
     App.full_init("evolve_kizimkazi")
@@ -24,69 +25,51 @@ try:
 
     class KizimkaziLoss(LossFunction):
 
-        def __init__(self, target_balance):
+        def __init__(self,):
             LossFunction.__init__(self)
-            self.base_note=-31
-            scale=[0,3,7,10]
-            freq=note_to_freq(self.base_note)
-            self.scale_peaks=[freq]
-            i=0
-            while freq<1000:
-                oct=np.floor(i/len(scale))
-                note=self.base_note + oct*12 + scale[i%len(scale)]
-                freq=note_to_freq(note)
-                i+=1
-                self.scale_peaks.append(math.log(freq, 2))
-            self.target_balance=target_balance
 
+            self.base_note=-31
+
+            self.notes=[]
+
+            for i in range(5):
+                self.notes.append(self.base_note + 4 + i*12)
+                self.notes.append(self.base_note + 7 + i*12)
+
+            self.notes=[note_to_freq(x) for x in self.notes]
+            
         def get_loss(self, geo, context=None):
 
-            fundamental=single_note_loss(-31, geo)*4
-            octave=single_note_loss(-19, geo, i_note=1)
+            fundamental=single_note_loss(self.base_note, geo)*5
+            octave=single_note_loss(self.base_note+12, geo, i_note=1)
 
-            n_toots=6
-            n_toots_loss=20*min(n_toots+1-len(geo.get_cadsd().get_notes()), n_toots+1)
-            if n_toots_loss<0:
-                n_toots_loss=0
+            peaks=geo.get_cadsd().get_notes().copy()
+            singer_tuning_loss=0
+            singer_volume_loss=0
+            peaks=geo.
+            for target_freq in self.target_peaks:
+                peaks["diff"]=abs(peaks.freq-target_freq)
+                closest_peak=peaks[peaks["diff"]==peaks["diff"].min()].iloc[0]
 
-            # tune all other overtones
-            toot_tuning_loss=0
-            notes=geo.get_cadsd().get_notes()
-            notes=notes[notes.rel_imp>0.15]
-            toot_volume_loss=0
-            for ix, note in notes.iterrows():
-                f1=math.log(note["freq"], 2)
-                f2=min(self.scale_peaks, key=lambda x:abs(x-f1))
-                toot_tuning_loss += math.sqrt(abs(f1-f2))
-                toot_volume_loss+=math.sqrt(1/(note["impedance"]/1e6))
-            toot_tuning_loss*=15
+                f1=math.log(target_freq, 2)
+                f2=math.log(closest_peak["freq"], 2)
+                singer_tuning_loss += math.sqrt(abs(f1-f2))
 
-            d_loss = diameter_loss(geo)*0.1
+                singer_volume_loss += math.sqrt(1/(closest_peak["impedance"]/1e6))
+            singer_tuning_loss*=4
+            singer_volume_loss*=2
 
-            balance_loss=0
-            balance=cadsd_octave_tonal_balance(geo)
-            for i in range(len(balance)):
-                balance_loss += abs(balance[i]-self.target_balance[i])
+            d_loss=diameter_loss(geo)
 
-            loss = {
-                "toot_tuning_loss": toot_tuning_loss,
-                "toot_volume_loss": toot_volume_loss,
-                "diameter_loss": d_loss,
-                "fundamental_loss": fundamental,
-                "octave_loss": octave,
-                "balance_loss": balance_loss,
-                "n_toots_loss": n_toots_loss
-            }
 
             loss["loss"]=sum(loss.values())
 
             return loss
-    geo=[[0,32], [800,32], [900,38], [970,42], [1050, 40], [1180, 48], [1350, 60], [1390, 68], [1500, 72]]
-    geo=Geo(geo)
-    open_didge_balance=cadsd_octave_tonal_balance(geo)
 
-    loss=KizimkaziLoss(open_didge_balance)    
-    father=MbeyaShape()
+    loss=KizimkaziLoss()    
+    father=KizimkaziShape(1462)
+    father.make_geo()
+    sys.exit(0)
     initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 
     pipeline=Pipeline()
