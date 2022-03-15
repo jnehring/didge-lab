@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     p = argparse.ArgumentParser()
     p.add_argument('-infile', type=str, help='input file. if infile is not specified it will load the latest file')
-    p.add_argument('-limit', type=int, default=1, help='limit to first n shapes')
+    p.add_argument('-limit', type=int, default=-1, help='limit to first n shapes')
     args = p.parse_args()
 
     infile=args.infile
