@@ -40,12 +40,7 @@ if __name__=="__main__":
         logging.info("fundamental", math.sin(length*2*np.pi/wavelength_fundamental))
         print("1st harmomnic", math.sin(length*2*np.pi/wavelength_2nd_harmonic))
 
-        1/0
-        print(fundamental_freq*1/4)
-        
-        # freq 2nd overtone
-        print(3*fundamental_freq*3/4)
-        
+        sys.exit(0)        
 
 
 
@@ -58,16 +53,12 @@ if __name__=="__main__":
 
         pipeline=Pipeline()
 
-        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
-        pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=200, generation_size=70))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
 
-        for i in range(10):
-            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+    for i in range(10):
+        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 
         ui=EvolutionUI()
 

@@ -21,6 +21,7 @@ from cad.calc.loss import LossFunction, TootTuningHelper, single_note_loss, diam
 import pickle
 import json
 from cad.evo.evolve_matema import MatemaLoss
+from cad.calc.parameters import MatemaShape
 
 f=note_to_freq(-31)
 for i in range(1, 10):
