@@ -3,12 +3,13 @@
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
-from cad.calc.parameters import KizimkaziShape
+from cad.calc.parameters import MatemaShape
+from cad.evo.evolve_mbeya import MbeyaLoss
 from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss
 import numpy as np
 from cad.calc.geo import geotools
 from cad.cadsd.cadsd import CADSD, cadsd_octave_tonal_balance
-from cad.calc.conv import note_to_freq, note_name, freq_to_note_and_cent
+from cad.calc.conv import note_to_freq, note_name, freq_to_note_and_cent, freq_to_wavelength
 import math
 import numpy as np
 from cad.calc.geo import Geo
@@ -17,77 +18,60 @@ from cad.calc.util.losslog import LossLog
 from cad.calc.util.cad_logger import LossCADLogger
 import logging
 import sys
+import logging
 
-try:
-    App.full_init("evolve_kizimkazi")
+if __name__=="__main__":
+    try:
+        App.full_init("evolve_kizimkazi")
 
-    losslogger=LossCADLogger()
+        losslogger=LossCADLogger()
 
-    class KizimkaziLoss(LossFunction):
+        fundamental=-31
+        fundamental_freq=note_to_freq(fundamental)
+        
+        length=1168.6795199638118
 
-        def __init__(self,):
-            LossFunction.__init__(self)
+        wavelength_fundamental=freq_to_wavelength(fundamental_freq)
+        wavelength_2nd_harmonic=freq_to_wavelength(fundamental_freq*3)
+        wavelength_4nd_harmonic=freq_to_wavelength(fundamental_freq*5)
 
-            self.base_note=-31
+        
 
-            self.notes=[]
+        logging.info("fundamental", math.sin(length*2*np.pi/wavelength_fundamental))
+        print("1st harmomnic", math.sin(length*2*np.pi/wavelength_2nd_harmonic))
 
-            for i in range(5):
-                self.notes.append(self.base_note + 4 + i*12)
-                self.notes.append(self.base_note + 7 + i*12)
-
-            self.notes=[note_to_freq(x) for x in self.notes]
-            
-        def get_loss(self, geo, context=None):
-
-            fundamental=single_note_loss(self.base_note, geo)*5
-            octave=single_note_loss(self.base_note+12, geo, i_note=1)
-
-            peaks=geo.get_cadsd().get_notes().copy()
-            singer_tuning_loss=0
-            singer_volume_loss=0
-            peaks=geo.
-            for target_freq in self.target_peaks:
-                peaks["diff"]=abs(peaks.freq-target_freq)
-                closest_peak=peaks[peaks["diff"]==peaks["diff"].min()].iloc[0]
-
-                f1=math.log(target_freq, 2)
-                f2=math.log(closest_peak["freq"], 2)
-                singer_tuning_loss += math.sqrt(abs(f1-f2))
-
-                singer_volume_loss += math.sqrt(1/(closest_peak["impedance"]/1e6))
-            singer_tuning_loss*=4
-            singer_volume_loss*=2
-
-            d_loss=diameter_loss(geo)
+        1/0
+        print(fundamental_freq*1/4)
+        
+        # freq 2nd overtone
+        print(3*fundamental_freq*3/4)
+        
 
 
-            loss["loss"]=sum(loss.values())
 
-            return loss
+        loss=KizimkaziLoss()    
+        father=MatemaShape(n_bubbles=1, add_bubble_prob=0.3)
+        geo=father.make_geo()
+        print(geo.geo[-1])
+        sys.exit(0)
+        initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 
-    loss=KizimkaziLoss()    
-    father=KizimkaziShape(1462)
-    father.make_geo()
-    sys.exit(0)
-    initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
+        pipeline=Pipeline()
 
-    pipeline=Pipeline()
+        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
+        pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
+        for i in range(10):
+            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 
-    for i in range(10):
-        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        ui=EvolutionUI()
 
-    ui=EvolutionUI()
+        pipeline.run()
 
-    pipeline.run()
-
-except Exception as e:
-    App.log_exception(e)
+    except Exception as e:
+        App.log_exception(e)
