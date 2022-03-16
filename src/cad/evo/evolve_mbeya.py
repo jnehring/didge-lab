@@ -23,6 +23,7 @@ class MbeyaLoss(LossFunction):
     # add_octave: the first toot is one octave above the fundamental
     # scale: define the scale of the toots of the didgeridoo as semitones relative from the fundamental
     # target_peaks: define the target peaks as list of math.log(frequency, 2). overrides scale 
+    # n_notes: set > 0 to determine the number of impedance peaks (above fundamental and add_octave)
     # weights: override the default weights
     # {
     #     "tuning_loss": 8,
@@ -32,8 +33,8 @@ class MbeyaLoss(LossFunction):
     #     "diameter_loss": 0.1,
     #     "fundamental_loss": 8,
     # }
-    def __init__(self):
-        LossFunction.__init__(self, fundamental=-31, add_octave=True, scale=[0,2,3,5,7,9,10], target_peaks=None, weights={})
+    def __init__(self, fundamental=-31, add_octave=True, n_notes=-1, scale=[0,2,3,5,7,9,10], target_peaks=None, weights={}):
+        LossFunction.__init__(self)
 
         self.weights={
             "tuning_loss": 8,
@@ -52,8 +53,9 @@ class MbeyaLoss(LossFunction):
         self.scale=scale
         self.fundamental=fundamental
         self.add_octave=add_octave
+        self.n_notes=n_notes
 
-        if self.target_peaks is not None:
+        if target_peaks is not None:
             self.target_peaks=target_peaks
         else:
             self.scale_note_numbers=[]
@@ -69,7 +71,7 @@ class MbeyaLoss(LossFunction):
                     freq=math.log(freq, 2)
                     self.target_peaks.append(freq)
 
-        def get_loss(self, geo, context=None):
+    def get_loss(self, geo, context=None):
 
         fundamental=single_note_loss(-31, geo)*self.weights["fundamental_loss"]
         octave=single_note_loss(-19, geo, i_note=1)*self.weights["octave_loss"]
@@ -92,7 +94,10 @@ class MbeyaLoss(LossFunction):
         tuning_loss*=self.weights["tuning_loss"]
         volume_loss*=self.weights["volume_loss"]
         
-        n_note_loss=max(5-len(notes), 0)*self.weights["n_note_loss"]
+        n_notes=self.n_notes+1
+        if self.add_octave:
+            n_notes+=1
+        n_note_loss=max(n_notes-len(notes), 0)*self.weights["n_note_loss"]
 
         d_loss = diameter_loss(geo)*self.weights["diameter_loss"]
 
@@ -108,7 +113,7 @@ class MbeyaLoss(LossFunction):
         loss["loss"]=sum(loss.values())
         return loss
 
-if __name__=="__main"__:
+if __name__=="__main__":
     try:
         App.full_init("evolve_penta")
 
@@ -118,7 +123,7 @@ if __name__=="__main"__:
 
         losslogger=LossCADLogger()
 
-        loss=MbeyaLoss()    
+        loss=MbeyaLoss(n_notes=3)    
         father=MbeyaShape()
         initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 

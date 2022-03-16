@@ -35,30 +35,28 @@ if __name__=="__main__":
         wavelength_2nd_harmonic=freq_to_wavelength(fundamental_freq*3)
         wavelength_4nd_harmonic=freq_to_wavelength(fundamental_freq*5)
 
-        
+        max_fundamental=math.sin(length*2*np.pi/wavelength_fundamental)
+        max_2nd_harmonic=math.sin(length*2*np.pi/wavelength_2nd_harmonic)
+        max_4nd_harmonic=math.sin(length*2*np.pi/wavelength_4nd_harmonic)
+        logging.info(f"fundamental\t{max_fundamental}")
+        logging.info(f"2nd harmonic\t{max_2nd_harmonic}")
+        logging.info(f"4th harmonic\t{max_4nd_harmonic}")
 
-        logging.info("fundamental", math.sin(length*2*np.pi/wavelength_fundamental))
-        print("1st harmomnic", math.sin(length*2*np.pi/wavelength_2nd_harmonic))
+        target_peaks=[fundamental_freq*3, fundamental_freq*5]
 
-        sys.exit(0)        
-
-
-
-        loss=KizimkaziLoss()    
+        loss=MbeyaLoss(fundamental=fundamental, target_peaks=target_peaks, n_notes=3)    
         father=MatemaShape(n_bubbles=1, add_bubble_prob=0.3)
-        geo=father.make_geo()
-        print(geo.geo[-1])
-        sys.exit(0)
+
         initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 
         pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=200, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
+        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=200, generation_size=70))
+        pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
 
-    for i in range(10):
-        pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
-        pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
+        for i in range(10):
+            pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
+            pipeline.add_step(AddPointOptimizerFinetune(loss, n_generations=100, generation_size=30))
 
         ui=EvolutionUI()
 
