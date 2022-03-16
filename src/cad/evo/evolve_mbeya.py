@@ -1,5 +1,4 @@
-# mbeya should have the frequency spektrum of the open didgeridoo
-# it is tuned in d and has toots in the minor scale
+# mbeya is tuned in d and has toots in the minor scale
 
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
@@ -21,74 +20,65 @@ import logging
 try:
     App.full_init("evolve_penta")
 
-    geo=[[0,32], [800,32], [900,38], [970,42], [1050, 40], [1180, 48], [1350, 60], [1390, 68], [1500, 72]]
-    geo=Geo(geo)
-    open_didge_balance=cadsd_octave_tonal_balance(geo)
-
     losslogger=LossCADLogger()
 
     class MbeyaLoss(LossFunction):
 
-        def __init__(self, target_balance):
+        def __init__(self):
             LossFunction.__init__(self)
-            self.tuning_helper=TootTuningHelper([0,3,7, 10], -31)
-            self.target_balance=target_balance
+
+            self.scale=[0,2,3,5,7,9,10]
+            self.fundamental=-31
+
+            self.scale_note_numbers=[]
+            for i in range(len(self.scale)):
+                self.scale_note_numbers.append(self.scale[i]+self.fundamental)
+
+            n_octaves=10
+            self.target_peaks=[]
+            for note_number in self.scale_note_numbers:
+                for i in range(0, n_octaves):
+                    transposed_note=note_number+12*i
+                    freq=note_to_freq(transposed_note)
+                    freq=math.log(freq, 2)
+                    self.target_peaks.append(freq)
 
         def get_loss(self, geo, context=None):
 
             fundamental=single_note_loss(-31, geo)*4
             octave=single_note_loss(-19, geo, i_note=1)
 
-            tuning_deviations=self.tuning_helper.get_tuning_deviations(geo)
-            for i in range(len(tuning_deviations)):
-                tuning_deviations[i]*=tuning_deviations[i]
-            tuning_loss=sum(tuning_deviations)*5
+            notes=geo.get_cadsd().get_notes()
+            tuning_loss=0
+            volume_loss=0
 
-            n_notes=len(tuning_deviations)
-            n_note_loss=0
-            if n_notes<3:
-                n_note_loss=0
-            elif n_notes==4:
-                n_note_loss=-0.1
-            elif n_notes==5:
-                n_note_loss=-0.15
-            elif n_notes>5:
-                n_note_loss=-0.2
-            elif n_notes>6:
-                n_note_loss=-0.25
-
-            balance_loss=0
-            balance=cadsd_octave_tonal_balance(geo)
+            if len(notes)>2:
+                for ix, note in notes[2:].iterrows():
+                    f1=math.log(note["freq"],2)
+                    closest_target_index=np.argmin([abs(x-f1) for x in self.target_peaks])
+                    f2=self.target_peaks[closest_target_index]
+                    tuning_loss += math.sqrt(abs(f1-f2))
+                    volume_loss += math.sqrt(1/(note["impedance"]/1e6))
+            tuning_loss*=4
+            volume_loss*=2
+            
+            n_note_loss=max(5-len(notes), 0)*5
 
             d_loss = diameter_loss(geo)*0.1
 
-            for i in range(len(balance)):
-                balance_loss += abs(balance[i]-self.target_balance[i])
-
-            # final_loss=balance_loss + tuning_loss + n_note_loss + d_loss
-
-            # return {
-            #     "loss": final_loss,
-            #     "balance_loss": balance_loss,
-            #     "tuning_loss": tuning_loss,
-            #     "n_note_loss": n_note_loss,
-            #     "diameter_loss": d_loss
-            # }            
-            
-            final_loss=tuning_loss + n_note_loss + d_loss + fundamental + octave + balance_loss
-
-            return {
-                "loss": final_loss,
+            loss={
+                # "tuning_loss": tuning_loss,
                 "tuning_loss": tuning_loss,
+                "volume_loss": volume_loss,
                 "n_note_loss": n_note_loss,
                 "diameter_loss": d_loss,
                 "fundamental_loss": fundamental,
                 "octave_loss": octave,
-                "balance_loss": balance_loss
             }
-            return final_loss
+            loss["loss"]=sum(loss.values())
+            return loss
 
-    loss=MbeyaLoss(open_didge_balance)    
+    loss=MbeyaLoss()    
     father=MbeyaShape()
     initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 
