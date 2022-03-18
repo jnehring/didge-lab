@@ -3,6 +3,7 @@ import pickle
 from cad.cadsd.cadsd import CADSD
 import argparse
 import os
+import sys
 
 if __name__ == "__main__":
 
@@ -17,7 +18,11 @@ if __name__ == "__main__":
         infile="output"
         folder=sorted(os.listdir(infile))[-1]
         infile=os.path.join(infile, folder, "results")
-        pkl=sorted(os.listdir(infile))[-1]
+        
+        candidates=os.listdir(infile)
+        candidates=[int(x[0:x.find(".")]) for x in candidates]
+        candidates=sorted(candidates)
+        pkl=str(candidates[-1]) + ".pkl"
         infile=os.path.join(infile, pkl)
 
     print("loading from infile " + infile)
