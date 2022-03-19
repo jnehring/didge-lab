@@ -133,7 +133,18 @@ def loss_report(infile, outfile=None):
 
     for chart in charts:
         plt.plot(x, chart)
+
+    # add vertical lines
+    for step in df.pipeline_step.unique():
+        maxx=df[df.pipeline_step==step].accumulated_step.max()
+
+        if maxx < df.accumulated_step.max():
+            plt.axvline(x=maxx)
+
     plt.legend(loss_columns)
+
+    if outfile is not None:
+        plt.savefig(outfile)
 
 def loss_report_old(infile, outfile=None):
     df=logfile_to_dataframe(infile)
