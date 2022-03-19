@@ -36,13 +36,15 @@ class KizimkaziLoss(LossFunction):
     #     "diameter_loss": 0.1,
     #     "fundamental_loss": 8,
     # }
-    def __init__(self, fundamental=-31, add_octave=True, n_notes=-1, scale=[0,2,3,5,7,9,10], target_peaks=None, weights={}):
+    def __init__(self, fundamental=-31, add_octave=True, n_notes=-1, scale=[0,2,3,5,7,9,10], singer_peaks=None, weights={}):
         LossFunction.__init__(self)
 
         self.weights={
-            "tuning_loss": 8,
-            "volume_loss": 0.5,
-            "octave_loss": 4,
+            "other_tuning_loss": 5,
+            "other_volume_loss": 0.3,
+            "singer_tuning_loss": 8,
+            "singer_volume_loss": 1.8,
+            "octave_loss": 0,
             "n_note_loss": 5,
             "diameter_loss": 0.1,
             "fundamental_loss": 8,
@@ -52,68 +54,86 @@ class KizimkaziLoss(LossFunction):
                 raise Exception(f"Unknown weight {key}")
             self.weights[key]=value
 
+        self.singer_peaks=[math.log(freq, 2) for freq in singer_peaks]
 
         self.scale=scale
         self.fundamental=fundamental
         self.add_octave=add_octave
         self.n_notes=n_notes
 
-        if target_peaks is not None:
-            self.target_peaks=target_peaks
-        else:
-            self.scale_note_numbers=[]
-            for i in range(len(self.scale)):
-                self.scale_note_numbers.append(self.scale[i]+self.fundamental)
+        self.scale_note_numbers=[]
+        for i in range(len(self.scale)):
+            self.scale_note_numbers.append(self.scale[i]+self.fundamental)
 
-            n_octaves=10
-            self.target_peaks=[]
-            for note_number in self.scale_note_numbers:
-                for i in range(0, n_octaves):
-                    transposed_note=note_number+12*i
-                    freq=note_to_freq(transposed_note)
-                    freq=math.log(freq, 2)
-                    self.target_peaks.append(freq)
+        n_octaves=10
+        self.target_peaks=[]
+        for note_number in self.scale_note_numbers:
+            for i in range(0, n_octaves):
+                transposed_note=note_number+12*i
+                freq=note_to_freq(transposed_note)
+                freq=math.log(freq, 2)
+                self.target_peaks.append(freq)
 
     def get_loss(self, geo, context=None):
 
         fundamental=single_note_loss(-31, geo)*self.weights["fundamental_loss"]
         octave=single_note_loss(-19, geo, i_note=1)*self.weights["octave_loss"]
 
-        notes=geo.get_cadsd().get_notes()
+        notes=geo.get_cadsd().get_notes().copy()
         tuning_loss=0
         volume_loss=0
 
         n_notes=self.n_notes+1
-        if self.add_octave:
-            n_notes+=1
-        n_note_loss=abs(n_notes-len(notes))*self.weights["n_note_loss"]
+
+        n_note_loss=max(n_notes-len(notes), 0)*self.weights["n_note_loss"]
         if len(notes)<n_notes:
             return {"loss": 1000000}
-
-        impedances=list(notes.impedance)
-        impedances=sorted(impedances, reverse=True)
-        notes=notes[notes.impedance>=impedances[n_notes-1]]
         
         start_index=1
         if self.add_octave:
             start_index+=1
-        if len(notes)>start_index:
-            for ix, note in notes[start_index:].iterrows():
-                f1=math.log(note["freq"],2)
-                closest_target_index=np.argmin([abs(x-f1) for x in self.target_peaks])
-                f2=self.target_peaks[closest_target_index]
-                tuning_loss += math.sqrt(abs(f1-f2))
-                volume_loss += math.sqrt(1/(note["impedance"]/1e6))
 
-        tuning_loss*=self.weights["tuning_loss"]
-        volume_loss*=self.weights["volume_loss"]
+        notes["log_freq"]=notes.freq.apply(lambda x : math.log(x, 2))
+
+        # singer tuning loss
+        singer_indizes=[]
+        singer_tuning_loss=0
+        singer_volume_loss=0
+        for freq in self.singer_peaks:
+            closest_note=np.argmin([abs(x-freq) for x in notes.log_freq])
+            f2=list(notes.log_freq)[closest_note]
+            singer_indizes.append(singer_indizes)
+            singer_tuning_loss += math.sqrt(abs(freq-f2))
+            singer_volume_loss += math.sqrt(1/(list(notes.impedance)[closest_note]/1e6))
+        singer_tuning_loss*=self.weights["singer_tuning_loss"]
+        singer_volume_loss*=self.weights["singer_volume_loss"]
+
+        # other toots loss
+        other_tuning_loss=0
+        other_volume_loss=0
+        for i in range(start_index, len(notes)):
+            if i in singer_indizes:
+                continue
+            f1=list(notes.log_freq)[i]
+            closest_note=np.argmin([abs(f1-f2) for f2 in self.target_peaks])
+            f2=self.target_peaks[closest_note]
+            other_tuning_loss += math.sqrt(abs(f1-f2))
+            other_volume_loss += math.sqrt(1/(list(notes.impedance)[i]/1e6))
+
+        num_other_toots=len(notes) - (start_index + len(self.singer_peaks))
+        other_tuning_loss/=num_other_toots
+        other_volume_loss/=num_other_toots
+        other_tuning_loss*=self.weights["other_tuning_loss"]
+        other_volume_loss*=self.weights["other_volume_loss"]
         
         d_loss = diameter_loss(geo)*self.weights["diameter_loss"]
 
         loss={
             # "tuning_loss": tuning_loss,
-            "tuning_loss": tuning_loss,
-            "volume_loss": volume_loss,
+            "singer_tuning_loss": singer_tuning_loss,
+            "singer_volume_loss": singer_volume_loss,
+            "other_tuning_loss": other_tuning_loss,
+            "other_volume_loss": other_volume_loss,
             "n_note_loss": n_note_loss,
             "diameter_loss": d_loss,
             "fundamental_loss": fundamental,
@@ -151,10 +171,7 @@ if __name__=="__main__":
         target_peaks=[fundamental_freq*3, fundamental_freq*5]
 
         length-=25
-        weights={
-            "octave_loss": 0
-        }
-        loss=KizimkaziLoss(fundamental=fundamental, target_peaks=target_peaks, add_octave=False, n_notes=2, weights=weights)    
+        loss=KizimkaziLoss(fundamental=fundamental, singer_peaks=target_peaks, add_octave=False, n_notes=2)    
         father=MatemaShape(n_bubbles=1, add_bubble_prob=0.3)
 
         father.set_minmax("length", length, length)
