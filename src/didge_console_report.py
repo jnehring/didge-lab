@@ -3,12 +3,14 @@ import pickle
 from cad.cadsd.cadsd import CADSD
 import argparse
 import os
+import sys
 
 if __name__ == "__main__":
 
     p = argparse.ArgumentParser()
     p.add_argument('-infile', type=str, help='input file. if infile is not specified it will load the latest file')
     p.add_argument('-limit', type=int, default=-1, help='limit to first n shapes')
+    p.add_argument('-full_shape', action="store_true", help='output the full shape')
     args = p.parse_args()
 
     infile=args.infile
@@ -17,7 +19,11 @@ if __name__ == "__main__":
         infile="output"
         folder=sorted(os.listdir(infile))[-1]
         infile=os.path.join(infile, folder, "results")
-        pkl=sorted(os.listdir(infile))[-1]
+        
+        candidates=os.listdir(infile)
+        candidates=[int(x[0:x.find(".")]) for x in candidates]
+        candidates=sorted(candidates)
+        pkl=str(candidates[-1]) + ".pkl"
         infile=os.path.join(infile, pkl)
 
     print("loading from infile " + infile)
@@ -33,5 +39,9 @@ if __name__ == "__main__":
         print("-"*20)
         print(f"mutant {i}")
         geo=mutant_pool.get(i).geo
-        print("shape", str(geo.geo[-1]))
+
+        if args.full_shape:
+            print("shape", str(geo.geo))
+        else:
+            print("shape", str(geo.geo[-1]))
         print(geo.get_cadsd().get_notes())

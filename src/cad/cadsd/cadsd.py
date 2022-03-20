@@ -93,7 +93,7 @@ class CADSD():
         fft=self.get_highres_impedance_spektrum()
         peaks = fft.iloc[argrelextrema(fft.impedance.values, np.greater_equal)[0]].copy()
         peaks["rel_imp"]=peaks.impedance / peaks.iloc[0]["impedance"]
-        peaks=peaks[peaks.rel_imp>0.1]
+        #peaks=peaks[peaks.rel_imp>0.1]
         t=[freq_to_note_and_cent(x) for x in peaks["freq"]]
         peaks["note-number"], peaks["cent-diff"]=zip(*t)
         peaks["note-name"] = peaks["note-number"].apply(lambda x : note_name(x))
