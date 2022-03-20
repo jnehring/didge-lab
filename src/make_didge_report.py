@@ -166,11 +166,20 @@ def didge_report(geos, outdir, cad_report=None, parameters=None, losses=None, co
     os.system("pdflatex report")
     os.chdir(current_dir)
 
+    # cleanup
+    files=os.listdir(outdir)
+    for f in files:
+        if f=="report.pdf" or f[-7:] == "geo.txt":
+            continue
+        
+        os.remove(os.path.join(outdir, f))
+
 if __name__ == "__main__":
 
     p = configargparse.ArgParser()
     p.add('-infile', type=str, required=True, help='input file')
     p.add('-limit', type=int, default=-1, help='limit to first n shapes')
+    p.add('-single', type=int, default=-1, help='create a report for a single shape.')
     options = p.parse_args()
 
     f=open(options.infile, "rb")
@@ -182,23 +191,37 @@ if __name__ == "__main__":
         filename=filename[0:-4]
 
     outdir=os.path.join(os.path.dirname(options.infile), "report_" + filename)
+
+    if options.single >= 0:
+        outdir += "_single_" + str(options.single)
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
+    cad_report=None
+    if options.single<0:
+        cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
 
     geos=[]
     parameters=[]
     losses=[]
 
-    total=pool.len()
-    if options.limit>0 and options.limit < pool.len():
-        total=options.limit
-
-    for i in range(total):
-        mpe=pool.get(i)
+    if options.single>=0:
+        mpe=pool.get(options.single)
         geos.append(mpe.geo)
         losses.append(mpe.loss)
         parameters.append(mpe.parameterset)
 
-    didge_report(geos, outdir, cad_report, parameters=parameters, losses=losses)
+        didge_report(geos, outdir, cad_report, parameters=parameters, losses=losses)
+    else:
+
+        total=pool.len()
+        if options.limit>0 and options.limit < pool.len():
+            total=options.limit
+
+        for i in range(total):
+            mpe=pool.get(i)
+            geos.append(mpe.geo)
+            losses.append(mpe.loss)
+            parameters.append(mpe.parameterset)
+
+        didge_report(geos, outdir, cad_report, parameters=parameters, losses=losses)

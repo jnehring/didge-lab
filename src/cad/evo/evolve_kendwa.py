@@ -1,5 +1,4 @@
-# mbeya should have the frequency spektrum of the open didgeridoo
-# it is tuned in d and has toots in the minor scale
+# kendwa has toots in overtones
 
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
