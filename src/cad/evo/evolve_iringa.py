@@ -1,4 +1,4 @@
-# iringa is tuned in a minor pentatonic
+# iringa is tuned in a major pentatonic
 
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
@@ -28,7 +28,7 @@ try:
             LossFunction.__init__(self)
 
             self.base_note=-31
-            scale=[0,3,5,7,10]
+            scale=[0,4,5,7,10]
             freq=note_to_freq(self.base_note)
             self.scale_peaks=[freq]
             i=0
@@ -85,8 +85,8 @@ try:
 
     pipeline=Pipeline()
 
-    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=100, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=50, generation_size=30))
+    pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500, generation_size=70))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
 
     for i in range(15):
         pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))
