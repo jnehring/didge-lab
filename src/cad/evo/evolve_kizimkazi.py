@@ -42,7 +42,7 @@ class KizimkaziLoss(LossFunction):
         self.weights={
             "other_tuning_loss": 5,
             "other_volume_loss": 0.3,
-            "singer_tuning_loss": 8,
+            "singer_tuning_loss": 16,
             "singer_volume_loss": 1.8,
             "octave_loss": 0,
             "n_note_loss": 5,
