@@ -8,6 +8,7 @@ from cad.common.app import App
 import logging
 from cad.calc.mutation import MutantPool
 from cad.ui.evolution_ui import EvolutionUI
+import time
 
 class PipelineStep(ABC):
 
@@ -39,9 +40,17 @@ class Pipeline:
     def __init__(self):
         self.steps=[]
         self.folder=os.path.join(App.get_output_folder(), "results")
+        self.log={}
+        self.log_file=os.path.join(folder, "pipeline.json")
         
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
+
+    def write_log(self, key, value):
+        self.log[key]=value
+        f=open(self.log_file, "w")
+        f.write(json.dumps(self.log, indent=4))
+        f.close()
 
     def add_step(self, step : PipelineStep):
         self.steps.append(step)
@@ -51,11 +60,16 @@ class Pipeline:
         try:
             logging.info("starting pipeline " + App.get_config()["pipeline_name"])
             App.set_context("state", "started")
+            start_time=time.time()
+
+            self.write_log("pipeline_name", App.get_config()["pipeline_name"])
 
             pool=None
 
             no_cache=App.get_config()["no_cache"]
             for i in range(len(self.steps)):
+
+                step_start_time=time.time()
 
                 App.set_context("current_pipeline_step", i)
                 App.set_context("pipeline_step_name", self.steps[i].name)
@@ -92,6 +106,12 @@ class Pipeline:
                     f=open(pkl_file, "wb")
                     pickle.dump(pool, f)
                     f.close()
+
+                duration=time.time()-step_start_time
+                self.write_log(f"duration_step_{i}", duration)
+
+            duration=time.time()-start_time
+            self.write_log(f"duration_total", duration)
 
             App.publish("pipeline_finished")
             logging.info("pipeline finished")

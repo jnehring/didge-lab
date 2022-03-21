@@ -22,7 +22,11 @@ import pickle
 import json
 from cad.evo.evolve_matema import MatemaLoss
 
-f=note_to_freq(-31)
+fundamental_freq=note_to_freq(-31)
+n_overtone=5
+f_overtone=fundamental_freq*(n_overtone+1)
+f_overtone=440
+
 tones=sorted([1,2,3])
 tones=[1,2,3]
 tones=sorted([1,5,6,3])
@@ -32,7 +36,7 @@ def freq_plot():
     for i in tones:
         for x in np.arange(500, 610, 0.1):
             name="fundamental" if i==1 else f"overtone {i-1}"
-            freq=f*i
+            freq=fundamental_freq*i
             note,cent=freq_to_note_and_cent(freq)
             note=note_name(note)
             name += f", {note}, {freq:.2f} Hz"
@@ -45,7 +49,7 @@ def bore_plot():
     data=[]
     for i in tones:
         name="fundamental" if i==1 else f"overtone {i-1}"
-        freq=f*i
+        freq=fundamental_freq*i
         note,cent=freq_to_note_and_cent(freq)
         note=note_name(note)
         name += f", {note}, {freq:.2f} Hz"
@@ -53,21 +57,19 @@ def bore_plot():
         wavelength=freq_to_wavelength(freq)
 
         #for x in np.arange(1300, 1800, 0.1):
-        for x in np.arange(0, 5000, 1):
+        for x in np.arange(0, 2000, 1):
             data.append([x, abs(np.sin(x*2*np.pi/wavelength)), name])
 
     df=pd.DataFrame(data, columns=["distance from mouth piece [mm]", "amplitude", "tone"])
     sns.lineplot(data=df, x="distance from mouth piece [mm]", y="amplitude", hue="tone")
 
-bore_plot()
-
-f_overtone=f*5
-note, cent=freq_to_note_and_cent(f_overtone)
-print(f_overtone, freq_to_wavelength(f_overtone), note_name(note))
-
-# print maxima of fundamental
-print("1st maximum of fundamental")
-print(freq_to_wavelength(f)/4)
+wavelength_overtone=freq_to_wavelength(f_overtone)
+print(f"overtone {n_overtone} at {f_overtone:.2f} Hz, wavelength {wavelength_overtone}")
+print("maxima")
+for i in range(3):
+    print(i, (i+1/4)*wavelength_overtone)
+# print("1st maximum of fundamental")
+# print(freq_to_wavelength(f)/4)
 # for i in range(1,2):
 #     f1=f*i
 #     wavelength=freq_to_wavelength(f)
