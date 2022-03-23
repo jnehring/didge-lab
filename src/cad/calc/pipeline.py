@@ -9,6 +9,7 @@ import logging
 from cad.calc.mutation import MutantPool
 from cad.ui.evolution_ui import EvolutionUI
 import time
+import json
 
 class PipelineStep(ABC):
 
@@ -41,7 +42,7 @@ class Pipeline:
         self.steps=[]
         self.folder=os.path.join(App.get_output_folder(), "results")
         self.log={}
-        self.log_file=os.path.join(folder, "pipeline.json")
+        self.log_file=os.path.join(self.folder, "pipeline.json")
         
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)

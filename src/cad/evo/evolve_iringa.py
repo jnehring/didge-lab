@@ -50,7 +50,7 @@ try:
             notes=geo.get_cadsd().get_notes()
             notes=notes[notes.rel_imp>0.10]
 
-            num_toots_loss=max(6-len(notes), 1)
+            num_toots_loss=abs(6-len(notes))
 
             for ix, note in notes.iterrows():
                 f1=math.log(note["freq"], 2)
@@ -86,7 +86,7 @@ try:
     pipeline=Pipeline()
 
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=800, generation_size=30))
 
     for i in range(15):
         pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))

@@ -4,7 +4,7 @@
 from cad.calc.pipeline import Pipeline, ExplorePipelineStep, OptimizeGeoStep, PipelineStartStep, FinetuningPipelineStep, AddPointOptimizerExplore, AddPointOptimizerFinetune
 from cad.common.app import App
 from cad.calc.mutation import ExploringMutator, FinetuningMutator, MutantPool
-from cad.calc.parameters import MbeyaShape
+from cad.calc.parameters import MatemaShape
 from cad.calc.loss import LossFunction, TootTuningHelper, diameter_loss, single_note_loss
 import numpy as np
 from cad.calc.geo import geotools
@@ -121,7 +121,7 @@ if __name__=="__main__":
         losslogger=LossCADLogger()
 
         loss=MbeyaLoss(n_notes=3)    
-        father=MbeyaShape()
+        father=MatemaShape()
         father.set_minmax("length", 2100, 3000)
         initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
 

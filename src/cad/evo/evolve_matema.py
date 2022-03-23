@@ -85,7 +85,8 @@ class MatemaLoss(LossFunction):
 
         n_notes=self.n_notes+1
 
-        n_note_loss=max(n_notes-len(notes), 0)*self.weights["n_note_loss"]
+        notes=notes[n_notes.rel_imp>0.1]
+        n_note_loss=abs(n_notes-len(notes))*self.weights["n_note_loss"]
         if len(notes)<n_notes:
             return {"loss": 1000000}
         
@@ -161,7 +162,7 @@ if __name__=="__main__":
         target_peaks=[440]
 
         length-=25
-        loss=KizimkaziLoss(fundamental=fundamental, singer_peaks=target_peaks, add_octave=False, n_notes=2)    
+        loss=MatemaLoss(fundamental=fundamental, singer_peaks=target_peaks, add_octave=False, n_notes=5)    
         father=MatemaShape(n_bubbles=1, add_bubble_prob=0.3)
 
         father.set_minmax("length", length, length)
@@ -173,7 +174,7 @@ if __name__=="__main__":
 
         pipeline=Pipeline()
 
-        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=300, generation_size=70))
+        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500, generation_size=70))
         pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
 
         for i in range(10):
