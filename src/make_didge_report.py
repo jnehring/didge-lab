@@ -115,7 +115,7 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
 
     return tex
 
-def didge_report(geos, outdir, cad_report=None, parameters=None, losses=None, contents="all", notes=None):
+def didge_report(geos, outdir, overview_report=None, parameters=None, losses=None, contents="all", notes=None):
 
     if parameters is not None:
         assert(len(geos) == len(parameters))
@@ -132,21 +132,9 @@ def didge_report(geos, outdir, cad_report=None, parameters=None, losses=None, co
 
 ''')
 
-    if cad_report is not None:
-        # add loss report
-        if os.path.exists(cad_report):
-            cad_report_outfile=os.path.join(outdir, "loss_report.png")
-            loss_report(cad_report, cad_report_outfile)
+    if overview_report is not None:
+        overview_report.render(tex)
 
-            tex.write('''
-    \\section{Loss Report}
-    \\begin{centering}\n
-    \\begin{figure}[!ht]
-    {\\includegraphics[width=100mm]{loss_report.png}}
-    \\caption{Loss Report}
-    \\end{figure}
-    \\end{centering}\n
-    ''')
 
     with tqdm(total=len(geos)) as pbar:
 
@@ -174,6 +162,64 @@ def didge_report(geos, outdir, cad_report=None, parameters=None, losses=None, co
         
         os.remove(os.path.join(outdir, f))
 
+class OverviewReport():
+
+    def __init__(self, outdir, cad_report_file=None, pipeline_json_file=None):
+        self.cad_report_file=cad_report_file
+        self.outdir=outdir
+        self.pipeline_json_file=pipeline_json_file
+    
+    def render(self, tex):
+
+        tex.write("\\section{Evolution Summary}")
+
+        if self.cad_report_file is not None and os.path.exists(self.cad_report_file):
+            self.cad_report(tex)
+
+        if self.pipeline_json_file is not None and os.path.exists(self.pipeline_json_file):
+            self.pipeline_json(tex)
+
+    def pipeline_json(self, tex):
+        f=open(self.pipeline_json_file)
+        data=json.load(f)
+        f.close()
+
+        # convert all durations to min
+        needle="duration_"
+        for key, value in data.items():
+            if key[0:len(needle)]==needle:
+                value/=60
+                value=f"{value:.2f} min"
+                data[key]=value
+
+        # write table
+        tex.write("\\subsection{Evolution Parameters}")
+
+        df=[]
+        for key, value in data.items():
+            df.append([key, value])
+        df=pd.DataFrame(df, columns=["parameter", "value"])
+
+        tex.write(df.to_latex(index=False, header=False))
+
+    def cad_report(self, tex):
+            cad_report_outfile=os.path.join(self.outdir, "loss_report.png")
+            loss_report(self.cad_report_file, cad_report_outfile)
+
+            tex.write('''
+\\subsection{Loss Report}
+\\begin{centering}\n
+\\begin{figure}[!ht]
+{\\includegraphics[width=100mm]{loss_report.png}}
+\\caption{Loss Report}
+\\end{figure}
+\\end{centering}\n
+''')
+
+
+            
+
+
 if __name__ == "__main__":
 
     p = configargparse.ArgParser()
@@ -197,10 +243,6 @@ if __name__ == "__main__":
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
-    cad_report=None
-    if options.single<0:
-        cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
-
     geos=[]
     parameters=[]
     losses=[]
@@ -211,8 +253,11 @@ if __name__ == "__main__":
         losses.append(mpe.loss)
         parameters.append(mpe.parameterset)
 
-        didge_report(geos, outdir, cad_report, parameters=parameters, losses=losses)
+        didge_report(geos, outdir, overview_report=None, parameters=parameters, losses=losses)
     else:
+        cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
+        pipeline_json=os.path.join(Path(options.infile).parent.absolute(), "pipeline.json")
+        overview_report=OverviewReport(outdir, cad_report_file=cad_report, pipeline_json_file=pipeline_json)
 
         total=pool.len()
         if options.limit>0 and options.limit < pool.len():
@@ -224,4 +269,4 @@ if __name__ == "__main__":
             losses.append(mpe.loss)
             parameters.append(mpe.parameterset)
 
-        didge_report(geos, outdir, cad_report, parameters=parameters, losses=losses)
+        didge_report(geos, outdir, overview_report=overview_report, parameters=parameters, losses=losses)
