@@ -85,7 +85,8 @@ class MatemaLoss(LossFunction):
 
         n_notes=self.n_notes+1
 
-        n_note_loss=max(n_notes-len(notes), 0)*self.weights["n_note_loss"]
+        notes=notes[n_notes.rel_imp>0.1]
+        n_note_loss=abs(n_notes-len(notes))*self.weights["n_note_loss"]
         if len(notes)<n_notes:
             return {"loss": 1000000}
         
