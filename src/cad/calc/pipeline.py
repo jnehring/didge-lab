@@ -10,6 +10,7 @@ from cad.calc.mutation import MutantPool
 from cad.ui.evolution_ui import EvolutionUI
 import time
 import json
+from cad.calc.util.mutant_pool_store import save_mutant_pool, load_mutant_pool
 
 class PipelineStep(ABC):
 
@@ -95,7 +96,7 @@ class Pipeline:
                 pkl_file=os.path.join(self.folder, str(i) + ".pkl")
                 if not no_cache and os.path.exists(pkl_file):
                     logging.info(f"loading pipeline step {i} ({self.steps[i].name}) from cache")
-                    pool=pickle.load(open(pkl_file, "rb"))
+                    pool=load_mutant_pool(pkl_file)
                 else:
                     msg=f"executing pipeline step {i} ({self.steps[i].name})"
                     msg += f", n_generations={n_generations}"
@@ -104,9 +105,7 @@ class Pipeline:
                     
                     logging.info(msg)
                     pool=self.steps[i].execute(pool)
-                    f=open(pkl_file, "wb")
-                    pickle.dump(pool, f)
-                    f.close()
+                    save_mutant_pool(pool, pkl_file)
 
                 duration=time.time()-step_start_time
                 self.write_log(f"duration_step_{i}", duration)

@@ -142,7 +142,9 @@ class MutationParameterSet(ABC):
         df=self.to_pandas()
         return str(df)
 
-        #return type(self).__name__ + "\n * " + "\n * ".join(str(x) for x in self.mutable_parameters + self.immutable_parameters)
+    # override this method to release unused memory before saving the parameterset
+    def release_memory(self):
+        pass
 
 class BasicShapeParameters(MutationParameterSet):
     
@@ -786,6 +788,9 @@ class AddPointOptimizer(MutationParameterSet):
             new_geo.sort_segments()
 
         return new_geo
+
+    def release_memory(self):
+        self.geo.reset_cadsd()
 
 class MatemaShape(MutationParameterSet):
 

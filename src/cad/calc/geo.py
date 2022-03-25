@@ -99,6 +99,11 @@ class Geo:
     def get_cadsd(self):
         return self.cadsd
 
+    # set the cadsd to default to release its memory
+    def reset_cadsd(self):
+        self.cadsd=CADSD(self)
+
+
 class geotools:
 
     @staticmethod
