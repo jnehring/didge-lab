@@ -111,6 +111,7 @@ class App:
             p.add('-pipeline_name', type=str, default="default", help='name of pipeline')
             p.add('-hide_ui', action='store_true', default=False, help='not not show ui.')
             p.add('-log_level', type=str, choices=["info", "error", "debug", "warn"], default="info", help='log level ')
+            p.add('-resume', type=str, default=None, help="resume an evolution.")
 
             options = p.parse_args()
 
@@ -157,19 +158,23 @@ class App:
 
         if App.output_folder is None:
 
-            f=App.get_config()["output_folder"]
+            resume=App.get_config()["resume"]
+            if resume is not None:
+                App.output_folder=resume
+            else:
+                f=App.get_config()["output_folder"]
 
-            if not os.path.exists(f):
-                os.mkdir(f)
+                if not os.path.exists(f):
+                    os.mkdir(f)
 
-            my_date = datetime.now()
+                my_date = datetime.now()
 
-            folder_name=my_date.strftime('%Y-%m-%dT%H-%M-%S')
-            folder_name += "_" + App.get_config()["pipeline_name"]
-            if len(suffix)>0:
-                folder_name += "_" + suffix
+                folder_name=my_date.strftime('%Y-%m-%dT%H-%M-%S')
+                folder_name += "_" + App.get_config()["pipeline_name"]
+                if len(suffix)>0:
+                    folder_name += "_" + suffix
 
-            App.output_folder=os.path.join(f, folder_name)
-            os.mkdir(App.output_folder)
+                App.output_folder=os.path.join(f, folder_name)
+                os.mkdir(App.output_folder)
 
         return App.output_folder
