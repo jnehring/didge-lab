@@ -52,11 +52,14 @@ try:
 
             num_toots_loss=abs(6-len(notes))
 
+            i=0
             for ix, note in notes.iterrows():
                 f1=math.log(note["freq"], 2)
                 f2=min(self.scale_peaks, key=lambda x:abs(x-f1))
-                toot_tuning_loss += math.sqrt(abs(f1-f2))
-                toot_volume_loss += math.sqrt(1/(note["impedance"]/1e6))
+                weight=2*(len(notes)-i)/len(notes)
+                i+=1
+                toot_tuning_loss += math.sqrt(abs(f1-f2)) * weight
+                toot_volume_loss += math.sqrt(1/(note["impedance"]/1e6)) * weight
 
             toot_tuning_loss/=len(notes)
             toot_volume_loss/=len(notes)
@@ -65,6 +68,22 @@ try:
 
             d_loss = diameter_loss(geo)*0.1
 
+            # make sure the bell does not get smaller 
+            shape=geo.geo
+            x=geo.geo[-1][0]-200
+            y=geotools.diameter_at_x(geo, x)
+            shape.append([x,y])
+            shape=Geo(shape)
+            shape.sort_segments()
+            shape=shape.geo
+            for i in range(len(shape)):
+                if shape[i][0]==x:
+                    if shape[i+1]==x:
+                        i+=1
+                    break
+            shape=shape[i:]
+            bell_d_loss=diameter_loss(shape)*5
+
             losses={
                 "toot_tuning_loss": toot_tuning_loss,
                 "toot_volume_loss": toot_volume_loss,
@@ -72,6 +91,7 @@ try:
                 "fundamental_loss": fundamental,
                 "octave_loss": octave,
                 "num_toots_loss": num_toots_loss,
+                "bell_d_loss": bell_d_loss
             }
             final_loss=sum(losses.values())
             losses["loss"]=final_loss
