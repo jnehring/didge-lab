@@ -929,6 +929,9 @@ class MatemaShape(MutationParameterSet):
 
         geo=geotools.fix_zero_length_segments(geo)
         return geo
+        
+    def release_memory(self):
+        self.geo.reset_cadsd()
 
 
 class KizimkaziShape(MatemaShape):

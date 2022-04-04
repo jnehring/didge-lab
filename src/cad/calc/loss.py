@@ -4,6 +4,7 @@ from cad.cadsd.cadsd import CADSD
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 import math
 import numpy as np
+from typing import List
 
 class LossFunction(ABC):
 
@@ -47,8 +48,6 @@ class ImpedanceVolumeLoss():
                 return 10
             else:
                 peaks=peaks.loc[peaks.sort_values(by=["impedance"]).impedance[-1*self.num_peaks:].index]
-
-        print(peaks)
 
         volume_loss=0
         for imp in peaks.impedance:
@@ -114,9 +113,15 @@ class TootTuningHelper():
         return np.sqrt(abs(freq-f2))
 
 # add loss if the didge gets smaller
-def diameter_loss(geo: Geo):
+def diameter_loss(geo):
 
-    shape=geo.geo
+    if type(geo)==Geo:
+        shape=geo.geo
+    elif type(geo) == list:
+        shape=geo
+    else:
+        raise Exception("unknown type " + str(type(geo)))
+
     loss=0
     for i in range(1, len(shape)):
         delta_y=shape[i-1][1]-shape[i][1]
