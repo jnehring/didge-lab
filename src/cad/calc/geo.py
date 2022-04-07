@@ -14,6 +14,14 @@ class Geo:
         if geo != None:
             self.geo=geo
 
+        # remove zero length segments
+        clean_geo=[]
+        for i in range(0, len(self.geo)):
+            if i>0 and self.geo[i][0]==self.geo[i-1][0]:
+                continue
+            clean_geo.append(self.geo[i])
+        self.geo=clean_geo
+
         self.cadsd=CADSD(self)
 
     @classmethod
