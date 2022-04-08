@@ -787,6 +787,8 @@ class AddPointOptimizer(MutationParameterSet):
             new_geo.geo.append([x,y])
             new_geo.sort_segments()
 
+        new_geo=geotools.fix_zero_length_segments(new_geo)
+
         return new_geo
 
     def release_memory(self):
@@ -841,6 +843,15 @@ class MatemaShape(MutationParameterSet):
 
         for j in range(1, n_segments):
             x=pos-0.5*width + j*width/n_segments
+
+            # check if this point already exists
+            found=False
+            for i in range(len(shape)):
+                if shape[i][0]==x:
+                    found=True
+                    break
+            if found:
+                continue
 
             # get diameter at x
             y=geotools.diameter_at_x(Geo(geo=shape), x)
