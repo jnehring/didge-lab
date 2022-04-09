@@ -9,6 +9,14 @@ def log(*x):
     if is_logging:
         print(x)
 
+def init_data():
+    return {
+        'verts': [],
+        'edges': [],
+        'faces': [],
+    }
+
+
 def vertex_circle(segments, z, r):
     """ Return a ring of vertices """
     verts = []
@@ -94,18 +102,30 @@ def shape_from_geo(geo, data, n_circle_segments):
 
     return data
 
-def connect_ends(data, start_vertex_inner, start_vertex_outer, start_edge_inner, start_edge_outer, n_circle_segments, last_inner_vertex, last_outer_vertex):
-    
-    log("last outer vertex", last_outer_vertex)
+def connect_ends(inner_shape, outer_shape, n_circle_segments):
+
+    data=init_data()
     for end in range(2):
-        log("connect end " + str(end))
+        if end==0:
+            start_vertex_inner=0
+            start_vertex_outer=0
+        else:
+            start_vertex_inner=len(inner_shape["verts"])-n_circle_segments
+            start_vertex_outer=len(outer_shape["verts"])-n_circle_segments
+
         edge_start=len(data["edges"])
-        if end==1:
-            start_vertex_inner=last_inner_vertex-n_circle_segments
-            start_vertex_outer=last_outer_vertex-n_circle_segments
-            
-        for i in range(0, n_circle_segments):
-            edge=(i+start_vertex_inner, i+start_vertex_outer)
+        for i in range(n_circle_segments):
+            vert_inner=inner_shape["verts"][start_vertex_inner+i]            
+            log("add vert", len(data["verts"]), vert_inner)
+            data["verts"].append(vert_inner)
+
+            vert_outer=outer_shape["verts"][start_vertex_outer+i]            
+            log("add vert", len(data["verts"]), vert_outer)
+            data["verts"].append(vert_outer)
+
+            n=len(data["verts"])
+
+            edge=(n-2, n-1)
             log("add edge", len(data["edges"]), edge)
             data["edges"].append(edge)
             
@@ -121,3 +141,31 @@ def connect_ends(data, start_vertex_inner, start_vertex_outer, start_edge_inner,
             data["faces"].append(face)
     
     return data
+
+# def connect_ends(data, start_vertex_inner, start_vertex_outer, start_edge_inner, start_edge_outer, n_circle_segments, last_inner_vertex, last_outer_vertex):
+    
+#     log("last outer vertex", last_outer_vertex)
+#     for end in range(2):
+#         log("connect end " + str(end))
+#         edge_start=len(data["edges"])
+#         if end==1:
+#             start_vertex_inner=last_inner_vertex-n_circle_segments
+#             start_vertex_outer=last_outer_vertex-n_circle_segments
+            
+#         for i in range(0, n_circle_segments):
+#             edge=(i+start_vertex_inner, i+start_vertex_outer)
+#             log("add edge", len(data["edges"]), edge)
+#             data["edges"].append(edge)
+            
+#         for i in range(n_circle_segments):
+#             e1=data["edges"][edge_start+i]
+#             e2=None
+#             if i==n_circle_segments-1:
+#                 e2=data["edges"][edge_start]
+#             else:
+#                 e2=data["edges"][edge_start+i+1]
+#             face=(e1[0],e1[1], e2[1],e2[0])
+#             log("add face", len(data["faces"]), face)
+#             data["faces"].append(face)
+    
+#     return data
