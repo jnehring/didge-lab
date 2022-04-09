@@ -160,19 +160,22 @@ class geotools:
     @staticmethod
     def diameter_at_x(geo, x):
 
-        assert x<geo.length()
+        if type(geo)==Geo:
+            geo=geo.geo
+
+        assert x<=geo[-1][0]
 
         if x==0:
-            return geo.geo[0][1]
+            return geo[0][1]
 
-        for i in range(len(geo.geo)):
-            if x<geo.geo[i][0]:
+        for i in range(len(geo)):
+            if x<geo[i][0]:
                 break
 
-        x1=geo.geo[i-1][0]
-        y1=geo.geo[i-1][1]
-        x2=geo.geo[i][0]
-        y2=geo.geo[i][1]
+        x1=geo[i-1][0]
+        y1=geo[i-1][1]
+        x2=geo[i][0]
+        y2=geo[i][1]
 
         ydiff=(y2-y1)/2
         xdiff=(x2-x1)

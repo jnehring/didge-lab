@@ -91,6 +91,18 @@ class MutationParameterSet(ABC):
                 return False
         raise Exception("cannot find parameter \"" + name + "\"")
 
+    def set_immutable(self, name, value):
+        if type(name)==list:
+            for n in name:
+                self.set_immutable(n)
+                return
+        else:
+            for i in range(len(self.mutable_parameters)):
+                if self.mutable_parameters[i].name == name:
+                    found=True
+                    self.mutable_parameters[i].immutable=value
+                    return
+            raise Exception(f"cannot find parameter {name}")
 
     def set(self, name, value, min=None, max=None):
         for i in range(len(self.mutable_parameters)):
