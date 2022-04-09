@@ -86,12 +86,13 @@ def smooth_geo(geo, resolution=10, thickness=5, Wn=0.1):
             break
 
     # inner_geo=list(zip(x_new, y_inner))
+
     smooth_outer_geo=list(zip(x_new, y_outer))
     return smooth_outer_geo
 
 def add_simple_wall(geo, thickness):
     outer_geo=np.copy(geo)
-    outer_geo=[[s[0], s[1]+thickness] for s in outer_geo]
+    outer_geo=[[int(s[0]), int(s[1]+thickness)] for s in outer_geo]
     return outer_geo
 
 if __name__ == "__main__":
@@ -118,6 +119,7 @@ if __name__ == "__main__":
         "inner": inner_geo,
         "outer": outer_geo
     }
+
     outer_shape_file=os.path.join(args.outfolder, "outer_shape.json")
     f=open(outer_shape_file, "w")
     print("created " + outer_shape_file)
