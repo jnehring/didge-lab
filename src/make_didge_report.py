@@ -12,6 +12,7 @@ import pandas as pd
 from cad.calc.util.cad_logger import loss_report
 from pathlib import Path
 import sys
+from cad.calc.geo import Geo
 
 # possible values for contents: all,impedance,spektra,parameters,notes,general
 def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents="all", notes=None):
@@ -217,21 +218,12 @@ class OverviewReport():
 ''')
 
 
-            
-
-
-if __name__ == "__main__":
-
-    p = configargparse.ArgParser()
-    p.add('-infile', type=str, required=True, help='input file')
-    p.add('-limit', type=int, default=-1, help='limit to first n shapes')
-    p.add('-single', type=int, default=-1, help='create a report for a single shape.')
-    options = p.parse_args()
+def didge_report_from_pkl(options):
 
     f=open(options.infile, "rb")
     pool=pickle.load(f)
     f.close()
-
+    
     filename=os.path.basename(options.infile)
     if filename[-4:] == ".pkl":
         filename=filename[0:-4]
@@ -270,3 +262,33 @@ if __name__ == "__main__":
             parameters.append(mpe.parameterset)
 
         didge_report(geos, outdir, overview_report=overview_report, parameters=parameters, losses=losses)
+
+def didge_report_from_txt(options):
+
+    outdir=os.path.join(os.path.dirname(options.infile), "report_" + options.infile[0:-4])
+    
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
+
+    f=open(options.infile, "r")
+    geo=json.load(f)
+    f.close()
+    geo=Geo(geo)
+
+    geos=[geo]
+    print(outdir)
+    didge_report(geos, outdir, overview_report=None, parameters=None, losses=None)
+
+
+if __name__ == "__main__":
+
+    p = configargparse.ArgParser()
+    p.add('-infile', type=str, required=True, help='input file')
+    p.add('-limit', type=int, default=-1, help='limit to first n shapes')
+    p.add('-single', type=int, default=-1, help='create a report for a single shape.')
+    options = p.parse_args()
+
+    if options.infile[-4:] == ".pkl":
+        didge_report_from_pkl(options)
+    elif options.infile[-4:] == ".txt":
+        didge_report_from_txt(options)
