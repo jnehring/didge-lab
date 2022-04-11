@@ -85,10 +85,10 @@ def smooth_geo(geo, resolution=10, thickness=5, Wn=0.1):
         if all_good:
             break
 
-    # inner_geo=list(zip(x_new, y_inner))
+    inner_geo=list(zip(x_new, y_inner))
 
     smooth_outer_geo=list(zip(x_new, y_outer))
-    return smooth_outer_geo
+    return inner_geo, smooth_outer_geo
 
 def add_simple_wall(geo, thickness):
     outer_geo=np.copy(geo)
@@ -110,10 +110,10 @@ if __name__ == "__main__":
     inner_geo=json.load(f)
     f.close()
 
-    if args.no_smooth:
-        outer_geo=add_simple_wall(inner_geo, args.thickness)
-    else:
-        outer_geo=smooth_geo(inner_geo, resolution=args.resolution, thickness=args.thickness, Wn=args.wn)
+    # if args.no_smooth:
+    #     outer_geo=add_simple_wall(inner_geo, args.thickness)
+    # else:
+    inner_geo, outer_geo=smooth_geo(inner_geo, resolution=args.resolution, thickness=args.thickness, Wn=args.wn)
 
     geos={
         "inner": inner_geo,
