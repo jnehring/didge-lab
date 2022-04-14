@@ -171,49 +171,88 @@ def muster(data, start_vertex_outer, last_vertex_outer, n_circle_segments):
 
     return data
 
-def convert_to_blender(infile, outfile):
+def convert_to_blender(infile, outfile, inner_only=False):
     f=open(infile, "r")
     data=json.load(f)
     f.close()
-
-    inner_shape=data["inner"]
-    outer_shape=data["outer"]
-
-    data=init_data()
     n_circle_segments=64
 
-    start_vertex_outer=len(data["verts"])
-    start_edge_outer=len(data["edges"])
-    log("outer shape")
-    data_outer_shape=shape_from_geo(outer_shape, data, n_circle_segments)
-    
-    meshes=[{
-        "name": "outer_shape",
-        "data": data_outer_shape
-    }]
-    
-    data=init_data()
+    if inner_only:
+        inner_shape=data["inner"]
 
-    log("inner shape")
+        log("inner shape")
 
-    data_inner_shape=shape_from_geo(inner_shape, data, n_circle_segments)
-    meshes.append({
-        "name": "inner_shape",
-        "data": data
-    })
+        count=0
+        meshes=[]
+        for g in inner_shape:
+            data=init_data()
+            offset_last_circle_vert=len(data["verts"])
+            x=g[0]/1000
+            y=0.5*g[1]/1000
+            verts=vertex_circle(n_circle_segments, x,y)
+            data["verts"].extend(verts)
 
-    last_inner_vertex=len(data["verts"])
+            for i in range(n_circle_segments):
+                next=i+1
+                if i==n_circle_segments-1:
+                    next=0
+                edge=(i+offset_last_circle_vert, next+offset_last_circle_vert)
+                log("add edge", len(data["edges"]), edge)
+                data["edges"].append(edge)
+            meshes.append({
+                "name": f"segment{count}",
+                "data": data
+            })
+            count+=1
 
-    log("connect ends")
-    data_ends=connect_ends(data_inner_shape, data_outer_shape, n_circle_segments)
-    meshes.append({
-        "name": "ends",
-        "data": data_ends
-    })
 
-    f=open(outfile, "w")
-    f.write(json.dumps(meshes))
-    f.close()
+        # #data_inner_shape=shape_from_geo(inner_shape, data, n_circle_segments)
+        # meshes=[{
+        #     "name": "inner_shape",
+        #     "data": data
+        # }]
+        f=open(outfile, "w")
+        f.write(json.dumps(meshes))
+        f.close()
+
+    else:
+        inner_shape=data["inner"]
+        outer_shape=data["outer"]
+
+        data=init_data()
+
+        start_vertex_outer=len(data["verts"])
+        start_edge_outer=len(data["edges"])
+        log("outer shape")
+        data_outer_shape=shape_from_geo(outer_shape, data, n_circle_segments)
+        
+        meshes=[{
+            "name": "outer_shape",
+            "data": data_outer_shape
+        }]
+        
+        data=init_data()
+
+        log("inner shape")
+
+        data_inner_shape=shape_from_geo(inner_shape, data, n_circle_segments)
+        meshes.append({
+            "name": "inner_shape",
+            "data": data
+        })
+
+        last_inner_vertex=len(data["verts"])
+
+        log("connect ends")
+        data_ends=connect_ends(data_inner_shape, data_outer_shape, n_circle_segments)
+        meshes.append({
+            "name": "ends",
+            "data": data_ends
+        })
+
+        f=open(outfile, "w")
+        f.write(json.dumps(meshes))
+        f.close()
 
 if __name__=="__main__":
 
