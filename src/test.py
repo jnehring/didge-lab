@@ -25,18 +25,9 @@ from cad.calc.parameters import MatemaShape
 from cad.evo.evolve_kizimkazi import KizimkaziLoss
 from cad.calc.util.mutant_pool_store import save_mutant_pool
 
-# open didge
-geo=[[0,32], [800,32], [900,38], [970,42], [1050, 40], [1180, 48], [1350, 60], [1390, 68], [1500, 72]]
-geo=Geo(geo)
 
-geos=[]
-parameters=[]
-losses=[]
+x=np.arange(0,2,0.1)
+y=x*2
 
-if options.single>=0:
-    mpe=pool.get(options.single)
-    geos.append(mpe.geo)
-    losses.append(mpe.loss)
-    parameters.append(mpe.parameterset)
-
-    didge_report(geos, outdir, overview_report=None, parameters=parameters, losses=losses)
+plt.plot(x,y)
+plt.show()

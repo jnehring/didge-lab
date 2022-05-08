@@ -27,7 +27,9 @@ def vertex_circle(segments, z, r):
 
     return verts
 
-def shape_from_geo(geo, data, n_circle_segments):
+def shape_from_geo(geo, n_circle_segments):
+
+    data=init_data()
     
     # create first ring
     offset_last_circle_vert=len(data["verts"])
@@ -102,11 +104,11 @@ def shape_from_geo(geo, data, n_circle_segments):
 
     return data
 
-def connect_ends(inner_shape, outer_shape, n_circle_segments):
+def connect_ends(inner_shape, outer_shape, n_circle_segments, lower=True):
 
     data=init_data()
     for end in range(2):
-        if end==0:
+        if lower:
             start_vertex_inner=0
             start_vertex_outer=0
         else:
