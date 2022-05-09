@@ -181,6 +181,48 @@ def make_blender_form(inner_geo, outer_geo, mouthpiece, n_circle_segments=64):
 
     return meshes
 
+def add_outer_bubbles(outer_geo, outer_bubbles):
+    assert type(outer_bubbles) == list
+    assert all(np.char.isnumeric(outer_bubbles))
+    assert len(outer_bubbles)%3==0
+
+    outer_bubbles=[float(x) for x in outer_bubbles]
+    n_segments=20
+    # print(outer_geo[0])
+    # print(outer_geo[-1])
+    # print(len(outer_geo))
+
+    # window=list(filter(lambda a : a[0]>390 and a[0]<410, outer_geo))
+    # print(window)
+
+    for i in range(int(len(outer_bubbles)/3)):
+        index=i*3
+        pos=outer_bubbles[index]
+        height=outer_bubbles[index+1]
+        width=outer_bubbles[index+2]
+
+        y=height*np.array([np.sin(x) for x in np.arange(0, np.pi, np.pi/n_segments)])
+        start=pos-width/2
+        x=[start + i*width/n_segments for i in range(n_segments)]
+
+        bubble=list(zip(x,y))
+
+        bubble=[[x,y+diameter_at_x(outer_geo, x)] for x,y in bubble]
+
+        outer_geo_links=list(filter(lambda a : a[0]<x[0], outer_geo))
+        outer_geo_rechts=list(filter(lambda a : a[0]>x[-1], outer_geo))
+
+        outer_geo = outer_geo_links + bubble + outer_geo_rechts
+
+        # + bubble + list(filter(lambda a : a[0]>x[-1], outer_geo))
+        # outer_geo=Geo(outer_geo).sort_segments().geo
+    # window=list(filter(lambda a : a[0]>=395 and a[0]<=400, outer_geo))
+    # print(window)
+
+    #a=list(filter(lambda a : a[0]>380 and a[0]<420, outer_geo))
+    
+    return outer_geo
+
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Create outer shape to a didgelab geometry with smoothing.')
@@ -192,6 +234,8 @@ if __name__ == "__main__":
     parser.add_argument('-wn', type=float, default=0.1, help="butterdingens. default=0.1")
     parser.add_argument('-inner_only', action="store_true", help="necessary inner rings only")
     parser.add_argument('-no_mouthpiece', action="store_true", help="do not add the mouthpiece")
+    parser.add_argument('-outer_bubbles', nargs="+", help="add bubbles to outer shape in format pos, height, width")
+
     args = parser.parse_args()
 
     f=open(args.infile, "r")
@@ -224,12 +268,16 @@ if __name__ == "__main__":
             "outer": outer_geo
         }
 
-        # outer_shape_file=os.path.join(args.outfolder, "outer_shape.json")
-        # f=open(outer_shape_file, "w")
-        # print("created " + os.path.abspath((outer_shape_file)))
-        # f.write(json.dumps(geos))
-        # f.close()
+        window=list(filter(lambda a : a[0]>=410 and a[0]<=430, outer_geo))
+        print(window)
 
+
+        if args.outer_bubbles is not None:
+            outer_geo=add_outer_bubbles(outer_geo, args.outer_bubbles)
+        window=list(filter(lambda a : a[0]>=410 and a[0]<=430, outer_geo))
+        print(window)
+
+        # visualization
         y_offset=50     # artificial additional wall thickness for better visualization
         outer_geo_plot=[[a[0], a[1]+y_offset] for a in outer_geo]
         for geo in [inner_geo, outer_geo_plot]:
@@ -244,11 +292,13 @@ if __name__ == "__main__":
         plt.ylim([-1*inner_geo[-1][0]/2, inner_geo[-1][0]/2])
         outfile=os.path.join(args.outfolder, "didge_shape_plot.png")
         plt.savefig(outfile)
+
         print("created " + os.path.abspath(outfile))
         print("number of segments in inner shape", len(inner_geo))
         print("number of segments in outer shape", len(outer_geo))
         print("number of segments in mouthpiece", len(mouthpiece_outer_geo))
 
+        # convert to blender
         outfile=os.path.join(args.outfolder, "blender_bridge.json")
         meshes=make_blender_form(inner_geo, outer_geo, mouthpiece_outer_geo)
         f=open(outfile, "w")
