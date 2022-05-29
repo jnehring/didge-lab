@@ -78,11 +78,15 @@ def smooth_geo(geo, args):
         # find all places where thickness is smaller thickness parameter
 
         all_good=True
+        
+        inner_geo=list(zip(x_new_inner, y_inner))
+        smooth_outer_geo=list(zip(x_new_outer, y_outer))
+
         for i in range(len(y_outer)):
-            if y_outer[i]-y_inner_regular[i] < args.thickness:
+            x=x_new_outer[i]
+            if y_outer[i] - diameter_at_x(inner_geo, x) < args.thickness*2:
                 correction = y_corrections[i]+1 if i in y_corrections else 1
                 y_corrections[i]=correction
-                #=y_outer[i]-y_inner[i]
                 all_good=False
 
         def at_x(x):
@@ -269,13 +273,11 @@ if __name__ == "__main__":
         }
 
         window=list(filter(lambda a : a[0]>=410 and a[0]<=430, outer_geo))
-        print(window)
 
 
         if args.outer_bubbles is not None:
             outer_geo=add_outer_bubbles(outer_geo, args.outer_bubbles)
         window=list(filter(lambda a : a[0]>=410 and a[0]<=430, outer_geo))
-        print(window)
 
         # visualization
         y_offset=50     # artificial additional wall thickness for better visualization

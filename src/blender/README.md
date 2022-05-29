@@ -1,5 +1,10 @@
 DidgeLab to Blender Converter
 
+open didge
+
+PROD_DIR=/home/jan/workspaces/didge-sound/production
+python convert_to_blender.py -infile $PROD_DIR/open_didge/didgelab/0_geo.txt -outfolder $PROD_DIR/open_didge/blender -outer_bubbles 430 10 60 1220 10 60
+
 # create inner and outer shape
 ```
 PROD_DIR=/home/jan/workspaces/didge-sound/production
