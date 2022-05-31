@@ -211,7 +211,7 @@ def add_outer_bubbles(outer_geo, outer_bubbles):
 
         bubble=list(zip(x,y))
 
-        bubble=[[x,y+diameter_at_x(outer_geo, x)] for x,y in bubble]
+        bubble=[[_x,_y+diameter_at_x(outer_geo, _x)] for _x,_y in bubble]
 
         outer_geo_links=list(filter(lambda a : a[0]<x[0], outer_geo))
         outer_geo_rechts=list(filter(lambda a : a[0]>x[-1], outer_geo))
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     parser.add_argument('-infile', type=str, required=True)
     parser.add_argument('-inner_resolution', type=float, default=3, help="Put an inner segment every resolution mm. default=5")
     parser.add_argument('-outer_resolution', type=float, default=5, help="Put an outer segment every resolution mm. default=10")
-    parser.add_argument('-thickness', type=int, default=5, help="Wall thickness in mm. default=5.")
+    parser.add_argument('-thickness', type=float, default=5, help="Wall thickness in mm. default=5.")
     parser.add_argument('-outfolder', type=str, default="./")
     parser.add_argument('-wn', type=float, default=0.1, help="butterdingens. default=0.1")
     parser.add_argument('-inner_only', action="store_true", help="necessary inner rings only")
