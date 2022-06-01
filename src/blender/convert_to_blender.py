@@ -227,6 +227,30 @@ def add_outer_bubbles(outer_geo, outer_bubbles):
     
     return outer_geo
 
+def get_volume(inner_geo, outer_geo):
+
+    assert inner_geo[-1][0]==outer_geo[-1][0]
+
+    d_inner_last=diameter_at_x(inner_geo, 0)/10
+    d_outer_last=diameter_at_x(outer_geo, 0)/10
+    v_inner=0
+    v_outer=0
+    for x in range(1, int(outer_geo[-1][0])+1):
+        d_inner=diameter_at_x(inner_geo, x)/10
+        d_outer=diameter_at_x(outer_geo, x)/10
+        
+        v_inner+=np.pi*np.power((0.25*(d_inner_last+d_inner)), 2)*0.1
+        v_outer+=np.pi*np.power((0.25*(d_outer_last+d_outer)), 2)*0.1
+
+        d_inner_last=d_inner
+        d_outer_last=d_outer
+
+    print(v_inner, v_outer)
+
+    return v_outer-v_inner
+
+
+
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description='Create outer shape to a didgelab geometry with smoothing.')
@@ -280,7 +304,7 @@ if __name__ == "__main__":
         window=list(filter(lambda a : a[0]>=410 and a[0]<=430, outer_geo))
 
         # visualization
-        y_offset=50     # artificial additional wall thickness for better visualization
+        y_offset=0     # artificial additional wall thickness for better visualization
         outer_geo_plot=[[a[0], a[1]+y_offset] for a in outer_geo]
         for geo in [inner_geo, outer_geo_plot]:
             y_offset=0
@@ -299,6 +323,7 @@ if __name__ == "__main__":
         print("number of segments in inner shape", len(inner_geo))
         print("number of segments in outer shape", len(outer_geo))
         print("number of segments in mouthpiece", len(mouthpiece_outer_geo))
+        print(f"volume: {get_volume(inner_geo, outer_geo):.2f} cm3")
 
         # convert to blender
         outfile=os.path.join(args.outfolder, "blender_bridge.json")
