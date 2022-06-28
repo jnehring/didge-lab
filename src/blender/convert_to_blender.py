@@ -245,8 +245,6 @@ def get_volume(inner_geo, outer_geo):
         d_inner_last=d_inner
         d_outer_last=d_outer
 
-    print(v_inner, v_outer)
-
     return v_outer-v_inner
 
 
@@ -262,6 +260,7 @@ if __name__ == "__main__":
     parser.add_argument('-wn', type=float, default=0.1, help="butterdingens. default=0.1")
     parser.add_argument('-inner_only', action="store_true", help="necessary inner rings only")
     parser.add_argument('-no_mouthpiece', action="store_true", help="do not add the mouthpiece")
+    parser.add_argument('-no_smooth', action="store_true", help="skip smoothing")
     parser.add_argument('-outer_bubbles', nargs="+", help="add bubbles to outer shape in format pos, height, width")
 
     args = parser.parse_args()
@@ -287,7 +286,19 @@ if __name__ == "__main__":
         print("created " + os.path.abspath(outfile))
     else:
 
-        inner_geo, outer_geo=smooth_geo(inner_geo, args)
+        if args.no_smooth:
+            x=np.arange(0, inner_geo[-1][0], args.inner_resolution)
+            if x[-1] != inner_geo[-1][0]:
+                x=np.append(x, inner_geo[-1][0])
+            y=[diameter_at_x(inner_geo, a) for a in x]
+            inner_geo=list(zip(x,y))
+            x=np.arange(0, inner_geo[-1][0], args.inner_resolution)
+            if x[-1] != inner_geo[-1][0]:
+                x=np.append(x, inner_geo[-1][0])
+            y=[args.thickness*2 + diameter_at_x(inner_geo, a) for a in x]
+            outer_geo=list(zip(x,y))
+        else:
+            inner_geo, outer_geo=smooth_geo(inner_geo, args)
 
         inner_geo, outer_geo, mouthpiece_outer_geo=add_mouthpiece(inner_geo, outer_geo)
 
