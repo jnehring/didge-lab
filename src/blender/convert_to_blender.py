@@ -138,7 +138,7 @@ def add_mouthpiece(inner_geo, outer_geo):
 
 
     mouthpiece_l=20
-    mouthpiece_d=20
+    mouthpiece_d=10
     x=np.arange(-3, 10, 1/mouthpiece_l)
 
     def sigmoid(x, d):
