@@ -1,6 +1,0 @@
-* Mundstück getrennt von äußerer Hülle exportieren
-* Außenhülle gleichmäßig machen ohne die extra Ringe der inneren Form
-
-
-oder
-* Kurven als Bezier Spline exportieren

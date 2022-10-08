@@ -1,9 +1,39 @@
-DidgeLab to Blender Converter
+# DidgeLab to Blender Converter
 
-open didge
+```
+usage: convert_to_blender.py [-h] -infile INFILE
+                             [-inner_resolution INNER_RESOLUTION]
+                             [-outer_resolution OUTER_RESOLUTION]
+                             [-thickness THICKNESS] [-outfolder OUTFOLDER]
+                             [-wn WN] [-inner_only] [-no_mouthpiece]
+                             [-no_smooth]
+                             [-outer_bubbles OUTER_BUBBLES [OUTER_BUBBLES ...]]
 
+Create outer shape to a didgelab geometry with smoothing.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -infile INFILE
+  -inner_resolution INNER_RESOLUTION
+                        Put an inner segment every resolution mm. default=5
+  -outer_resolution OUTER_RESOLUTION
+                        Put an outer segment every resolution mm. default=10
+  -thickness THICKNESS  Wall thickness in mm. default=5.
+  -outfolder OUTFOLDER
+  -wn WN                butterdingens. default=0.1
+  -inner_only           necessary inner rings only
+  -no_mouthpiece        do not add the mouthpiece
+  -no_smooth            skip smoothing
+  -outer_bubbles OUTER_BUBBLES [OUTER_BUBBLES ...]
+                        add bubbles to outer shape in format pos, height,
+                        width
+
+```
+
+```
 PROD_DIR=/home/jan/workspaces/didge-sound/production
 python convert_to_blender.py -infile $PROD_DIR/open_didge/didgelab/0_geo.txt -outfolder $PROD_DIR/open_didge/blender -outer_bubbles 430 10 60 1220 10 60
+```
 
 # create inner and outer shape
 ```

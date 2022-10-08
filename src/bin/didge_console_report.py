@@ -1,3 +1,6 @@
+# create a didgeridoo analysis report on the command line
+# from a .pkl file
+
 import pickle
 #from cad.calc.geo import geotools, geo
 from cad.cadsd.cadsd import CADSD

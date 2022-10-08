@@ -1,15 +1,9 @@
 import torch
 from torch.nn import MSELoss
-from cad.cadsd.cadsd_pytorch import Segment, cadsd_Ze
-import matplotlib
+from cad.cadsd.pytorch.cadsd_pytorch import Segment, cadsd_Ze
 import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
 import numpy as np
 import torch.optim as optim
-import sys
-from torchviz import make_dot
-from scipy.signal import argrelextrema
 
 fmin=30
 fmax=400
