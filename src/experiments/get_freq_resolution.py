@@ -1,5 +1,5 @@
 '''
-Help finding 
+Help finding the necessary frequency resolution for cadsd
 
 run it:
 python -m cad.bin.get_freq_resolution
