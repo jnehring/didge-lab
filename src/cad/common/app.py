@@ -113,7 +113,7 @@ class App:
             p.add('-log_level', type=str, choices=["info", "error", "debug", "warn"], default="info", help='log level ')
             p.add('-resume', type=str, default=None, help="resume an evolution.")
 
-            options = p.parse_args()
+            options = p.parse_known_args()[0]
 
             App.config=App.manager.dict()
             for key, value in vars(options).items():

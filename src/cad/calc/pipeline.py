@@ -134,13 +134,18 @@ class ExplorePipelineStep(PipelineStep):
         return pool
 
 class FinetuningPipelineStep(PipelineStep):
-    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, generation_size=None):
+    def __init__(self, mutator : Mutator, loss : LossFunction, n_generations=None, generation_size=None, initial_pool = None):
         super().__init__("FinetuningPipelineStep", n_generations, generation_size)
         self.mutator=mutator
         self.loss=loss
+        self.initial_pool = initial_pool
 
-    def execute(self,pool : MutantPool) -> MutantPool:        
-        pool=evolve_generations(pool, self.loss, self.mutator)
+    def execute(self,pool : MutantPool) -> MutantPool:
+
+        if self.initial_pool is None:
+            pool=evolve_generations(pool, self.loss, self.mutator)
+        else:
+            pool=evolve_generations(self.initial_pool, self.loss, self.mutator)
         return pool
 
 class PipelineStartStep(PipelineStep):
