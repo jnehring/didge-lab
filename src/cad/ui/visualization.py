@@ -11,6 +11,8 @@ from cad.cadsd.cadsd import CADSD
 from cad.calc.geo import geotools
 import json
 
+
+# paint a picture of a didgeridoo
 class DidgeVisualizer:
     
     @classmethod
@@ -60,7 +62,8 @@ class DidgeVisualizer:
         plt.axis('equal')
         return g
 
-        
+
+# paint an image of fft
 class FFTVisualiser:
     
     @classmethod

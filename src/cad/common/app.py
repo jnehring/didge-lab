@@ -43,6 +43,11 @@ class App:
 
     @classmethod
     def init(cls):
+
+        App.config = None
+        App.context = App.manager.dict()
+        App.subscribers = {}
+
         # add config to context
         for key, value in App.get_config().items():
             App.set_context(key, value)
@@ -101,8 +106,8 @@ class App:
     def get_config(cls, path="config.ini"):
         if App.config==None:
             p = configargparse.ArgParser(default_config_files=['./*.conf'])
-            p.add('-no_cache', action='store_true', help='disable pipeline caching. default=False')
-            p.add('-n_threads', type=int, default=20, help='number of threads')
+            p.add('-cache', type=bool, default=False, help='disable pipeline caching. default=False')
+            p.add('-n_threads', type=int, default=8, help='number of threads')
             p.add('-n_poolsize', type=int, default=10, help='pool size')
             p.add('-n_generations', type=int, help='number of generations')
             p.add('-n_generation_size', type=int, help='generation size')

@@ -60,6 +60,7 @@ class Pipeline:
     def run(self):
 
         try:
+            App.publish("pipeline_started")
             logging.info("starting pipeline " + App.get_config()["pipeline_name"])
             App.set_context("state", "started")
             start_time=time.time()
@@ -68,7 +69,7 @@ class Pipeline:
 
             pool=None
 
-            no_cache=App.get_config()["no_cache"]
+            cache=App.get_config()["cache"]
             for i in range(len(self.steps)):
 
                 step_start_time=time.time()
@@ -94,7 +95,7 @@ class Pipeline:
                 App.publish("start_pipeline_step", (i, type(self.steps).__name__))
 
                 pkl_file=os.path.join(self.folder, str(i) + ".pkl")
-                if not no_cache and os.path.exists(pkl_file):
+                if cache and os.path.exists(pkl_file):
                     logging.info(f"loading pipeline step {i} ({self.steps[i].name}) from cache")
                     pool=load_mutant_pool(pkl_file)
                 else:
@@ -116,6 +117,8 @@ class Pipeline:
             App.publish("pipeline_finished")
             logging.info("pipeline finished")
             App.set_context("state", "finished")
+
+            return pool
         except Exception as e:
             App.log_exception(e)
 
