@@ -102,7 +102,6 @@ class MbeyaLoss(LossFunction):
         d_loss = diameter_loss(geo)*self.weights["diameter_loss"]
 
         loss={
-            # "tuning_loss": tuning_loss,
             "tuning_loss": tuning_loss,
             "volume_loss": volume_loss,
             "n_note_loss": n_note_loss,
@@ -116,10 +115,6 @@ class MbeyaLoss(LossFunction):
 if __name__=="__main__":
     try:
         App.full_init("evolve_penta")
-
-        geo=[[0,32], [800,32], [900,38], [970,42], [1050, 40], [1180, 48], [1350, 60], [1390, 68], [1500, 72]]
-        geo=Geo(geo)
-        open_didge_balance=cadsd_octave_tonal_balance(geo)
 
         losslogger=LossCADLogger()
 
