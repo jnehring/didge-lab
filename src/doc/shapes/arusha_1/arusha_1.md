@@ -1,10 +1,16 @@
 # Arusha 1
 
-Arusha 1 is created to have especially many resonant frequencies and toots that are tuned in the minor scale. It derives from the same evolution as Arusha 2 and 3.
+The Arusha series is designrd to have especially many resonant frequencies and toots that are tuned in the minor scale. Arusha 1 shape has especially high resonant frequencies above the drone frequency.
 
 ## Geometry
+* Length: 1712 mm
+* Bell Diameter: 91 mm
+* Download geometry: [geo.txt](geo.txt)
 
-Download geometry: [geo.txt](geo.txt)
+Download geometry
+
+* [JSON format](geo.json)
+* [text format](formated_geo.txt)
 
 ![Impedance Spektrum](shape.png)
 

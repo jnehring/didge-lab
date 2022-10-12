@@ -1,10 +1,16 @@
 # Arusha 3
 
-Arusha 3 is created to have especially many resonant frequencies and toots that are tuned in the minor scale. It derives from the same evolution as Arusha 1 and 2.
+The Arusha series is designed to have especially many resonant frequencies and toots that are tuned in the minor scale. Arusha 3 should have a bright tone because of the strong higher resonant frequencies.
 
 ## Geometry
 
-Download geometry: [geo.txt](geo.txt)
+* Length: 1717 mm
+* Bell Diameter: 113 mm
+
+Download geometry
+
+* [JSON format](geo.json)
+* [text format](formated_geo.txt)
 
 ![Impedance Spektrum](shape.png)
 

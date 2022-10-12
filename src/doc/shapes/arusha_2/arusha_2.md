@@ -1,10 +1,16 @@
 # Arusha 2
 
-Arusha 2 is created to have especially many resonant frequencies and toots that are tuned in the minor scale. It derives from the same evolution as Arusha 1 and 3.
+The Arusha series is designed to have especially many resonant frequencies and toots that are tuned in the minor scale. The interesting property of Arusha 2 is that the first toot has a larger imepdance than the drone.
 
 ## Geometry
 
-Download geometry: [geo.txt](geo.txt)
+* Length: 1624 mm
+* Bell Diameter: 74 mm
+
+Download geometry
+
+* [JSON format](geo.json)
+* [text format](formated_geo.txt)
 
 ![Impedance Spektrum](shape.png)
 
