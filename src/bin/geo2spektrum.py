@@ -1,4 +1,8 @@
-# convert a .txt file containing a didgeridoo geometry to a frequency spektrum
+# create information about the didgeridoo from a .txt geo file. it can create
+# * resonant frequency table
+# * a nicely formated geo table
+# * impedance and ground spektrum as image
+# * image of the didgeridoo geometry
 
 from cad.calc.geo import Geo
 import argparse
@@ -7,7 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from cad.ui.visualization import DidgeVisualizer
 import os
-
+import pandas as pd
 
 if __name__ == "__main__":
 
@@ -31,6 +35,19 @@ if __name__ == "__main__":
     df["cent-diff"] = df["cent-diff"].apply(lambda x : f"{x:.2f}")
     df["impedance"] = df["impedance"].apply(lambda x : f"{x:.2e}")
 
+    f.write(df.to_string(index=False))
+    f.close()
+
+    print("wrote " + outfile)
+
+    outfile = os.path.join(args.outfolder, "formated_geo.txt")
+    df = []
+    for line in geo.geo:
+        df.append(line)
+    f = open(outfile, "w")
+    df=pd.DataFrame(df, columns=["x", "y"])
+    df["x"]=df["x"].apply(lambda x : round(x))
+    df["y"]=df["y"].apply(lambda x : round(x))
     f.write(df.to_string(index=False))
     f.close()
 
