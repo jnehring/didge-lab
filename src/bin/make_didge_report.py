@@ -288,7 +288,11 @@ if __name__ == "__main__":
     p.add('-single', type=int, default=-1, help='create a report for a single shape.')
     options = p.parse_args()
 
-    if options.infile[-4:] == ".pkl":
+    if not os.path.exists(options.infile):
+        print("cannot find infile " + options.infile)
+    elif options.infile[-4:] == ".pkl":
         didge_report_from_pkl(options)
     elif options.infile[-4:] == ".txt":
         didge_report_from_txt(options)
+    else:
+        print("-infile must point to a .pkl or a .txt file.")
