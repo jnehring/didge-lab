@@ -2,6 +2,7 @@ import copy
 import pandas as pd
 import math
 from cad.cadsd.cadsd import CADSD
+import json
 
 class Geo:
 
@@ -39,10 +40,7 @@ class Geo:
 
     def read_geo(self, infile):
         f=open(infile)
-        geo=[]
-        for line in f:
-            line=line[0:-1].split(" ")
-            geo.append([float(line[0]), float(line[1])])
+        geo = json.load(f)
         f.close()
         return geo
 
