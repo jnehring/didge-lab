@@ -134,3 +134,4 @@ dmypy.json
 src/db
 
 finished_forms
+.idea/
