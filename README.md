@@ -63,7 +63,12 @@ apt install texlive-full
 
 ### 4.2 Documentation
 
-There is a tutorial series how to use the code:
+There is a tutorial series how to use the code. The tutorials also explain on how DidgeLab works.
+
+* Tutorial 1
+* Tutorial 2
+* Tutorial 3
+* Tutorial 4
 
 If you use the system and struggle because you need more information, then please open a GitHub issue. I can write more documentation if there is a demand for it.
 
@@ -73,15 +78,58 @@ This is out of scope for this document. Again I refer to [Frank Geipels Website]
 
 ## 5. Didgeridoo geometry collection
 
-There is a series of didgeridoo geometries with interesting sonic capabilities published as well. If you have a Didgeridoo geometry with interesting sonic properties you can publish it here also.
+There is a series of didgeridoo geometries with interesting sonic capabilities published as well. If you have a Didgeridoo geometry with interesting sonic properties you can publish it here also. The Didgeridoo shapes are free for non-commercial use. For commercial use, please contact me.
 
-The Didgeridoo geometries are published in the DidgeLab format
+Geometries are published as a series of diameters that describe the inner shape of the instrument. Here is an example:
+
+```
+0 32
+1000 40
+1200 60
+```
+
+Each segment consists of two coordinates: The first coordinate describes the distance from the mouthpiece to the segment in mm. The 2nd coordinate describes the diameter of the bore at this coordinate. So the didgeridoo in this example has length 1200mm and a bell size of 60mm.
+
+These are the geometries:
+
+* [Arusha 1]()
+* [Arusha 2]()
+* [Arusha 3]()
+* [Kizimkazi]()
+* [Matema]()
 
 ## 6. Get involved
 
 This project is open source. Please use the GitHub issues system for questions, feedback, etc. You can send me a private message on GitHub, but please consider: If the information might be interesting for others, which is especially the case for questions or bug reports, then use the GitHub issues system so others can see this conversation also.
 
-## 7. Licensing / What does it cost?
+It would be super great if you published the didgeridoo geometries you create with DidgeLab here in the geometry collection. Knowledge should be shared instead of being kept for oneself. But you do not need to publish your shapes.
+
+## 7. Licensing / Hoch much does it cost?
 
 The software is free and released unter the GNU GPL v2.0 license.
 
+The Didgeridoo shapes are free for non-commercial use.
+
+## 8. Future works
+
+The current version is certainly not the end. There are many ways to further develop this software. Here are some ideas for future directions.
+
+### 8.1 Building Didgeridoos
+
+Most importantly, I want to use this software to examine further didgeridoo shapes. I am super interested in reproducing and understanding Frank Geipels work. Another interesting thing are wet / drop octave didgeridoos which I would like to further explore with this software. 
+
+### 8.2 Faster acoustical simulation
+
+One big drawback of this software is that even with a beefy computer (e.g. with 40 CPU cores), the evolution takes a long time, e.g. one day. I have some ideas to make it faster:
+
+1. Use clever shapes that leave out geometries that would not work anyways.
+2. Optimize the acoustical simulation. The acoustical simulation computes the impedance for a given frequency. To compute a spektrum it computes e.g. all impedances from 30-1000 Hz. The low octave C1-C2 spans ~65 Hz, which means we need a high resolution to get a precise tuning. A higher octave, e.g. C3-C4, spans ~262 Hz, so for the same tuning precision as for the lower octave we can use a lower resolution. Right now, DidgeLab computes frequency spektra from 30-100 Hz with 0.1 Hz resolution (which runs 700 acoustical simulations) and from 100-1000 Hz with 1 Hz resolution (which runs 900 simulations). It should not be too difficult to find a more clever way to get the same tuning precision over all octaves and safe acoustical simulations.
+3. Also, I guess one can save a lot of computing power when we skip certain frequencies, e.g. frequencies below the drone frequency. If the drone is at D1 / 73.41 Hz and we skip everything below 70 Hz, this would safe 400 acoustical simulations, which saves 25% of the computing power. 
+
+### 8.3 Gradient descent instead of computational evolution
+
+Use a gradient based optimization instead of computational evolution. There is already an implementation for the acoustical simulation in PyTorch in src/cad/cadsd/pytorch. The idea is to use PyTorchs automatic gradient computation to save us from computing the gradient "by hand".
+
+### 8.4 Graphical user interface
+
+Implementing a graphical user interface to make the software easier to use for non-programmers. For me, personally, this is the least interesting, but for others it is probably super interesting.
