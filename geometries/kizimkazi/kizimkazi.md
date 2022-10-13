@@ -1,6 +1,6 @@
 # Kizimkazi
 
-Kizimkazi is tuned in D and should have two singer notes. The position of the bell end is at the same position as maximum values of the sound wave of the 2nd and the 4th harmonic. At the same time, these are resonant frequencies of the didgeridoo.
+Kizimkazi is tuned in D and should have two singer notes at A and F#. The position of the bell end is at the same position as maximum values of the sound wave of the 2nd and the 4th harmonic. At the same time, these are resonant frequencies of the didgeridoo.
 
 ## Geometry
 
