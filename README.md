@@ -1,5 +1,14 @@
 # DidgeLab
 
+1. [Introduction](#1-introduction)
+2. [Related Works](#2-related-works)
+3. [What can it do?](#3-what-can-it-do)
+4. [Usage](#4-usage)
+- [Installation](#4.1-installation)
+- [Documentation](#4.2-documentation)
+- [How to build a didgeridoo after these specifications](#4.3-how-to-build-a-didgeridoo-after-these-specifications)
+5. [Didgeridoo geometry library](#5-didgeridoo-geometry-library)
+
 ## 1. Introduction
 
 DidgeLab is a free toolkit to compute didgeridoo geometries. Traditionally, building a didgeridoo is a random process. Builders know how the geometry influences the sound, but the exact sonic properties of the didgeridoo can only be determined after it was built. The DidgeLab software helps didgeridoo builders to first define the sound and then compute the according geometry.
@@ -30,9 +39,11 @@ DidgeLab stands on the shoulders of giants:
   * [Didgeridoo backpressure - Everything you know about it is probably wrong](https://www.youtube.com/watch?v=2q5TCpuf07U)
   
 
-## 3. What can it do? Where are practical examples?
+## 3. What can it do?
 
-Well. Thats the thing. Currently I never built a Didgeridoo with a shape that this software computed. I computed some shapes with interesting sonic properties. I also spent a month in a 3d printing lab but I invested a lot of time in the printer and could not get it to work. After a pause from the 3d printer, I will restart this effort. So meanwhile I release this software as open source.
+In depth information of the inner workings of the software is in the tutorials in the documentation section.
+
+Currently I never built a Didgeridoo with a shape that this software computed. I computed some shapes with interesting sonic properties. I also spent a month in a 3d printing lab but I invested a lot of time in the printer and could not get it to work. After a pause from the 3d printer, I will restart this effort. So meanwhile I release this software as open source.
 
 But the software should be able to do these things:
 
@@ -76,7 +87,7 @@ There is a tutorial series how to use the code. The tutorials also explain on ho
 
 If you use the system and struggle because you need more information, then please open a GitHub issue. I can write more documentation if there is a demand for it.
 
-### 4.3 How to build a didgeridoo after these specifications.
+### 4.3 How to build a didgeridoo from a geometry?
 
 This is out of scope for this document. Again I refer to [Frank Geipels Website](https://www.didgeridoo-physik.de), he wrote down some ideas. I am trying 3d printing but there are other ways to do it.
 
