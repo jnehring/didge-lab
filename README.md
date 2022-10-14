@@ -6,8 +6,15 @@
 4. [Usage](#4-usage)
 - [Installation](#4.1-installation)
 - [Documentation](#4.2-documentation)
-- [How to build a didgeridoo after these specifications](#4.3-how-to-build-a-didgeridoo-after-these-specifications)
+- [How to build a didgeridoo from a geometry](#4.3-how-to-build-a-didgeridoo-from-a-geometry)
 5. [Didgeridoo geometry library](#5-didgeridoo-geometry-library)
+6. [Get involved](#6-get-involved)
+7. [Licensing / Hoch much does it cost?](#7-licensing--hoch-much-does-it-cost)
+8. [Future Works](#8-future-works)
+- [Building didgeridoos](#81-building-didgeridoos)
+- [Faster acoustical simulation](#82-faster-acoustical-simulation)
+- [Gradient descent instead of computational evolution](#83-gradient-descent-instead-of-computational-evolution)
+- [Graphical user interface](#84-graphical-user-interface)
 
 ## 1. Introduction
 
