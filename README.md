@@ -130,7 +130,7 @@ It would be super great if you published the didgeridoo geometries you create wi
 
 The software is free and released under the GNU GPL v2.0 license.
 
-The Didgeridoo shapes are free for non-commercial use.
+The Didgeridoo geometries from the geometry library are free for non-commercial use.
 
 ## 8. Future works
 
