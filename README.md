@@ -9,7 +9,7 @@
     3. [How to build a didgeridoo from a geometry](#43-how-to-build-a-didgeridoo-from-a-geometry)
 5. [Didgeridoo geometry library](#5-didgeridoo-geometry-library)
 6. [Get involved](#6-get-involved)
-7. [Licensing / Hoch much does it cost?](#7-licensing--hoch-much-does-it-cost)
+7. [Licensing / How much does it cost?](#7-licensing--hoch-much-does-it-cost)
 8. [Future Works](#8-future-works)
     1. [Building didgeridoos](#81-building-didgeridoos)
     2. [Faster acoustical simulation](#82-faster-acoustical-simulation)
@@ -130,7 +130,7 @@ It would be super great if you published the didgeridoo geometries you create wi
 
 The software is free and released under the GNU GPL v2.0 license.
 
-The Didgeridoo shapes are free for non-commercial use.
+The Didgeridoo geometries from the geometry library are free for non-commercial use.
 
 ## 8. Future works
 
