@@ -67,10 +67,10 @@ apt install texlive-full
 
 There is a tutorial series how to use the code. The tutorials also explain on how DidgeLab works.
 
-* Tutorial 1
-* Tutorial 2
-* Tutorial 3
-* Tutorial 4
+* [Tutorial 1 - Introduction and acoustical simulation](doc/tutorials/tutorial1.ipynb)
+* [Tutorial 2 - Shapes and Parameters](doc/tutorials/tutorial1.ipynb)
+* [Tutorial 3 - Computational Evolution](doc/tutorials/tutorial1.ipynb)
+* [Tutorial 4 - Advanced Concepts](doc/tutorials/tutorial1.ipynb)
 
 If you use the system and struggle because you need more information, then please open a GitHub issue. I can write more documentation if there is a demand for it.
 
@@ -94,11 +94,11 @@ Each segment consists of two coordinates: The first coordinate describes the dis
 
 These are the geometries:
 
-* [Arusha 1]()
-* [Arusha 2]()
-* [Arusha 3]()
-* [Kizimkazi]()
-* [Matema]()
+* [Arusha 1](geometries/arusha_1/arusha_1.md)
+* [Arusha 2](geometries/arusha_2/arusha_2.md)
+* [Arusha 3](geometries/arusha_3/arusha_3.md)
+* [Kizimkazi](geometries/kizimkazi/kizimkazi.md)
+* [Matema](geometries/matema/matema.md)
 
 ## 6. Get involved
 
