@@ -14,6 +14,8 @@ So the first functionality takes a didgeridoo geometry as input and computes its
 
 Unfortunately the software is complicated to use. It is a command line application, which means: There is no graphical user interface. When you use the software you most likely need to program in python, because it is more of a python programming toolkit than a normal end user software.
 
+If you do not want to use DidgeLab itself, you can still use the geometry library (see below), which publishes some Didgeridoo geometries computed with DidgeLab.
+
 ## 2. Related works
 
 DidgeLab stands on the shoulders of giants:
