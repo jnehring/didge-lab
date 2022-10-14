@@ -80,7 +80,7 @@ If you use the system and struggle because you need more information, then pleas
 
 This is out of scope for this document. Again I refer to [Frank Geipels Website](https://www.didgeridoo-physik.de), he wrote down some ideas. I am trying 3d printing but there are other ways to do it.
 
-## 5. Didgeridoo geometry collection
+## 5. Didgeridoo geometry library
 
 There is a series of didgeridoo geometries with interesting sonic capabilities published as well. If you have a Didgeridoo geometry with interesting sonic properties you can publish it here also. The Didgeridoo shapes are free for non-commercial use. For commercial use, please contact me.
 
@@ -106,7 +106,7 @@ These are the geometries:
 
 This project is open source. You are most welcome to contribute to it. Please use the GitHub issues system for questions, feedback, etc. You can send me a private message on GitHub, but please consider: If the information might be interesting for others, which is especially the case for questions or bug reports, then use the GitHub issues system so others can see this conversation also.
 
-It would be super great if you published the didgeridoo geometries you create with DidgeLab here in the geometry collection. Knowledge should be shared instead of being kept secret.
+It would be super great if you published the didgeridoo geometries you create with DidgeLab here in the geometry library. Knowledge should be shared instead of being kept secret.
 
 ## 7. Licensing / Hoch much does it cost?
 
