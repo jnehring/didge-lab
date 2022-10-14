@@ -68,9 +68,9 @@ apt install texlive-full
 There is a tutorial series how to use the code. The tutorials also explain on how DidgeLab works.
 
 * [Tutorial 1 - Introduction and acoustical simulation](doc/tutorials/tutorial1.ipynb)
-* [Tutorial 2 - Shapes and Parameters](doc/tutorials/tutorial1.ipynb)
-* [Tutorial 3 - Computational Evolution](doc/tutorials/tutorial1.ipynb)
-* [Tutorial 4 - Advanced Concepts](doc/tutorials/tutorial1.ipynb)
+* [Tutorial 2 - Shapes and Parameters](doc/tutorials/tutorial2.ipynb)
+* [Tutorial 3 - Computational Evolution](doc/tutorials/tutorial3.ipynb)
+* [Tutorial 4 - Advanced Concepts](doc/tutorials/tutorial4.ipynb)
 
 If you use the system and struggle because you need more information, then please open a GitHub issue. I can write more documentation if there is a demand for it.
 
