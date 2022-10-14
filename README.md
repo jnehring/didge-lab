@@ -21,7 +21,7 @@ DidgeLab stands on the shoulders of giants:
 * Most important, the [pioneering works of Frank Geipel]((https://www.didgeridoo-physik.de/)) and his Computer-Aided-Dideridoo-Sound-Design-Tools (CADSD). I am not exactly sure what Frank Geipel did. But after reading through his website 1000 times I implemented DidgeLab in the way I understood he implemented it.
 * The acoustic simulation of the didgeridoo is based on transmission line modeling, see [Dan Mapes-Riordan, 1991: Horn Modeling with Conical and Cylindrical Transmission Line Elements
 ](https://www.aes.org/e-lib/browse.cfm?elib=5522).
-* There is important background information on didgeridoo acoustics in [Andrea Ferronis Youtube channel](https://www.youtube.com/) Andrea also offers webinars on Didgeridoo per year which are super informative. Most notable Youtube videos are:
+* There is important background information on didgeridoo acoustics in [Andrea Ferronis Youtube channel](https://www.youtube.com/) Andrea also offers webinars on Didgeridoo which are super informative. Most notable Youtube videos are:
   * [DIDGMO - The didgeridoo sound design software. How to set it and how to read the results
 ](https://www.youtube.com/watch?v=wWRTe3FMCWI&t=1017s)
   * [Acoustic and color tone of cylindrical and conical didgeridoo](https://www.youtube.com/watch?v=idcPw0RaUiE)
