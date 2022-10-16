@@ -2,7 +2,6 @@ import math
 import cmath
 import numpy as np
 import pandas as pd
-import cython
 import torch
 
 print("warning - using non-cython version of cadsd")
