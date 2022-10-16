@@ -70,12 +70,59 @@ Up to now it ran solely on Ubuntu linux. It should run in MS Windows and MacOS t
 
 Prerequisites
 
-* python 3.8 (other python versions will work also, but nobody tried yet)
-* we recommend a virtual environment using e.g. pip or conda. In this environment, you install all required python packages with pip:
+* [Install Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
+
+Download the source codes. Here we git. In a linux terminal, we clone the repository and open the directory but you can also just download the DidgeLab source codes as zip and unzip them.
+
+```
+git clone https://github.com/jnehring/didge-lab/
+cd didge-lab
+```
+
+Create a conda virtual environment with python 3.8 and activate it.
+
+```
+conda create -n "didgelab" python=3.8
+conda activate didgelab
+```
+
+Install necessary packages:
 
 ```
 pip install -r requirements.txt
 ```
+
+DidgeLab implements the acoustical simulation in Cython. Next you need to compile the Cython skript:
+
+```
+cd cad/cadsd
+python setup.py build_ext --inplace
+```
+
+Now you have everything installed. Run a test skript to see if if works.
+
+```
+# change to the src/ directory
+cd ../../
+python getting_started.py
+```
+
+If the skript prints this table, than you have installed DidgeLab succesfully:
+
+```
+       freq     impedance   rel_imp  note-number  cent-diff note-name
+1715   72.7  3.185908e+07  1.000000          -31  16.971505        D1
+184   185.0  7.729043e+06  0.242601          -15  -0.026096       F#2
+294   295.0  5.042328e+06  0.158270           -7  -7.853717        D3
+401   402.0  1.748191e+06  0.054873           -2 -43.630373        G3
+511   512.0  2.287785e+06  0.071810            3  37.631656        C4
+635   636.0  9.630371e+05  0.030228            6 -37.827890       D#4
+727   728.0  8.437544e+05  0.026484            9  28.278088       F#4
+849   850.0  8.842669e+05  0.027756           11 -39.951181       G#4
+955   956.0  5.949348e+05  0.018674           13 -43.408513       A#5
+998   999.0  5.007546e+05  0.015718           14 -19.577385        B5
+```
+
 
 To use the didge reporting tool you need to have latex installed. Latex distributions tend to be large, e.g. tex-live is 5 GB. So you can start without Latex and then install it when you want to use the didge-reporting tool. Assuming you are using Ubuntu Linux, use this command. Sorry I did not test this because i have latex already installed. Probably a smaller Latex distribution will work also.
 
