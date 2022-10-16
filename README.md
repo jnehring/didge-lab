@@ -72,7 +72,7 @@ Prerequisites
 
 * [Install Conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html)
 
-Download the source codes. Here we git. In a linux terminal, we clone the repository and open the directory but you can also just download the DidgeLab source codes as zip and unzip them.
+Download the source codes. Here we use git. In a linux terminal, we clone the repository and open the directory but you can also just download the DidgeLab source codes as zip and unzip them.
 
 ```
 git clone https://github.com/jnehring/didge-lab/
@@ -107,7 +107,7 @@ cd ../../
 python getting_started.py
 ```
 
-If the skript prints this table, than you have installed DidgeLab succesfully:
+If the skript prints this table, you installed DidgeLab succesfully:
 
 ```
        freq     impedance   rel_imp  note-number  cent-diff note-name
