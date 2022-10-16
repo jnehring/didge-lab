@@ -36,5 +36,5 @@ Download geometry
 ## How to create it?
 
 ```
-python -m cad.evo.evolve_arusha
+python -m cad.evo.evolve_kizimkazi
 ```
