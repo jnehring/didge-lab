@@ -92,7 +92,7 @@ Install necessary packages:
 pip install -r requirements.txt
 ```
 
-DidgeLab implements the acoustical simulation in Cython. Next you need to compile the Cython skript:
+DidgeLab implements the acoustical simulation in Cython. Next you need to compile the Cython skript. Depending on your operating system you might need to install additional things in order to run the Cython compiler, you can read the [Cython documentation](https://cython.readthedocs.io/en/latest/src/quickstart/install.html) to find out more:
 
 ```
 cd cad/cadsd
