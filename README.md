@@ -66,7 +66,7 @@ You might ask yourself how I verify that the software works if I never built a d
 
 ### 4.1 Installation
 
-Up to now it ran solely on Ubuntu linux. It should run in MS Windows and MacOS too, but nobody every tried that.
+Up to now it ran on Ubuntu Linux and MacOS. Should work on Windows too but it has never been tried.
 
 Prerequisites
 
