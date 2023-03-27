@@ -1,7 +1,14 @@
 # python setup.py build_ext --inplace
 
 #import pyximport; pyximport.install()
-import cad.cadsd._cadsd as cadsd
+
+import os
+
+if os.getenv('CADSD_BACKEND') == "python":
+    print("hello world")
+    import cad.cadsd.cadsd_py as cadsd_imp
+else:
+    import cad.cadsd._cadsd as cadsd_imp
 import numpy as np
 import pandas as pd
 from scipy.signal import argrelextrema
@@ -20,13 +27,15 @@ class CADSD():
         self.ground_peaks=None
 
         self.sound_spektra=None
+        self.fmin = 30
         self.fmax=1000
+        self.stepsize = 1
 
         self.additional_metrics={}
 
     def get_segments(self):
         if self.segments==None:
-            self.segments=cadsd.create_segments_from_geo(self.geo.geo)
+            self.segments=cadsd_imp.create_segments_from_geo(self.geo.geo)
         return self.segments
 
     def get_impedance_spektrum(self):
@@ -34,9 +43,9 @@ class CADSD():
         if self.impedance_spectrum is not None:
             return self.impedance_spectrum
 
-        from_freq=1
+        from_freq=self.fmin
         to_freq=self.fmax
-        stepsize=1
+        stepsize=self.stepsize
 
         segments=self.get_segments()
         spektrum={
@@ -46,7 +55,7 @@ class CADSD():
 
         for freq in np.arange(from_freq, to_freq, stepsize):
             spektrum["freq"].append(freq)
-            impedance=cadsd.cadsd_Ze(segments, freq)
+            impedance=cadsd_imp.cadsd_Ze(segments, freq)
             spektrum["impedance"].append(impedance)
 
         self.impedance_spectrum=pd.DataFrame(spektrum)
@@ -70,7 +79,7 @@ class CADSD():
                 continue
             
             spektrum["freq"].append(freq)
-            impedance=cadsd.cadsd_Ze(segments, freq)
+            impedance=cadsd_imp.cadsd_Ze(segments, freq)
             spektrum["impedance"].append(impedance)
 
         spektrum=pd.DataFrame(spektrum)

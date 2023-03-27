@@ -1,15 +1,18 @@
+# cadsd python implementation
+
 import math
 import cmath
 import numpy as np
 import pandas as pd
 import cython
 
-print("warning - using non-cython version of cadsd")
+print("using non-cython version of cadsd")
 
-p = np.float128(1.2929)
-n = np.float128(1.708e-5)
-c = np.float128(343.37)
-PI=np.float128(np.pi)
+# float64 would be better but it gave an error on MacOS
+p = np.float64(1.2929)
+n = np.float64(1.708e-5)
+c = np.float64(343.37)
+PI=np.float64(np.pi)
 
 #c = 331.45 * sqrt(293.16 / 273.16)
 class Segment:
@@ -24,8 +27,11 @@ class Segment:
         self.a1 = PI * d1 * d1 / 4
         self.phi = math.atan ((d1 - d0) / (2 * L))
 
-        self.l = (d1 - d0) / (2 * math.sin (self.phi))
-        self.x1 = d1 / (2 * math.sin (self.phi))
+        x = (2 * math.sin (self.phi))
+        if x==0:
+            x=1e-20
+        self.l = (d1 - d0) / x
+        self.x1 = d1 / x
         self.x0 = self.x1 - self.l
         self.r0 = p * c / self.a0
 
@@ -33,7 +39,7 @@ class Segment:
     def create_segments_from_geo(cls, geo):
 
         segments=[]
-        shape=[[np.float128(x)[0]/1000, np.float128(x)[1]/1000] for x in geo]
+        shape=[[np.float64(x)[0]/1000, np.float64(x)[1]/1000] for x in geo]
         for i_seg in range(1, len(shape)):
             seg1=shape[i_seg]
             seg0=shape[i_seg-1]
@@ -43,6 +49,9 @@ class Segment:
             seg=Segment(L, d0, d1)
             segments.append(seg)
         return segments
+
+def create_segments_from_geo(geo):
+    return Segment.create_segments_from_geo(geo)
 
 
 def ap (w, segments):
