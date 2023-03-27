@@ -5,7 +5,6 @@
 import os
 
 if os.getenv('CADSD_BACKEND') == "python":
-    print("hello world")
     import cad.cadsd.cadsd_py as cadsd_imp
 else:
     import cad.cadsd._cadsd as cadsd_imp
