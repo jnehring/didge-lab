@@ -10,7 +10,6 @@ else:
     import cad.cadsd._cadsd as cadsd_imp
 import numpy as np
 import pandas as pd
-from scipy.signal import argrelextrema
 from cad.calc.conv import freq_to_note_and_cent, note_name, note_to_freq
 
 class CADSD():
@@ -90,7 +89,10 @@ class CADSD():
         if self.ground_peaks is not None:
             return self.ground_peaks
         ground=self.get_all_spektra_df()
-        self.ground_peaks=ground.iloc[argrelextrema(ground.impedance.values, np.greater_equal)[0]].copy()
+        
+        maxima = get_max(ground.impedance.freq, ground.impedance.values, "max")
+        self.ground_peaks=ground.iloc[maxima].copy()
+
         return self.ground_peaks
         
     def get_notes(self):        
@@ -99,9 +101,9 @@ class CADSD():
             return self.notes
 
         fft=self.get_highres_impedance_spektrum()
-        peaks = fft.iloc[argrelextrema(fft.impedance.values, np.greater_equal)[0]].copy()
+        maxima = get_max(fft.freq, fft.impedance, "max")
+        peaks=fft.iloc[maxima].copy()
         peaks["rel_imp"]=peaks.impedance / peaks.iloc[0]["impedance"]
-        #peaks=peaks[peaks.rel_imp>0.1]
         t=[freq_to_note_and_cent(x) for x in peaks["freq"]]
         peaks["note-number"], peaks["cent-diff"]=zip(*t)
         peaks["note-name"] = peaks["note-number"].apply(lambda x : note_name(x))
@@ -136,8 +138,8 @@ class CADSD():
             "overblow": {}
         }
 
-        fft["impedance"][0]=0
-        for i in range(0, self.fmax):
+        fft["impedance"][self.fmin]=0
+        for i in range(self.fmin, self.fmax):
             fft["ground"][i]=0
             fft["overblow"][i]=0
         
@@ -148,7 +150,8 @@ class CADSD():
         npeaks = 0
         nvally = 0
 
-        for i in range(2, self.fmax):
+        #print(fft["impedance"].keys())
+        for i in range(self.fmin+1, self.fmax):
             if fft["impedance"][i] > fft["impedance"][i-1]:
                 if npeaks and not up:
                     vally[nvally] = i - 1
@@ -164,7 +167,7 @@ class CADSD():
 
         if peaks[0]<0:
             raise Exception("bad fft")
-
+        
         k = 0.0001
 
         mem0 = peaks[0]
@@ -176,14 +179,14 @@ class CADSD():
         # calculate overblow spectrum of base tone
         for i in range(mem0, self.fmax, mem0):
             for j in range(-mem0a, mem0b):
-                if i + j < self.fmax:
+                if i + j < self.fmax and i + j + offset>self.fmin and mem0-j>=self.fmin and mem0+j>=self.fmin: 
                     if j < 0:
                         fft["ground"][i + j + offset] += fft["impedance"][mem0 + j] * np.exp (i * k)
                     else:
                         fft["ground"][i + j + offset] += fft["impedance"][mem0 - j] * np.exp (i * k)
 
         # calculate sound specturm of base tone
-        for i in range(self.fmax):
+        for i in range(self.fmin, self.fmax):
             fft["ground"][i] = fft["impedance"][i] * fft["ground"][i] * 1e-6
 
         mem1 = peaks[1]
@@ -200,7 +203,7 @@ class CADSD():
                         fft["overblow"][i + j + offset] +=fft["impedance"][mem1 - j] * np.exp (i * k)
 
         # calculate sound spectrum of first overblow
-        for i in range(self.fmax):
+        for i in range(self.fmin, self.fmax):
             fft["overblow"][i] = fft["impedance"][i] * fft["overblow"][i] * 1e-6
 
         # df={
@@ -215,7 +218,7 @@ class CADSD():
         # df.ground=df.ground.apply(lambda x : max(0, 20*np.log10(x*2e-5)))
         # df.overblow=df.overblow.apply(lambda x : max(0, 20*np.log10(x*2e-5)))
 
-        for i in range(self.fmax):
+        for i in range(self.fmin, self.fmax):
             fft["impedance"][i] *= 1e-6
             x=fft["ground"][i]*2e-5
             fft["ground"][i] = 0 if x<1 else 20*np.log10(x) 
@@ -238,6 +241,7 @@ class CADSD():
             "ground": self.sound_spektra["ground"].values(),
             "overblow": self.sound_spektra["overblow"].values()
         }
+
         self.all_spektra_df=pd.DataFrame(self.all_spektra_df)
         return self.all_spektra_df
 
@@ -323,3 +327,15 @@ def cadsd_abs_tonal_balance(geo, n_bins=3):
 
     cadsd.set_additional_metric(key, key)
     return bins
+
+# find maxima or minima of a numpy array
+# scipy.signal import argrelextrema caused problems
+# code from https://stackoverflow.com/questions/4624970/finding-local-maxima-minima-with-numpy-in-a-1d-numpy-array
+def get_max(x, y, find):
+    assert find in ("max", "min")
+    a = np.diff(np.sign(np.diff(y))).nonzero()[0] + 1 # local min+max
+
+    if find == "min":
+        return (np.diff(np.sign(np.diff(y))) > 0).nonzero()[0] + 1 # local min
+    elif find == "max":
+        return (np.diff(np.sign(np.diff(y))) < 0).nonzero()[0] + 1 # local max
