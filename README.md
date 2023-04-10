@@ -141,6 +141,8 @@ There is a tutorial series how to use the code. The tutorials also explain on ho
 
 If you use the system and struggle because you need more information, then please open a GitHub issue. I can write more documentation if there is a demand for it.
 
+There is also a version of the tutorial hosted on [Google Colab](https://colab.research.google.com/drive/1t3qLLzBLBrWtkHMfXHlinyQgoqmizlTF?usp=sharing). On Google Colab you can use DidgeLab without a local installation which should be a lot easier.
+
 ### 4.3 How to build a didgeridoo from a geometry?
 
 This is out of scope for this document. Again I refer to [Frank Geipels Website](https://www.didgeridoo-physik.de), he wrote down some ideas. I am trying 3d printing but there are other ways to do it.
