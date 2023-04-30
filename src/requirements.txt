@@ -1,5 +1,5 @@
 configargparse==1.5.3
-numpy==1.24.2
+#numpy==1.24.2
 pandas==1.5.0
 scipy==1.9.1
 matplotlib==3.6.1
