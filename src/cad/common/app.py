@@ -107,7 +107,7 @@ class App:
         if App.config==None:
             p = configargparse.ArgParser(default_config_files=['./*.conf'])
             p.add('-cache', type=bool, default=False, help='disable pipeline caching. default=False')
-            p.add('-n_threads', type=int, default=8, help='number of threads')
+            p.add('-n_threads', type=int, default=8, help='number of threads', env_var='N_THREADS')
             p.add('-n_poolsize', type=int, default=10, help='pool size')
             p.add('-n_generations', type=int, help='number of generations')
             p.add('-n_generation_size', type=int, help='generation size')
