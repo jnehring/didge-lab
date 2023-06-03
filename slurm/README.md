@@ -1,0 +1,1 @@
+./usrun.sh -p batch -c 32 --time 08:00:00 --mem 64GB --pty /bin/bash
