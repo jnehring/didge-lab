@@ -152,6 +152,7 @@ def didge_report(geos, outdir, overview_report=None, parameters=None, losses=Non
     # create pdf
     current_dir=os.path.abspath(".")
     os.chdir(outdir)
+
     os.system("pdflatex report")
     os.chdir(current_dir)
 
