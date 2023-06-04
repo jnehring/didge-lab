@@ -32,14 +32,14 @@ class EriceiraShape(MutationParameterSet):
         self.n_bubble_segments=10
         
         self.add_param("length", 2000, 2700)
-        self.add_param("bellsize", 65, 100)
+        self.add_param("bellsize", 60, 90)
         self.add_param("bell_length", 200, 300)
         self.add_param("pre_bell_diameter", 0.7, 0.8)
         
         
         for i in range(self.n_bubbles):
-            self.add_param(f"bubble{i}_width", 100, 300)
-            self.add_param(f"bubble{i}_height", 5, 30)
+            self.add_param(f"bubble{i}_width", 10, 300)
+            self.add_param(f"bubble{i}_height", 1, 5)
             self.add_param(f"bubble{i}_pos", -0.3, 0.3)
 
     def make_geo(self):
@@ -87,12 +87,12 @@ try:
 
     loss=MbeyaLoss(n_notes=8, add_octave=True)    
     father=EriceiraShape()
-    initial_pool=MutantPool.create_from_father(father, App.get_config()["n_poolsize"], loss)
+    initial_pool=MutantPool.create_from_father(father, 20, loss)
 
     pipeline=Pipeline()
 
     pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=200, generation_size=70))
-    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
+    pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=100, generation_size=200))
 
     #for i in range(10):
     #    pipeline.add_step(AddPointOptimizerExplore(loss, n_generations=100, generation_size=30))

@@ -968,3 +968,33 @@ class KizimkaziShape(MatemaShape):
         for i in range(len(geo.geo)):
             geo.geo[i][0]*=ratio
         return geo
+
+class SintraShape(MutationParameterSet):
+    
+    def __init__(self):
+        
+        MutationParameterSet.__init__(self)
+
+        self.d1=32
+        self.n_segments = 10
+        
+        self.add_param("length", 1450, 1600)
+        self.add_param("bellsize", 65, 80)
+        self.add_param("power", 1,2)
+        
+    def make_geo(self):
+        length = self.get_value("length")
+        bellsize = self.get_value("bellsize")
+
+        x = length*np.arange(self.n_segments+1)/self.n_segments
+    
+        y= np.arange(self.n_segments+1)/self.n_segments
+        p = self.get_value("power")
+        y = np.power(y, p)
+        y = np.power(y, p)
+        y = np.power(y, p)
+        y = self.d1 + y*(bellsize - self.d1)
+        
+        geo = list(zip(x,y))
+        
+        return Geo(geo)
