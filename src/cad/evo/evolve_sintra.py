@@ -21,12 +21,55 @@ import sys
 import logging
 from cad.calc.parameters import MutationParameterSet, SintraShape
 
+class SintraLoss(LossFunction):
+        
+    def __init__(self):
+        LossFunction.__init__(self)
+        
+        base_note = -31
+        self.target_notes = np.array([0,16,24])+base_note
+        self.target_freqs = np.log2(note_to_freq(self.target_notes))
+        self.multiples = np.arange(1,15)*note_to_freq(base_note)
+
+    def get_deviations(self, freq, reference):
+        
+        deviations = []
+        for f in freq:
+            d = [np.abs(r-f) for r in reference]
+            deviations.append(np.min(d))
+        return deviations
+        
+    def get_loss(self, geo, context=None):
+        
+        notes = geo.get_cadsd().get_notes()
+        freqs = np.log2(list(notes.freq))
+        toots = freqs[0:3]
+        others = freqs[3:]
+        
+        deviations = self.get_deviations(toots, self.target_freqs)
+        fundamental_loss = deviations[0]
+        fundamental_loss *= 30
+        toots_loss = np.sum(deviations[1:])/2
+        toots_loss *= 10
+
+        deviations = self.get_deviations(others, self.multiples)
+        multiple_loss = (np.sum(deviations) / len(deviations))
+        multiple_loss = multiple_loss/100
+        
+        loss = {
+            "loss": fundamental_loss + toots_loss + multiple_loss,
+            "fundamental_loss": fundamental_loss,
+            "toots_loss": toots_loss,
+            "multiple_loss": multiple_loss
+        }
+        return loss
+    
 try:
     App.full_init("evolve_sintra")
 
     losslogger=LossCADLogger()
 
-    loss=MbeyaLoss(n_notes=3, scale=[0,4])
+    loss=SintraLoss()
     father=SintraShape()
     initial_pool=MutantPool.create_from_father(father, 20, loss)
 
