@@ -2,7 +2,6 @@ from cad.calc.didgmo import PeakFile, didgmo_bridge
 import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo, geotools
-from IPython.display import clear_output
 import math
 import random
 import copy
@@ -995,6 +994,56 @@ class SintraShape(MutationParameterSet):
         y = np.power(y, p)
         y = self.d1 + y*(bellsize - self.d1)
         
+        geo = list(zip(x,y))
+        
+        return Geo(geo)
+
+class NazareShape(MutationParameterSet):
+    
+    def __init__(self):
+        
+        MutationParameterSet.__init__(self)
+
+        self.d1=32
+        self.n_segments = 10
+        
+        self.add_param("length", 1450, 1600)
+        self.add_param("bellsize", 65, 80)
+        self.add_param("power", 1,2)
+        self.add_param("widening_1_x", 500, 800)
+        self.add_param("widening_1_y", 1.0, 1.3)
+        self.add_param("widening_2_x", 800, 1400)
+        self.add_param("widening_2_y", 1.0, 1.3)
+        
+    def make_geo(self):
+        length = self.get_value("length")
+        bellsize = self.get_value("bellsize")
+
+        x = length*np.arange(self.n_segments+1)/self.n_segments
+        y= np.arange(self.n_segments+1)/self.n_segments
+        
+        
+        p = self.get_value("power")
+        y = np.power(y, p)
+        y = np.power(y, p)
+        y = np.power(y, p)
+        y = self.d1 + y*(bellsize - self.d1)
+        
+        widenings = [[self.get_value(f"widening_{i}_x"), self.get_value(f"widening_{i}_y")] for i in range(1,3)]
+        for w in widenings:
+            geo = list(zip(x,y))
+            d=geotools.diameter_at_x(Geo(geo), w[0])
+            
+            add_d = w[1]*d - d
+            for i in range(len(geo)):
+                if geo[i][0] >= w[0]:
+                    break
+            
+            x = np.concatenate((x[0:i], [w[0]], x[i:]))
+            y_right = np.concatenate(([d], y[i:])) + add_d
+            y = np.concatenate((y[0:i], y_right))
+        
+            y[i:] /= y[-1]/bellsize
         geo = list(zip(x,y))
         
         return Geo(geo)

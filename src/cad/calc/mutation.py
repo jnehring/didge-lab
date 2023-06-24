@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from cad.calc.conv import note_to_freq, note_name, freq_to_note
 from cad.calc.geo import Geo
 from cad.calc.parameters import BasicShapeParameters, MutationParameterSet
-from IPython.display import clear_output
 import math
 import random
 import copy
