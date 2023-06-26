@@ -152,11 +152,11 @@ class App:
 
     @classmethod
     def log_exception(cls, e : Exception):
-        ctx=json.dumps(App.context.copy())
+        ctx = "None" if App.context is None else json.dumps(App.context.copy())
         logging.error("An exception has occured. App context:\n" + ctx)
         logging.exception(e)
 
-        if not App.get_config()["hide_ui"]:
+        if App.context is not None and not App.get_config()["hide_ui"]:
             print(traceback.format_exc())
 
     @classmethod
