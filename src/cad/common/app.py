@@ -14,9 +14,9 @@ import traceback
 class App:
 
     config=None
-    manager=Manager()
-
-    context=manager.dict()
+    manager=None
+    
+    context=None
     context_lock=Lock()
 
     subscribers={}
@@ -43,6 +43,7 @@ class App:
 
     @classmethod
     def init(cls):
+        App.manager=Manager()
 
         App.config = None
         App.context = App.manager.dict()

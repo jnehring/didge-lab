@@ -158,6 +158,7 @@ def didge_report(geos, outdir, overview_report=None, parameters=None, losses=Non
 
     # cleanup
     files=os.listdir(outdir)
+    print("wrote output to " + outdir)
     for f in files:
         if f=="report.pdf" or f[-7:] == "geo.txt":
             continue
