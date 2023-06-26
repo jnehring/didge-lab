@@ -1010,10 +1010,18 @@ class NazareShape(MutationParameterSet):
         self.add_param("length", 1450, 1600)
         self.add_param("bellsize", 65, 80)
         self.add_param("power", 1,2)
+        
         self.add_param("widening_1_x", 500, 800)
         self.add_param("widening_1_y", 1.0, 1.3)
         self.add_param("widening_2_x", 800, 1400)
         self.add_param("widening_2_y", 1.0, 1.3)
+        
+        self.n_bubbles=1
+        self.n_bubble_segments=10
+        for i in range(self.n_bubbles):
+            self.add_param(f"bubble{i}_width", 100, 200)
+            self.add_param(f"bubble{i}_height", 0, 15)
+            self.add_param(f"bubble{i}_pos", -0.3, 0.3)
         
     def make_geo(self):
         length = self.get_value("length")
@@ -1044,6 +1052,35 @@ class NazareShape(MutationParameterSet):
             y = np.concatenate((y[0:i], y_right))
         
             y[i:] /= y[-1]/bellsize
-        geo = list(zip(x,y))
+            
+        shape = list(zip(x,y))
         
-        return Geo(geo)
+        bubble_length = length-100
+
+        for i in range(self.n_bubbles):
+            
+            width = self.get_value(f"bubble{i}_width")
+            height = self.get_value(f"bubble{i}_height")
+            pos = self.get_value(f"bubble{i}_pos")
+                
+            x = width * np.arange(self.n_bubble_segments)/self.n_bubble_segments
+            y = height * np.sin(np.arange(self.n_bubble_segments)*np.pi/self.n_bubble_segments)
+            
+            x += bubble_length * i/self.n_bubbles
+            x += (0.5+pos)*bubble_length/self.n_bubbles
+                        
+            if x[0] < 0:
+                x += -1*x[0]
+                x += 1
+            if x[-1] > bubble_length:
+                x -= x[-1] - (bubble_length)
+            
+            geo = Geo(shape)
+            y += np.array([geotools.diameter_at_x(geo, _x) for _x in x])
+            
+            shape = list(filter(lambda a : a[0]<x[0] or a[0]>x[-1], shape))
+            shape.extend(zip(x,y))
+            shape = sorted(shape, key=lambda x : x[0])
+        
+        return Geo(shape)
+    

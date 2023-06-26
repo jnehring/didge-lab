@@ -59,7 +59,7 @@ class NazareLoss(LossFunction):
         toots_loss *= 10
 
         brightness_loss = self.base_brightness / self.get_brightness(geo)
-        brightness_loss *= 2
+        brightness_loss *= 10
         
         loss = {
             "loss": fundamental_loss + toots_loss + brightness_loss,
@@ -76,7 +76,7 @@ try:
 
     loss=NazareLoss()
     father=NazareShape()
-    initial_pool=MutantPool.create_from_father(father, 10, loss)
+    initial_pool=MutantPool.create_from_father(father, 20, loss)
 
     pipeline=Pipeline()
 
