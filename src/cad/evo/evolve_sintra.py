@@ -19,7 +19,7 @@ from cad.calc.util.cad_logger import LossCADLogger
 import logging
 import sys
 import logging
-from cad.calc.parameters import MutationParameterSet, SintraShape
+from cad.calc.parameters import MutationParameterSet, NazareShape
 
 class SintraLoss(LossFunction):
         
@@ -27,9 +27,13 @@ class SintraLoss(LossFunction):
         LossFunction.__init__(self)
         
         base_note = -31
-        self.target_notes = np.array([0,16,24])+base_note
+        self.target_notes = base_note + np.concatenate([np.array((0,3,7)) + 12*n for n in range(0,5)])
         self.target_freqs = np.log2(note_to_freq(self.target_notes))
-        self.multiples = np.arange(1,15)*note_to_freq(base_note)
+        #self.multiples = np.arange(1,15)*note_to_freq(base_note)
+
+    def get_brightness(self, geo):
+        imp = geo.get_cadsd().get_impedance_spektrum()
+        return (imp.query("freq>=400")).impedance.sum() / imp.impedance.sum()
 
     def get_deviations(self, freq, reference):
         
@@ -48,19 +52,18 @@ class SintraLoss(LossFunction):
         
         deviations = self.get_deviations(toots, self.target_freqs)
         fundamental_loss = deviations[0]
-        fundamental_loss *= 30
+        fundamental_loss *= 3
         toots_loss = np.sum(deviations[1:])/2
-        toots_loss *= 10
+        toots_loss *= 1
 
-        deviations = self.get_deviations(others, self.multiples)
-        multiple_loss = (np.sum(deviations) / len(deviations))
-        multiple_loss = multiple_loss/100
+        brightness_loss = self.get_brightness(geo)
+        brightness_loss *= 1
         
         loss = {
-            "loss": fundamental_loss + toots_loss + multiple_loss,
+            "loss": fundamental_loss + toots_loss + brightness_loss,
             "fundamental_loss": fundamental_loss,
             "toots_loss": toots_loss,
-            "multiple_loss": multiple_loss
+            "brightness_loss": brightness_loss
         }
         return loss
     
@@ -70,7 +73,7 @@ try:
     losslogger=LossCADLogger()
 
     loss=SintraLoss()
-    father=SintraShape()
+    father=NazareShape()
     initial_pool=MutantPool.create_from_father(father, 20, loss)
 
     pipeline=Pipeline()
