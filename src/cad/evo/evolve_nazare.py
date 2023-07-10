@@ -27,6 +27,7 @@ class NazareLoss(LossFunction):
         LossFunction.__init__(self)
         
         base_note = -31
+
         self.target_notes = np.array([0,16,24])+base_note
         self.target_freqs = np.log2(note_to_freq(self.target_notes))
 
@@ -35,7 +36,9 @@ class NazareLoss(LossFunction):
         # self.multiples = np.arange(1,15)*note_to_freq(base_note)
 
     def get_brightness(self, geo):
-        return geo.get_cadsd().get_impedance_spektrum().query("freq>=400 and freq<=800").impedance.sum()
+        imp = geo.get_cadsd().get_impedance_spektrum()
+        imp.impedance /= imp.impedance.max()
+        return (imp.query("freq>=400 and freq<=800")).impedance.sum()
 
     def get_deviations(self, freq, reference):
         
@@ -56,10 +59,10 @@ class NazareLoss(LossFunction):
         fundamental_loss = deviations[0]
         fundamental_loss *= 30
         toots_loss = np.sum(deviations[1:])/2
-        toots_loss *= 10
+        toots_loss *= 20
 
         brightness_loss = self.base_brightness / self.get_brightness(geo)
-        brightness_loss *= 10
+        brightness_loss *= 12
         
         loss = {
             "loss": fundamental_loss + toots_loss + brightness_loss,

@@ -16,4 +16,4 @@ python setup.py build_ext --inplace
 
 cd ../../
 
-python -m cad.evo.evolve_sintra -n_threads 128
+python -m cad.evo.evolve_nazare -n_threads 128
