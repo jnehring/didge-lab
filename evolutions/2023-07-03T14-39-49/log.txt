@@ -1,0 +1,62 @@
+2023-07-03 14:39:49,062 [INFO] {app.py:99} 
+ _____  _     _              _           _     
+|  __ \(_)   | |            | |         | |    
+| |  | |_  __| | __ _  ___  | |     __ _| |__  
+| |  | | |/ _` |/ _` |/ _ \ | |    / _` | '_ \ 
+| |__| | | (_| | (_| |  __/ | |___| (_| | |_) |
+|_____/|_|\__,_|\__, |\___| |______\__,_|_.__/ 
+                 __/ |                         
+                |___/                          
+Starting evolve_nazare.py
+2023-07-03 14:39:49,098 [INFO] {_internal.py:187} [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.18.159.216:5000
+2023-07-03 14:39:49,099 [INFO] {_internal.py:187} [33mPress CTRL+C to quit[0m
+2023-07-03 14:39:54,903 [INFO] {stats.py:32} {'generation': 0, 'num_individuals_total': 14, 'loss_min': 10.269205624785338, 'loss_avg': 12.51086340923698, 'loss_max': 15.19906535969664, 'fundamental_loss_min': 0.6630791438270656, 'fundamental_loss_avg': 1.3184097527750314, 'fundamental_loss_max': 2.565751289489464, 'toots_loss_min': 0.378226575047087, 'toots_loss_avg': 0.7262027978139051, 'toots_loss_max': 1.4218562392378153, 'brightness_loss_min': 9.22196104260602, 'brightness_loss_avg': 10.466250858648044, 'brightness_loss_max': 11.21145783096936}
+2023-07-03 14:39:57,452 [INFO] {stats.py:32} {'generation': 1, 'num_individuals_total': 24, 'loss_min': 10.269205624785338, 'loss_avg': 12.327168129721294, 'loss_max': 13.25509962601515, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 1.3108645161759545, 'fundamental_loss_max': 2.952930815397581, 'toots_loss_min': 0.129575238220192, 'toots_loss_avg': 0.7885624136696716, 'toots_loss_max': 1.7068440418542563, 'brightness_loss_min': 9.22196104260602, 'brightness_loss_avg': 10.22774119987567, 'brightness_loss_max': 10.8357520577317}
+2023-07-03 14:39:58,276 [INFO] {webserver.py:55} None
+2023-07-03 14:39:58,521 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:39:58] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:39:58,847 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:39:58] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:39:58,861 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:39:58] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:39:58,945 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:39:58] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:39:58,979 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:39:58] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:00,967 [INFO] {stats.py:32} {'generation': 2, 'num_individuals_total': 44, 'loss_min': 10.269205624785338, 'loss_avg': 11.902513962534865, 'loss_max': 12.746801616880113, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 1.3001943837265144, 'fundamental_loss_max': 3.6629165354786952, 'toots_loss_min': 0.0328325552476505, 'toots_loss_avg': 0.6586033960353628, 'toots_loss_max': 1.7068440418542563, 'brightness_loss_min': 8.710633179508543, 'brightness_loss_avg': 9.943716182772986, 'brightness_loss_max': 10.8357520577317}
+2023-07-03 14:40:02,839 [INFO] {webserver.py:55} None
+2023-07-03 14:40:02,841 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:02] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:40:02,874 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:02] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:40:02,875 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:02] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:40:02,906 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:02] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:02,935 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:02] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,540 [INFO] {webserver.py:55} None
+2023-07-03 14:40:03,543 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:40:03,581 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,582 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,598 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,622 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,741 [INFO] {webserver.py:55} None
+2023-07-03 14:40:03,743 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:40:03,769 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,776 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,797 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,828 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:03,927 [INFO] {webserver.py:55} None
+2023-07-03 14:40:03,930 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:40:03,999 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:03] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,003 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,055 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,085 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,735 [INFO] {webserver.py:55} None
+2023-07-03 14:40:04,736 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:40:04,753 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,753 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,761 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,782 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,906 [INFO] {stats.py:32} {'generation': 3, 'num_individuals_total': 79, 'loss_min': 8.905023400971551, 'loss_avg': 11.04760031799742, 'loss_max': 11.823216232085834, 'fundamental_loss_min': 0.10822442934978582, 'fundamental_loss_avg': 0.8948076514004786, 'fundamental_loss_max': 2.559787423258868, 'toots_loss_min': 0.0328325552476505, 'toots_loss_avg': 0.5298391093653594, 'toots_loss_max': 1.2272219418615782, 'brightness_loss_min': 8.342228923901853, 'brightness_loss_avg': 9.622953557231583, 'brightness_loss_max': 10.766812569340985}
+2023-07-03 14:40:04,909 [INFO] {webserver.py:55} None
+2023-07-03 14:40:04,926 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[35m[1mGET /api/get_mutant/0 HTTP/1.1[0m" 500 -
+2023-07-03 14:40:04,947 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=debugger.js HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,949 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,961 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:04,988 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:40:04] "[36mGET /api/get_mutant/0?__debugger__=yes&cmd=resource&f=console.png HTTP/1.1[0m" 304 -
+2023-07-03 14:40:09,234 [INFO] {stats.py:32} {'generation': 4, 'num_individuals_total': 136, 'loss_min': 8.905023400971551, 'loss_avg': 10.42569342034756, 'loss_max': 11.180818637088745, 'fundamental_loss_min': 0.10822442934978582, 'fundamental_loss_avg': 0.685529339172783, 'fundamental_loss_max': 2.1189772450904165, 'toots_loss_min': 0.04111784151480169, 'toots_loss_avg': 0.3346885146211813, 'toots_loss_max': 0.9270892048190227, 'brightness_loss_min': 8.342228923901853, 'brightness_loss_avg': 9.405475566553594, 'brightness_loss_max': 10.496960722806685}

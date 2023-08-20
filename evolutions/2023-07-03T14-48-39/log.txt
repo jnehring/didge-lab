@@ -1,0 +1,66 @@
+2023-07-03 14:48:39,561 [INFO] {app.py:99} 
+ _____  _     _              _           _     
+|  __ \(_)   | |            | |         | |    
+| |  | |_  __| | __ _  ___  | |     __ _| |__  
+| |  | | |/ _` |/ _` |/ _ \ | |    / _` | '_ \ 
+| |__| | | (_| | (_| |  __/ | |___| (_| | |_) |
+|_____/|_|\__,_|\__, |\___| |______\__,_|_.__/ 
+                 __/ |                         
+                |___/                          
+Starting evolve_nazare.py
+2023-07-03 14:48:39,742 [INFO] {_internal.py:187} [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.18.159.216:5000
+2023-07-03 14:48:39,742 [INFO] {_internal.py:187} [33mPress CTRL+C to quit[0m
+2023-07-03 14:48:44,885 [INFO] {stats.py:32} {'generation': 0, 'num_individuals_total': 12, 'loss_min': 11.988429698318928, 'loss_avg': 15.591633849294878, 'loss_max': 45.97436387823171, 'fundamental_loss_min': 1.2113507740126295, 'fundamental_loss_avg': 4.258557119115909, 'fundamental_loss_max': 34.60896782498618, 'toots_loss_min': 0.506453709815835, 'toots_loss_avg': 0.7574969461354707, 'toots_loss_max': 1.2588210315593473, 'brightness_loss_min': 9.475416602008922, 'brightness_loss_avg': 10.575579784043498, 'brightness_loss_max': 10.8357520577317}
+2023-07-03 14:48:44,885 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:48:48,057 [INFO] {stats.py:32} {'generation': 1, 'num_individuals_total': 24, 'loss_min': 10.075373169432712, 'loss_avg': 12.274659847042098, 'loss_max': 13.439188887073684, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 1.1435309294640832, 'fundamental_loss_max': 2.565751289489464, 'toots_loss_min': 0.2881195368568834, 'toots_loss_avg': 0.7392522331271622, 'toots_loss_max': 1.4045741905814957, 'brightness_loss_min': 8.819744397165186, 'brightness_loss_avg': 10.391876684450853, 'brightness_loss_max': 11.458047360288662}
+2023-07-03 14:48:48,057 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:48:51,285 [INFO] {stats.py:32} {'generation': 2, 'num_individuals_total': 44, 'loss_min': 9.789449899282722, 'loss_avg': 11.81642094498963, 'loss_max': 12.746801616880113, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 1.2242301517665741, 'fundamental_loss_max': 3.007960512863974, 'toots_loss_min': 0.08652919942827353, 'toots_loss_avg': 0.7314715682176978, 'toots_loss_max': 1.4045741905814957, 'brightness_loss_min': 8.38467471295717, 'brightness_loss_avg': 9.86071922500536, 'brightness_loss_max': 11.458047360288662}
+2023-07-03 14:48:51,285 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:48:53,886 [INFO] {webserver.py:50} <didgelab.evo.evolution_state.EvolutionState object at 0x11738a500>
+2023-07-03 14:48:54,110 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:48:54] "GET /api/get_mutant/0 HTTP/1.1" 200 -
+2023-07-03 14:48:55,286 [INFO] {stats.py:32} {'generation': 3, 'num_individuals_total': 75, 'loss_min': 9.789449899282722, 'loss_avg': 11.474924697832785, 'loss_max': 12.31165687685843, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 1.151118446010178, 'fundamental_loss_max': 3.007960512863974, 'toots_loss_min': 0.08652919942827353, 'toots_loss_avg': 0.6651689634444475, 'toots_loss_max': 1.4045741905814957, 'brightness_loss_min': 8.38467471295717, 'brightness_loss_avg': 9.658637288378161, 'brightness_loss_max': 10.947323227715698}
+2023-07-03 14:48:55,286 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:49:00,238 [INFO] {stats.py:32} {'generation': 4, 'num_individuals_total': 130, 'loss_min': 9.682967083073244, 'loss_avg': 10.729743121417206, 'loss_max': 11.474154165442428, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 0.6792441376555995, 'fundamental_loss_max': 2.787420666370597, 'toots_loss_min': 0.07171260762762532, 'toots_loss_avg': 0.5369367745340693, 'toots_loss_max': 1.2119699641495618, 'brightness_loss_min': 7.897928595109298, 'brightness_loss_avg': 9.513562209227535, 'brightness_loss_max': 10.435498680475618}
+2023-07-03 14:49:00,238 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:49:05,885 [INFO] {stats.py:32} {'generation': 5, 'num_individuals_total': 229, 'loss_min': 9.451869674085557, 'loss_avg': 10.29059944664213, 'loss_max': 10.832625541066951, 'fundamental_loss_min': 0.04937893935120563, 'fundamental_loss_avg': 0.6157137624688027, 'fundamental_loss_max': 1.8156856932416865, 'toots_loss_min': 0.07171260762762532, 'toots_loss_avg': 0.39106195062863236, 'toots_loss_max': 1.463372757893855, 'brightness_loss_min': 8.403742004998916, 'brightness_loss_avg': 9.283823733544692, 'brightness_loss_max': 10.233224974279018}
+2023-07-03 14:49:05,885 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:49:11,815 [INFO] {stats.py:32} {'generation': 6, 'num_individuals_total': 329, 'loss_min': 8.401705891653137, 'loss_avg': 9.804111929331173, 'loss_max': 10.463324342021881, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 0.5708866580070713, 'fundamental_loss_max': 1.8156856932416865, 'toots_loss_min': 0.08652919942827353, 'toots_loss_avg': 0.29959273832102307, 'toots_loss_max': 0.5776452179688762, 'brightness_loss_min': 7.669189411787761, 'brightness_loss_avg': 8.93363253300308, 'brightness_loss_max': 9.836455545995422}
+2023-07-03 14:49:11,815 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:49:16,379 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "[36mGET /static/index.html HTTP/1.1[0m" 304 -
+2023-07-03 14:49:16,460 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "[36mGET /static/js/evolution.js HTTP/1.1[0m" 304 -
+2023-07-03 14:49:16,471 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "[36mGET /static/js/ui.js HTTP/1.1[0m" 304 -
+2023-07-03 14:49:16,511 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "[36mGET /static/js/didgebuilder.js HTTP/1.1[0m" 304 -
+2023-07-03 14:49:16,540 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "[36mGET /static/style.css HTTP/1.1[0m" 304 -
+2023-07-03 14:49:16,622 [INFO] {webserver.py:50} <didgelab.evo.evolution_state.EvolutionState object at 0x11738a500>
+2023-07-03 14:49:16,624 [INFO] {webserver.py:36} generation
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} num_individuals_total
+2023-07-03 14:49:16,631 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} loss_min
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} loss_avg
+2023-07-03 14:49:16,631 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} loss_max
+2023-07-03 14:49:16,631 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} fundamental_loss_min
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} fundamental_loss_avg
+2023-07-03 14:49:16,631 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,631 [INFO] {webserver.py:36} fundamental_loss_max
+2023-07-03 14:49:16,643 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,649 [INFO] {webserver.py:36} toots_loss_min
+2023-07-03 14:49:16,661 [INFO] {webserver.py:36} toots_loss_avg
+2023-07-03 14:49:16,674 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,686 [INFO] {webserver.py:36} toots_loss_max
+2023-07-03 14:49:16,699 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,710 [INFO] {webserver.py:36} brightness_loss_min
+2023-07-03 14:49:16,723 [INFO] {webserver.py:36} brightness_loss_avg
+2023-07-03 14:49:16,735 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,747 [INFO] {webserver.py:36} brightness_loss_max
+2023-07-03 14:49:16,747 [INFO] {webserver.py:38} delete
+2023-07-03 14:49:16,748 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "GET /api/general_evolution_info HTTP/1.1" 200 -
+2023-07-03 14:49:16,887 [INFO] {_internal.py:187} 127.0.0.1 - - [03/Jul/2023 14:49:16] "GET /api/get_mutant/0 HTTP/1.1" 200 -
+2023-07-03 14:49:18,089 [INFO] {stats.py:32} {'generation': 7, 'num_individuals_total': 429, 'loss_min': 8.401705891653137, 'loss_avg': 9.527868906432289, 'loss_max': 9.942132628164629, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 0.28816638261984995, 'fundamental_loss_max': 0.8081995442684864, 'toots_loss_min': 0.0328325552476505, 'toots_loss_avg': 0.328839734963678, 'toots_loss_max': 0.5776452179688762, 'brightness_loss_min': 7.669189411787761, 'brightness_loss_avg': 8.91086278884876, 'brightness_loss_max': 9.836455545995422}
+2023-07-03 14:49:18,089 [INFO] {evolution_state.py:16} hehehehe
+2023-07-03 14:49:24,617 [INFO] {stats.py:32} {'generation': 8, 'num_individuals_total': 529, 'loss_min': 8.401705891653137, 'loss_avg': 9.355311167058439, 'loss_max': 9.810050481962254, 'fundamental_loss_min': 0.009546667064235237, 'fundamental_loss_avg': 0.4283891691692032, 'fundamental_loss_max': 1.7808438750398103, 'toots_loss_min': 0.0328325552476505, 'toots_loss_avg': 0.2863376673741078, 'toots_loss_max': 0.5776452179688762, 'brightness_loss_min': 7.669189411787761, 'brightness_loss_avg': 8.640584330515129, 'brightness_loss_max': 9.461553478419775}
+2023-07-03 14:49:24,617 [INFO] {evolution_state.py:16} hehehehe
