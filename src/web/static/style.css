@@ -51,3 +51,9 @@ table.table_margins td, table.table_margins th{
     width: 500px;
     height: 300px;
 }
+
+#tooltip{
+    position: absolute;
+    border: 1px solid black;
+    display: none;
+}

@@ -19,19 +19,23 @@
 <body>
 <h1>DidgeMate</h1>
 <div id='didgebuilder'>
-    <canvas id="didge_canvas" height="300" width="700"></canvas>
-
+    <canvas id="didge_canvas" height="300" width="1000"></canvas>
+    <div id="tooltip"></div>
     <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'geo_table_tab')">Geometry</button>
         <button class="tablinks" onclick="openTab(event, 'acoustic_sim_tab')">Acoustic Simulation</button>
-        <button class="tablinks" onclick="openTab(event, 'import_export_tab')">Import / Export</button>
+        <button class="tablinks" onclick="openTab(event, 'doc_tab')">Documentation</button>
       </div>
       
       <!-- Tab content -->
     <div id="geo_table_tab" class="tabcontent">
         <h2>Geometry</h2>
         <table id="geo_table"></table>
-        <button onclick="submitGeoTable(); run_simulation_if_open();">Set</button>
+        <button onclick="submitGeoTable(); run_simulation_if_open();">Set geometry</button>
+        <br/>
+        <br/>
+        <button onclick="import_geo();">Import</button>
+        <button onclick="download_geo();">Download</button>
       </div>
       
       <div id="acoustic_sim_tab" class="tabcontent">
@@ -39,8 +43,18 @@
         <div id="acoustic_sim_content"></div>
       </div>
 
-      <div id="import_export_tab" class="tabcontent">
-        <h2>Import / Export</h2>
+      <div id="doc_tab" class="tabcontent">
+        <h2>Documentation</h2>
+        <p>
+          DidgeMate helps you to create Didgeridoos. You can enter the geometry of the Didgeridoo, which is the inner shape of the bore. DidgeMate then computes the impedance spektrum. From the impedance spektrum you can infer certain sonic characteristics of the Didgeridoo, such as the tuning of the toots and the sound spektrum. DidgeMate also plots the sound spektra of the ground tone and the first overblow.
+        </p>
+        <h3>
+          Entering data
+        </h3>
+        <p>
+          The user interface first shows a plot of the Didgeridoo bore.
+          You enter data in the geometry tab. 
+        </p>
       </div>
     </div>
 </body>

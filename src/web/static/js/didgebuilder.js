@@ -53,7 +53,6 @@ function initializeDragPoints(){
 
     const transformed_geo_oben = coords["oben"];
     const transformed_geo_unten = coords["unten"];
-
 }
 
 // compute didgeridoo coordinates on the canvas
@@ -218,7 +217,7 @@ function dragPoint(iPoint, event){
         }
     }
     if( dp.direction == "vertical_up"){
-        const dy = (dp.y - mouseY) / scalingFactor;
+        const dy = 0.2*(dp.y - mouseY) / scalingFactor;
         const geoY = 2*(rect.height/2-dp.y) / scalingFactor;
         const newPos = Math.round(geoY + dy);
         if( newPos>0 && newPos<500 && newPos >-500){
@@ -273,3 +272,17 @@ document.addEventListener("DOMContentLoaded", () => {
         } 
     });
 });
+
+function download_geo(){
+    data = {
+        "geo": geo
+    }
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data));
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href",     dataStr);
+    downloadAnchorNode.setAttribute("download", "didgemate_geometry .json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+    
+}

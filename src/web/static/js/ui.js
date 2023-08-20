@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-    openTab(event, 'acoustic_sim_tab')
+    //openTab(event, 'geo_table_tab')
+    openTab(event, 'doc_tab')
     run_acoustic_simulation();
 });
 

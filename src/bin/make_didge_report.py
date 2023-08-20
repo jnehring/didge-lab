@@ -14,6 +14,7 @@ from pathlib import Path
 import sys
 from cad.calc.geo import Geo
 
+from cad.calc.parameters import *
 # possible values for contents: all,impedance,spektra,parameters,notes,general
 def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents="all", notes=None):
 
