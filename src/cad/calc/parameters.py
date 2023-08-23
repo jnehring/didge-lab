@@ -1127,3 +1127,44 @@ class MaveiraShape(MutationParameterSet):
         return Geo(geo)
 
 
+class TamakiShape(MutationParameterSet):
+    
+    def __init__(self):
+        
+        MutationParameterSet.__init__(self)
+
+        self.d1=30
+        self.n_segments = 15
+
+        self.add_param("length", 1380, 1400)
+        self.add_param("bellsize", 77, 83)
+        self.add_param("power", 1,2)
+        
+        for i in range(self.n_segments-1):
+            self.add_param(f"delta_x{i}", -20, 20)
+            self.add_param(f"delta_y{i}", 0.8, 1.2)
+        
+
+    def make_geo(self):
+        length = self.get_value("length")
+        bellsize = self.get_value("bellsize")
+
+        x = length*np.arange(self.n_segments+1)/self.n_segments
+    
+        y= np.arange(self.n_segments+1)/self.n_segments
+        p = self.get_value("power")
+        y = np.power(y, p)
+        y = np.power(y, p)
+        y = np.power(y, p)
+        y = self.d1 + y*(bellsize - self.d1)
+        
+        for i in range(1, self.n_segments-1):
+            delta_x = self.get_value(f"delta_x{i}")
+            delta_y = self.get_value(f"delta_y{i}")
+            y[i] *= delta_y
+            x[i] += delta_x
+            x = sorted(x)
+            
+        geo = list(zip(x,y))
+        
+        return Geo(geo)
