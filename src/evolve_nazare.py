@@ -1,20 +1,19 @@
 from multiprocessing import Pool
-import logging
 import numpy as np
+from didgelab.app import App
 
 from didgelab.calc.geo import Geo, geotools
 from didgelab.calc.conv import note_to_freq
 from didgelab.evo.loss import LossFunction
 
-from didgelab.shapes.util import scale
-from didgelab.app import App
-from didgelab.evo.mutator import MutationRateMutator
 from didgelab.evo.shapes import Shape
-from didgelab.evo.stats import EvolutionStats
-from didgelab.evo.checkpoint_writer import CheckPointWriter
-from didgelab.web.webserver import start_webwerver_non_blocking
-from didgelab.evo.evolution_state import EvolutionState
 from didgelab.evo.evolution import Evolution
+
+from didgelab.web.webserver import start_webwerver_non_blocking
+from didgelab.evo.log.checkpoint_writer import CheckPointWriter
+from didgelab.evo.log.loss_writer import LossWriter
+from didgelab.web.stats import EvolutionStats
+from didgelab.web.evolution_state import EvolutionState
 
 class NazareLoss(LossFunction):
         
@@ -152,12 +151,23 @@ class NazareShape(Shape):
         return Geo(shape)
     
 if __name__ == "__main__":
+
+    App.full_init()
+
+    cp = CheckPointWriter()
+    lw = LossWriter()
+    ss = EvolutionStats()
+    es = EvolutionState()
+
+    start_webwerver_non_blocking()
+
     father_shape = NazareShape()
     loss = NazareLoss()
 
     evo = Evolution(
         father_shape,
-        loss
+        loss,
+        num_generations=20
     )
     evo.evolve()
 

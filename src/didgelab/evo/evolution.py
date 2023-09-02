@@ -4,9 +4,11 @@ import multiprocessing
 from tqdm import tqdm
 import time
 
-from didgelab.evo.mutator import MutationRateMutator
-from didgelab.evo.loss import LossFunction
-from didgelab.evo.shapes import Shape
+from ..app import App
+from .mutator import MutationRateMutator
+from .loss import LossFunction
+from .shapes import Shape
+
 
 class Evolution():
 
@@ -65,3 +67,6 @@ class Evolution():
             description = str(description).replace("'", "")
             pbar.set_description(description)
             pbar.update(1)
+
+            App.publish("generation_ended", (i_generation, self.population))
+        App.publish("evolution_ended", (self.population))

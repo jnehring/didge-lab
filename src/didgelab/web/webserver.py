@@ -7,8 +7,8 @@ import logging
 
 from didgelab.calc.geo import Geo
 from didgelab.app import App
-from didgelab.evo.stats import EvolutionStats
-from didgelab.evo.evolution_state import EvolutionState
+from .stats import EvolutionStats
+from .evolution_state import EvolutionState
 
 app = Flask(__name__)
 

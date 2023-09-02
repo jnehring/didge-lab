@@ -99,8 +99,12 @@ class App:
         logging.info(msg)
 
     @classmethod
-    def full_init(self, name="default"):
-        outfolder=App.get_output_folder()
+    def full_init(self, name=None):
+        if name is None:
+            name = sys.argv[0]
+            print(name)
+            name = name[0:name.find(".")]
+        outfolder=App.get_output_folder(suffix=name)
         log_file=os.path.join(outfolder, "log.txt")
         App.init_logging(filename=log_file)
         App.start_message()

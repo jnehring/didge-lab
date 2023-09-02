@@ -1,4 +1,4 @@
-from didgelab.app import App
+from ..app import App
 import threading
 import copy
 import logging
