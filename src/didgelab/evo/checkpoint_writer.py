@@ -1,5 +1,5 @@
 from didgelab.app import App
-from didgelab.evo.parameters import MutationParameterSet
+from didgelab.evo.shapes import Shape
 
 import pickle
 import os
@@ -19,7 +19,7 @@ class CheckPointWriter:
         App.subscribe("generation_ended", write_checkpoint)
         App.register_service(self)
 
-    def write_checkpoint(self, name, population : list[MutationParameterSet]):
+    def write_checkpoint(self, name, population : list[Shape]):
         logging.info("write checkpoint")
         checkpoint_folder = os.path.join(App.get_output_folder(), "checkpoint_" + str(name))
         os.mkdir(checkpoint_folder)
