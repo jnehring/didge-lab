@@ -28,6 +28,10 @@ class App:
     def get_config(cls, path="config.ini"):
         if App.config==None:
             p = configargparse.ArgParser(default_config_files=['./*.conf'])
+            p.add('-sim.correction', type=str, default="svm", choices=("none", "svm"), help='correct the impedance spektrum using a model')
+            p.add('-sim.resolution', type=int, default=2, help='minimal frequency for acoustic simulation')
+            p.add('-sim.fmin', type=int, default=30, help='minimal frequency for acoustic simulation')
+            p.add('-sim.fmax', type=int, default=1000, help='maximal frequency for acoustic simulation')
             p.add('-n_threads', type=int, default=8, help='number of threads', env_var='N_THREADS')
             p.add('-log_level', type=str, choices=["info", "error", "debug", "warn"], default="info", help='log level ')
 
@@ -61,13 +65,14 @@ class App:
 
 
     @classmethod
-    def init_logging(self, filename="./log.txt"):
+    def init_logging(self, filename="./log.txt", log_to_file=True):
         logFormatter = logging.Formatter("%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s")
         rootLogger = logging.getLogger()
 
-        fileHandler = logging.FileHandler(filename)
-        fileHandler.setFormatter(logFormatter)
-        rootLogger.addHandler(fileHandler)
+        if log_to_file:
+            fileHandler = logging.FileHandler(filename)
+            fileHandler.setFormatter(logFormatter)
+            rootLogger.addHandler(fileHandler)
 
         consoleHandler = logging.StreamHandler()
         consoleHandler.setFormatter(logFormatter)
@@ -99,22 +104,32 @@ class App:
         logging.info(msg)
 
     @classmethod
-    def full_init(self, name=None):
-        if name is None:
-            name = sys.argv[0]
-            print(name)
-            name = name[0:name.find(".")]
-        outfolder=App.get_output_folder(suffix=name)
-        log_file=os.path.join(outfolder, "log.txt")
-        App.init_logging(filename=log_file)
-        App.start_message()
+    def full_init(self, name=None, create_output_folder=True):
+
+        if create_output_folder:
+            if name is None:
+                if "ipykernel" in sys.modules:
+                    # we are calling from inside of a jupyter notebook
+                    name = "jupyter"
+                else:
+                    # we are calling from python
+                    name = os.path.basename(sys.argv[0])
+                    if name.find(".")>0:
+                        name = name[0:name.find(".")]
+            outfolder=App.get_output_folder(suffix=name)
+            log_file=os.path.join(outfolder, "log.txt")
+            App.init_logging(filename=log_file, log_to_file=create_output_folder)
+
+        if "ipykernel" in sys.modules:
+            App.start_message()
 
     @classmethod
     def get_output_folder(cls, suffix=""):
 
         if App.output_folder is None:
 
-            f = "../evolutions/"
+            f = os.path.dirname(__file__)
+            f = os.path.join(f, "../../evolutions/")
 
             if not os.path.exists(f):
                 os.mkdir(f)

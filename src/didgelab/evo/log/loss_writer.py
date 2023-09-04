@@ -9,26 +9,29 @@ class LossWriter:
     def __init__(self, interval=100):
 
         self.interval = interval
+        self.writer = None
 
         def write_loss(i_generation, population):
             self.write_loss(i_generation, population)
 
         App.subscribe("generation_ended", write_loss)
 
-        def close():
-            self.writer.close()
+        def close(population):
+            self.csvfile.close()
+            self.writer = None
 
         App.subscribe("evolution_ended", close)
-        
+
         App.register_service(self)
         
-        outfile = os.path.join(App.get_output_folder(), "losses.csv")
-
-        csvfile = open(outfile, "w")
-        self.writer = csv.writer(csvfile)
-        self.format = None
-
     def write_loss(self, i_generation, population : list[Shape]):
+
+        if self.writer is None:
+            outfile = os.path.join(App.get_output_folder(), "losses.csv")
+            self.csvfile = open(outfile, "w")
+            self.writer = csv.writer(self.csvfile)
+            self.format = None
+
         if self.format is None:
             self.format = ["i_generation", "i_mutant"]
             for key in population[0].loss.keys():
