@@ -1,63 +1,113 @@
 import numpy as np
-from multiprocessing import Pool
+#from multiprocessing import Pool, Manager
+
+from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 from tqdm import tqdm
 import time
+from typing import List
+import logging
+import os
+import pickle
 
-from ..app import App
+from ..app import get_app, get_config
 from .mutator import MutationRateMutator
 from .loss import LossFunction
-from .shapes import Shape
+from .shapes import Shape, BasicShape, DetailShape
 
 
 class Evolution():
 
     def __init__(
         self, 
-        father_shape : Shape, 
         loss: LossFunction,
+        father_shape : Shape = None, 
+        initial_population : List[Shape] = None,
         population_size : int = 10, 
         num_generations : int = 100,
-        generation_size : int = 20, 
+        generation_size : int = 200, 
         mutation_rate_decay_after : float = 0.5,
+        mutation_probability : float = 1.0,
+        generation_offset : int = 0
         ):
+
+        assert father_shape is not None or initial_population is not None
+
         self.father_shape = father_shape
         self.loss = loss
         self.population_size = population_size
-        self.population = []
+
+        if initial_population is not None:
+            self.population = initial_population
+        else:
+            self.population = []
+
         self.generation_size = generation_size
         self.mutator = MutationRateMutator()
         self.num_generations = num_generations
         self.mutation_rate_decay_after = mutation_rate_decay_after
+        self.mutation_probability = mutation_probability
+
+        self.generation_offset = generation_offset
 
     def create_initial_pool(self):
         self.population = [self.father_shape.copy() for i in range(self.population_size)]
 
-    def mutate(self, father : Shape, i_generation : int, father_index : int):
-        decay_generation = self.num_generations * self.mutation_rate_decay_after
-        if i_generation < decay_generation:
-            mutation_rate = 1
-        else:
-            mutation_rate = (i_generation-decay_generation) / (self.num_generations-decay_generation)
-        mutant = self.mutator.mutate(father, mutation_rate)
-        geo = mutant.make_geo()
-        loss = self.loss.get_loss(geo)
-        mutant.loss = loss
-        return mutant, father_index
+    def mutate(self, params):
+        father, i_generation, father_index = params
+        try:
+            decay_generation = self.num_generations * self.mutation_rate_decay_after
+            if i_generation < decay_generation:
+                mutation_rate = 1
+            else:
+                mutation_rate = (i_generation-decay_generation) / (self.num_generations-decay_generation)
+            mutant = self.mutator.mutate(father, mutation_rate=mutation_rate, mutation_probability=self.mutation_probability)
+            geo = mutant.make_geo()
+            loss = self.loss.get_loss(geo)
+            mutant.loss = loss
+            return mutant, father_index
+        except Exception as e:
+            logging.exception(e)
+            
+            # report errors
+            if get_app().create_output_folder:
+                self.write_error(mutant, geo)
+            return father, father_index
         
-    def evolve(self):
-        self.father_shape.loss = self.loss.get_loss(self.father_shape.make_geo())
-        self.create_initial_pool()
-        pbar = tqdm(total=self.num_generations)
-        for i_generation in range(self.num_generations):
+    # write geo and shape to the error directory
+    def write_error(self, mutant, geo):
+        error_dir = get_app().get_output_folder()
+        error_dir = os.path.join(error_dir, "errors")
+        if not os.path.exists(error_dir):
+            os.mkdir(error_dir)
+        i_error = 0
+        found=False
+        while not found:
+            error_file = os.path.join(error_dir, str(i_error) + ".bin")
+            found = not os.path.exists(error_file)
+        with open(error_file, "wb") as f:
+            pickle.dump((mutant, geo), f)
+
+    def evolve(self, pbar=None):
+
+        if self.father_shape is not None:
+            self.father_shape.loss = self.loss.get_loss(self.father_shape.make_geo())
+            self.create_initial_pool()
+
+        if pbar is None:
+            pbar = tqdm(total=self.num_generations)
+
+        for i_generation in range(self.generation_offset, self.num_generations + self.generation_offset):
             arguments = [(self.population[i%self.population_size], i_generation, i%self.population_size) for i in range(self.generation_size)]
-            with Pool(2*multiprocessing.cpu_count()) as p:
-                results = p.starmap(self.mutate, arguments)
+            with ThreadPoolExecutor(multiprocessing.cpu_count()) as executor:
+                results = executor.map(self.mutate, arguments)
+                results = list(results)
                 pool = [[self.population[i]] for i in range(self.population_size)]
                 losses = [[self.population[i].loss["loss"]] for i in range(self.population_size)]
                 for mutant, father_index in results:
                     pool[father_index].append(mutant)
                     losses[father_index].append(mutant.loss["loss"])
+
                 for i in range(len(pool)):
                     mini = np.argmin(losses[i])
                     self.population[i] = pool[i][mini]
@@ -68,5 +118,116 @@ class Evolution():
             pbar.set_description(description)
             pbar.update(1)
 
-            App.publish("generation_ended", (i_generation, self.population))
-        App.publish("evolution_ended", (self.population))
+            get_app().publish("generation_ended", (i_generation, self.population))
+        
+        get_app().publish("evolution_ended", (self.population))
+        return self.population
+
+class MultiEvolution:
+
+    def __init__(
+        self,
+        loss: LossFunction,
+        # shape parameters
+        n_bubbles=1,
+        n_bubble_segments=10,
+        n_segments_1 = 10,
+        n_segments_2 = 30,
+        min_length = 1000,
+        max_length = 2000,
+        d1 = 32,
+        min_bellsize = 65,
+        max_bellsize = 80,
+
+        # evolution parameters
+        population_size : int = 10, 
+        num_generations_1 : int = 100,
+        num_generations_2 : int = 50,
+        num_generations_3 : int = 50,
+        generation_size : int = 200, 
+        mutation_rate_decay_after : float = 0.5,
+    ):
+        get_app().register_service(self)
+        get_config()["is_multi_evolution"] = True
+
+        self.step = -1
+
+        self.loss=loss
+        self.n_bubbles=n_bubbles
+        self.n_bubble_segments=n_bubble_segments
+        self.n_segments_1=n_segments_1
+        self.n_segments_2=n_segments_2
+        self.min_length=min_length
+        self.max_length = max_length
+        self.d1=d1
+        self.min_bellsize=min_bellsize
+        self.max_bellsize=max_bellsize
+
+        self.population_size=population_size
+        self.num_generations_1=num_generations_1
+        self.num_generations_2=num_generations_2
+        self.num_generations_3=num_generations_3
+        self.generation_size=generation_size
+        self.mutation_rate_decay_after=mutation_rate_decay_after
+
+    def evolve(self):
+
+        basic_shape = BasicShape(
+            n_bubbles=self.n_bubbles,
+            n_bubble_segments=self.n_bubble_segments,
+            n_segments = self.n_segments_1,
+            min_length = self.min_length,
+            max_length = self.max_length,
+            d1 = self.d1,
+            min_bellsize = self.min_bellsize,
+            max_bellsize = self.max_bellsize
+        )
+
+        n=self.num_generations_1+self.num_generations_2+self.num_generations_3
+        pbar = tqdm(total=n)
+
+        get_config()["sim.resolution"] = 50
+        self.step=1
+
+        num_generations = 0
+        evo1 = Evolution(
+            self.loss, 
+            father_shape = basic_shape,
+            population_size = self.population_size, 
+            num_generations = self.num_generations_1,
+            generation_size = self.generation_size, 
+            mutation_rate_decay_after = 1.0,
+            mutation_probability = 1.0,
+            generation_offset=num_generations
+        )
+        population = evo1.evolve(pbar=pbar)
+        num_generations += self.num_generations_1
+
+        get_config()["sim.resolution"] = 10
+        self.step=2
+        evo2 = Evolution(
+            self.loss,
+            initial_population = population,
+            population_size = self.population_size, 
+            num_generations = self.num_generations_2,
+            generation_size = self.generation_size, 
+            mutation_rate_decay_after = 0,
+            mutation_probability = 0.3,
+            generation_offset=num_generations
+        )
+        evo2.evolve(pbar=pbar)
+        num_generations += self.num_generations_2
+
+        get_config()["sim.resolution"] = 2
+        evo3 = Evolution(
+            self.loss,
+            initial_population = population,
+            population_size = self.population_size, 
+            num_generations = self.num_generations_3,
+            generation_size = self.generation_size, 
+            mutation_rate_decay_after = 0,
+            mutation_probability = 0.1,
+            generation_offset=num_generations
+        )
+        self.step=3
+        evo3.evolve(pbar=pbar)

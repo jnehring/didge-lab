@@ -1,5 +1,6 @@
-from didgelab.app import App
+from didgelab.app import get_app, get_config
 from didgelab.evo.shapes import Shape
+from didgelab.evo.evolution import MultiEvolution
 
 import pickle
 import os
@@ -16,30 +17,34 @@ class CheckPointWriter:
             if self.interval>0 and i_generation>0 and i_generation % self.interval == 0:
                 self.write_checkpoint(i_generation, population)
 
-        App.subscribe("generation_ended", write_checkpoint)
+        get_app().subscribe("generation_ended", write_checkpoint)
 
         def evolution_ended(population):
-            self.write_checkpoint("final", population)
+            suffix = ""
+            if "is_multi_evolution" in get_config() and get_config()["is_multi_evolution"] is True:
+                suffix = get_app().get_service(MultiEvolution).step
+                suffix = "_" + str(suffix)
+            self.write_checkpoint("final" + suffix, population)
 
-        App.subscribe("evolution_ended", evolution_ended)
-        App.register_service(self)
+        get_app().subscribe("evolution_ended", evolution_ended)
+        get_app().register_service(self)
 
     def write_checkpoint(self, name, population : list[Shape]):
         logging.info("write checkpoint_" + str(name))
-        checkpoint_folder = os.path.join(App.get_output_folder(), "checkpoint_" + str(name))
+        checkpoint_folder = os.path.join(get_app().get_output_folder(), "checkpoint_" + str(name))
         os.mkdir(checkpoint_folder)
-        App.publish("write_results", checkpoint_folder)
+        get_app().publish("write_results", checkpoint_folder)
 
         geos = []
-        parameters = []
+        shapes = []
         losses = []
         for to_write in population[0:min(len(population), 50)]:
             geos.append(to_write.make_geo().geo)
-            parameters.append(parameters)
+            shapes.append(to_write)
             losses.append(to_write.loss)
 
-        f = os.path.join(checkpoint_folder, "parameters.bin")
-        pickle.dump(parameters, open(f, "wb"))
+        f = os.path.join(checkpoint_folder, "shapes.bin")
+        pickle.dump(shapes, open(f, "wb"))
         logging.info("wrote " + f)
 
         f = os.path.join(checkpoint_folder, "geos.json")

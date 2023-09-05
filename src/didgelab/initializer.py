@@ -1,4 +1,4 @@
-from didgelab.app import App
+from didgelab.app import init_app
 from didgelab.web.webserver import start_webwerver_non_blocking
 from didgelab.evo.log.checkpoint_writer import CheckPointWriter
 from didgelab.evo.log.loss_writer import LossWriter
@@ -7,7 +7,7 @@ from didgelab.web.evolution_state import EvolutionState
 from didgelab.calc.sim.correction_model.correction_model import SVMCorrectionModel
 
 def init_web():
-    App.full_init()
+    init_app()
     cp = CheckPointWriter()
     lw = LossWriter()
     ss = EvolutionStats()
@@ -16,16 +16,16 @@ def init_web():
     start_webwerver_non_blocking()
 
 def init_console():
-    App.full_init()
+    init_app()
     cp = CheckPointWriter()
     lw = LossWriter()
     scm = SVMCorrectionModel()
 
 def init_jupyter():
-    App.full_init()
+    init_app()
     scm = SVMCorrectionModel()
 
 def init_console_no_output():
-    App.full_init()
+    init_app()
     scm = SVMCorrectionModel()
 

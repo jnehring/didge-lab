@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 from ..conv import freq_to_note_and_cent, note_name, note_to_freq
-from didgelab.app import App
+from didgelab.app import get_config
 from .correction_model.correction_model import FrequencyCorrectionModel
 
 class CADSD():
@@ -43,13 +43,13 @@ class CADSD():
         if self.impedance_spectrum is not None:
             return self.impedance_spectrum
 
-        from_freq=App.get_config()["sim.fmin"]
-        to_freq=App.get_config()["sim.fmax"]
+        from_freq=get_config()["sim.fmin"]
+        to_freq=get_config()["sim.fmax"]
         stepsize=self.stepsize
 
         segments=self.get_segments()
 
-        frequencies = self.get_simulation_frequencies(App.get_config()["sim.resolution"])
+        frequencies = self.get_simulation_frequencies(get_config()["sim.resolution"])
         spektrum={
             "freq": frequencies,
             "impedance": []
@@ -62,7 +62,7 @@ class CADSD():
         return self.impedance_spectrum
 
     def apply_frequency_correction(self, frequencies):
-        correction = App.get_config()["sim.correction"]
+        correction = get_config()["sim.correction"]
         if correction == "none":
             return frequencies
         correction_service = App.get_service(type(FrequencyCorrectionModel))
@@ -71,17 +71,17 @@ class CADSD():
     def get_simulation_frequencies(self, max_error):
         frequencies = []
         stepsize = max_error/1200
-        start_freq = App.get_config()["sim.fmin"]
+        start_freq = get_config()["sim.fmin"]
         end_freq = start_freq
         octave = 0
 
-        while end_freq < App.get_config()["sim.fmax"]:
+        while end_freq < get_config()["sim.fmax"]:
             notes = np.arange(0,1,stepsize) + octave
             frequencies.extend(start_freq*np.power(2, notes))
             end_freq = frequencies[-1]
             octave += 1
             
-        frequencies = list(filter(lambda x:x<=App.get_config()["sim.fmax"], frequencies))
+        frequencies = list(filter(lambda x:x<=get_config()["sim.fmax"], frequencies))
         return frequencies
 
     # def get_highres_impedance_spektrum(self):
@@ -163,8 +163,8 @@ class CADSD():
             "overblow": {}
         }
 
-        fft["impedance"][App.get_config()["sim.fmin"]]=0
-        for i in range(App.get_config()["sim.fmin"], App.get_config()["sim.fmax"]):
+        fft["impedance"][get_config()["sim.fmin"]]=0
+        for i in range(get_config()["sim.fmin"], get_config()["sim.fmax"]):
             fft["ground"][i]=0
             fft["overblow"][i]=0
         
@@ -176,7 +176,7 @@ class CADSD():
         nvally = 0
 
         #print(fft["impedance"].keys())
-        for i in range(App.get_config()["sim.fmin"]+1, App.get_config()["sim.fmax"]):
+        for i in range(get_config()["sim.fmin"]+1, get_config()["sim.fmax"]):
             if fft["impedance"][i] > fft["impedance"][i-1]:
                 if npeaks and not up:
                     vally[nvally] = i - 1
@@ -202,16 +202,16 @@ class CADSD():
         mem0b = mem0a
 
         # calculate overblow spectrum of base tone
-        for i in range(mem0, App.get_config()["sim.fmax"], mem0):
+        for i in range(mem0, get_config()["sim.fmax"], mem0):
             for j in range(-mem0a, mem0b):
-                if i + j < App.get_config()["sim.fmax"] and i + j + offset>App.get_config()["sim.fmin"] and mem0-j>=App.get_config()["sim.fmin"] and mem0+j>=App.get_config()["sim.fmin"]: 
+                if i + j < get_config()["sim.fmax"] and i + j + offset>get_config()["sim.fmin"] and mem0-j>=get_config()["sim.fmin"] and mem0+j>=get_config()["sim.fmin"]: 
                     if j < 0:
                         fft["ground"][i + j + offset] += fft["impedance"][mem0 + j] * np.exp (i * k)
                     else:
                         fft["ground"][i + j + offset] += fft["impedance"][mem0 - j] * np.exp (i * k)
 
         # calculate sound specturm of base tone
-        for i in range(App.get_config()["sim.fmin"], App.get_config()["sim.fmax"]):
+        for i in range(get_config()["sim.fmin"], get_config()["sim.fmax"]):
             fft["ground"][i] = fft["impedance"][i] * fft["ground"][i] * 1e-6
 
         mem1 = peaks[1]
@@ -219,16 +219,16 @@ class CADSD():
         mem1b = mem1a
 
         # calculate overblow spectrum of first overblow
-        for i in range(mem1, App.get_config()["sim.fmax"], mem1):
+        for i in range(mem1, get_config()["sim.fmax"], mem1):
             for j in range(-mem1a, mem1b):
-                if i + j < App.get_config()["sim.fmax"]:
+                if i + j < get_config()["sim.fmax"]:
                     if j < 0:
                         fft["overblow"][i + j + offset] += fft["impedance"][mem1 + j] * np.exp (i * k)
                     else:
                         fft["overblow"][i + j + offset] +=fft["impedance"][mem1 - j] * np.exp (i * k)
 
         # calculate sound spectrum of first overblow
-        for i in range(App.get_config()["sim.fmin"], App.get_config()["sim.fmax"]):
+        for i in range(get_config()["sim.fmin"], get_config()["sim.fmax"]):
             fft["overblow"][i] = fft["impedance"][i] * fft["overblow"][i] * 1e-6
 
         # df={
@@ -243,7 +243,7 @@ class CADSD():
         # df.ground=df.ground.apply(lambda x : max(0, 20*np.log10(x*2e-5)))
         # df.overblow=df.overblow.apply(lambda x : max(0, 20*np.log10(x*2e-5)))
 
-        for i in range(App.get_config()["sim.fmin"], App.get_config()["sim.fmax"]):
+        for i in range(get_config()["sim.fmin"], get_config()["sim.fmax"]):
             fft["impedance"][i] *= 1e-6
             x=fft["ground"][i]*2e-5
             fft["ground"][i] = 0 if x<1 else 20*np.log10(x) 

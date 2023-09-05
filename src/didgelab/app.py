@@ -3,30 +3,59 @@ import sys
 import os
 from datetime import datetime
 import configargparse
+from multiprocessing import Manager
+
+app = None
+
+def init_app(name=None, create_output_folder=True):
+    global app
+    app = App(name=name, create_output_folder=create_output_folder)
+
+def get_app():
+    return app
+
+def get_config():
+    return get_app().get_config()
 
 class App:
-    
-    subscribers = {}
-    output_folder = None
-    config = None
 
-    services = {}
+    def __init__(self, name=None, create_output_folder=True):
+        self.subscribers = {}
+        self.output_folder = None
+        self.services = {}
+        self.config = None
+        self.create_output_folder = create_output_folder
+        
+        if create_output_folder:
+            if name is None:
+                if "ipykernel" in sys.modules:
+                    # we are calling from inside of a jupyter notebook
+                    name = "jupyter"
+                else:
+                    # we are calling from python
+                    name = os.path.basename(sys.argv[0])
+                    if name.find(".")>0:
+                        name = name[0:name.find(".")]
+            outfolder=self.get_output_folder(suffix=name)
+            log_file=os.path.join(outfolder, "log.txt")
+            self.init_logging(filename=log_file, log_to_file=create_output_folder)
+
+        if "ipykernel" in sys.modules:
+            self.start_message()
 
     # register services in the app to make them available from other parts of the application
-    @classmethod
-    def register_service(cls, service):
-        App.services[type(service)] = service
+    def register_service(self, service):
+        self.services[type(service)] = service
 
-    @classmethod
-    def get_service(cls, service_type):
-        if service_type in App.services.keys():
-            return App.services[service_type]
+    def get_service(self, service_type):
+        if service_type in self.services.keys():
+            return self.services[service_type]
         else:
             return None
 
-    @classmethod
-    def get_config(cls, path="config.ini"):
-        if App.config==None:
+    def get_config(self, path="config.ini"):
+        
+        if self.config is None:
             p = configargparse.ArgParser(default_config_files=['./*.conf'])
             p.add('-sim.correction', type=str, default="svm", choices=("none", "svm"), help='correct the impedance spektrum using a model')
             p.add('-sim.resolution', type=int, default=2, help='minimal frequency for acoustic simulation')
@@ -36,20 +65,19 @@ class App:
             p.add('-log_level', type=str, choices=["info", "error", "debug", "warn"], default="info", help='log level ')
 
             options = p.parse_known_args()[0]
+            self.config = {}
 
-            App.config={}
             for key, value in vars(options).items():
-                App.config[key]=value
+                self.config[key]=value
 
-        return App.config
+        return self.config
 
     # publish / subscribe pattern for data exchange between services
-    @classmethod
-    def publish(cls, topic, args=None):
-        logging.debug(f"app.publish topic={topic}, args={args}")
-        if topic not in App.subscribers:
+    def publish(self, topic, args=None):
+        logging.debug(f"self.publish topic={topic}, args={args}")
+        if topic not in self.subscribers:
             return
-        for s in App.subscribers[topic]:
+        for s in self.subscribers[topic]:
             if args is None:
                 s()
             elif type(args) == tuple:
@@ -57,14 +85,12 @@ class App:
             else:
                 s(args)
 
-    @classmethod
-    def subscribe(cls, topic, fct):
-        if topic not in App.subscribers:
-            App.subscribers[topic]=[]
-        App.subscribers[topic].append(fct)
+    def subscribe(self, topic, fct):
+        if topic not in self.subscribers:
+            self.subscribers[topic]=[]
+        self.subscribers[topic].append(fct)
 
 
-    @classmethod
     def init_logging(self, filename="./log.txt", log_to_file=True):
         logFormatter = logging.Formatter("%(asctime)s [%(levelname)s] {%(filename)s:%(lineno)d} %(message)s")
         rootLogger = logging.getLogger()
@@ -88,7 +114,6 @@ class App:
         elif level == "warn":
             rootLogger.setLevel(logging.WARN)
 
-    @classmethod
     def start_message(self):
         msg='''
  _____  _     _              _           _     
@@ -103,30 +128,9 @@ class App:
         msg += "Starting " + " ".join(sys.argv)
         logging.info(msg)
 
-    @classmethod
-    def full_init(self, name=None, create_output_folder=True):
+    def get_output_folder(self, suffix=""):
 
-        if create_output_folder:
-            if name is None:
-                if "ipykernel" in sys.modules:
-                    # we are calling from inside of a jupyter notebook
-                    name = "jupyter"
-                else:
-                    # we are calling from python
-                    name = os.path.basename(sys.argv[0])
-                    if name.find(".")>0:
-                        name = name[0:name.find(".")]
-            outfolder=App.get_output_folder(suffix=name)
-            log_file=os.path.join(outfolder, "log.txt")
-            App.init_logging(filename=log_file, log_to_file=create_output_folder)
-
-        if "ipykernel" in sys.modules:
-            App.start_message()
-
-    @classmethod
-    def get_output_folder(cls, suffix=""):
-
-        if App.output_folder is None:
+        if self.output_folder is None:
 
             f = os.path.dirname(__file__)
             f = os.path.join(f, "../../evolutions/")
@@ -140,7 +144,7 @@ class App:
             if len(suffix)>0:
                 folder_name += "_" + suffix
 
-            App.output_folder=os.path.join(f, folder_name)
-            os.mkdir(App.output_folder)
+            self.output_folder=os.path.join(f, folder_name)
+            os.mkdir(self.output_folder)
 
-        return App.output_folder
+        return self.output_folder

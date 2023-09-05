@@ -67,3 +67,6 @@ class DidgeVisualizer:
             ax.set_aspect('equal', adjustable='box')
             plt.axis('equal')
             return g
+
+def vis_didge(geo):
+    DidgeVisualizer.vis_didge(geo)

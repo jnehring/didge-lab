@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from didgelab.app import App
+from didgelab.app import get_app
 
 class LossFunction(ABC):
 
     def __init__(self):
-        App.register_service(self)
+        get_app().register_service(self)
 
     @abstractmethod
     def get_loss(self, geo):
