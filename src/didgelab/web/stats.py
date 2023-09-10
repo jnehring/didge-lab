@@ -7,7 +7,7 @@ import threading
 import json
 import copy
 
-from didgelab.app import App
+from didgelab.app import get_app, get_config
 
 # service that keeps track of the losses
 class EvolutionStats:
@@ -29,14 +29,14 @@ class EvolutionStats:
                 new_row[key + "_avg"] = np.mean(series)
                 new_row[key + "_max"] = np.max(series)
 
-            logging.info(new_row)
+            # logging.info(new_row)
             with self.lock:
                 for key, value in new_row.items():
                     if key not in self.data.keys():
                         self.data[key] = []
                     self.data[key].append(value)
             
-        App.subscribe("generation_ended", log_loss)
+        get_app().subscribe("generation_ended", log_loss)
 
         # write checkpoint on write_results event
         def store_checkpoint(checkpoint_folder):
@@ -44,9 +44,9 @@ class EvolutionStats:
             f = os.path.join(checkpoint_folder, "stats.csv")
             df.to_csv(f, index=False)
 
-        App.subscribe("write_results", store_checkpoint)
+        get_app().subscribe("write_results", store_checkpoint)
 
-        App.register_service(self)
+        get_app().register_service(self)
 
     def get_latest_logs(self):
         data = self.get_data()

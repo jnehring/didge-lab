@@ -12,25 +12,16 @@ import numpy as np
 import pandas as pd
 
 from ..conv import freq_to_note_and_cent, note_name, note_to_freq
-from didgelab.app import get_config
+from didgelab.app import get_config, get_app
 from .correction_model.correction_model import FrequencyCorrectionModel
+
+from abc import abstractmethod
 
 class CADSD():
 
     def __init__(self, geo):
         self.geo=geo
         self.segments=None
-
-        self.impedance_spectrum=None
-        self.notes=None
-        self.all_spektra_df=None
-        self.ground_peaks=None
-
-        self.sound_spektra=None
-        self.stepsize = 1
-
-        self.additional_metrics={}
-
         self.correction_model = None
 
     def get_segments(self):
@@ -38,88 +29,148 @@ class CADSD():
             self.segments=cadsd_imp.create_segments_from_geo(self.geo.geo)
         return self.segments
 
-    def get_impedance_spektrum(self):
-
-        if self.impedance_spectrum is not None:
-            return self.impedance_spectrum
-
-        from_freq=get_config()["sim.fmin"]
-        to_freq=get_config()["sim.fmax"]
-        stepsize=self.stepsize
+    def compute_raw_impedance(self, frequencies=None):
 
         segments=self.get_segments()
 
-        frequencies = self.get_simulation_frequencies(get_config()["sim.resolution"])
-        spektrum={
-            "freq": frequencies,
-            "impedance": []
-        }
-        for freq in frequencies:
-            impedance=cadsd_imp.cadsd_Ze(segments, freq)
-            spektrum["impedance"].append(impedance)
-
-        self.impedance_spectrum=pd.DataFrame(spektrum)
-        return self.impedance_spectrum
+        if frequencies is None:
+            frequencies = CADSD.get_simulation_frequencies()
+            
+        impedance = [cadsd_imp.cadsd_Ze(segments, freq) for freq in frequencies]
+        impedance = np.array(impedance)
+        return frequencies, impedance
 
     def apply_frequency_correction(self, frequencies):
         correction = get_config()["sim.correction"]
         if correction == "none":
             return frequencies
-        correction_service = App.get_service(type(FrequencyCorrectionModel))
+        correction_service = get_app().get_service(type(FrequencyCorrectionModel))
         return correction_service.correct(frequencies)
 
-    def get_simulation_frequencies(self, max_error):
-        frequencies = []
-        stepsize = max_error/1200
-        start_freq = get_config()["sim.fmin"]
-        end_freq = start_freq
-        octave = 0
+    @abstractmethod    
+    def get_simulation_frequencies(
+        fmin : float=None,
+        fmax : float=None,
+        grid_size : float=None,
+        grid : float=None
+        ):
+        if fmin is None:
+            fmin = get_config()["sim.fmin"]
+        if fmax is None:
+            fmax = get_config()["sim.fmax"]
+        if grid_size is None:
+            grid_size = get_config()["sim.grid_size"]
+        if grid is None:
+            grid = get_config()["sim.grid"]
 
-        while end_freq < get_config()["sim.fmax"]:
-            notes = np.arange(0,1,stepsize) + octave
-            frequencies.extend(start_freq*np.power(2, notes))
-            end_freq = frequencies[-1]
-            octave += 1
-            
-        frequencies = list(filter(lambda x:x<=get_config()["sim.fmax"], frequencies))
-        return frequencies
+        if grid == "even":
+            frequencies = np.arange(fmin, fmax, grid_size)
+            return frequencies
+        elif grid == "log":
+            frequencies = []
+            stepsize = grid_size/1200
+            start_freq = fmin
+            end_freq = start_freq
+            octave = 0
 
-    # def get_highres_impedance_spektrum(self):
+            while end_freq < fmax:
+                notes = np.arange(0,1,stepsize) + octave
+                frequencies.extend(start_freq*np.power(2, notes))
+                end_freq = frequencies[-1]
+                octave += 1
+                
+            frequencies = np.array(list(filter(lambda x:x<=fmax, frequencies)))
+            return frequencies
+        else:
+            raise Exception()
+    
 
-    #     if self.highres_impedance_spektrum!=None:
-    #         return self.highres_impedance_spektrum
+    # helper function for compute_ground
+    def _get_closest_index(self, freqs, f):
+        for i in range(len(freqs)):
+            m2=np.abs(freqs[i]-f)
+            if i==0:
+                m1=m2
+                continue
+            if m2>m1:
+                return i-1
+            m1=m2
 
-    #     df1=self.get_impedance_spektrum()
-
-    #     segments=self.get_segments()
-    #     spektrum={
-    #         "freq": [],
-    #         "impedance": []
-    #     }
-
-    #     for freq in np.arange(1, 100, 0.1):
-    #         if freq%1==0:
-    #             continue
-            
-    #         spektrum["freq"].append(freq)
-    #         impedance=cadsd_imp.cadsd_Ze(segments, freq)
-    #         spektrum["impedance"].append(impedance)
-
-    #     spektrum=pd.DataFrame(spektrum)
-
-    #     self.highres_impedance_spektrum=pd.concat((df1, spektrum), ignore_index=True).sort_values("freq")
-    #     return self.highres_impedance_spektrum
-
-    def get_ground_peaks(self):
-        if self.ground_peaks is not None:
-            return self.ground_peaks
-        ground=self.get_all_spektra_df()
+        if f>freqs[-1]:
+            return len(freqs)
+        else:
+            return len(freqs)-1
         
-        maxima = get_max(ground.impedance.freq, ground.impedance.values, "max")
-        self.ground_peaks=ground.iloc[maxima].copy()
+    # helper function for compute_ground
+    def _find_first_maximum_index(impedance):
 
-        return self.ground_peaks
-        
+        peaks=[0,0]
+        vally=[0,0]
+
+        up = 0
+        npeaks = 0
+        nvally = 0
+
+        for i in range(get_config()["sim.fmin"]+1, get_config()["sim.fmax"]):
+            if impedance[i] > impedance[i-1]:
+                if npeaks and not up:
+                    vally[nvally] = i - 1
+                    nvally+=1
+                up = 1
+            else:
+                if up:
+                    peaks[npeaks] = i - 1
+                    npeaks+=1
+                up = 0
+            if nvally > 1:
+                break
+
+        if peaks[0]<0:
+            raise Exception("bad fft")
+
+        return peaks[0]
+    
+    # compute ground spektrum from impedance spektrum
+    # warning: frequencies must be evenly spaced
+    def compute_ground_spektrum(self, freqs, impedance, fmin, fmax):
+
+        fundamental_i = self._find_first_maximum_index(impedance)
+        fundamental_freq = freqs[fundamental_i]
+
+        ground = np.zeros(len(freqs))
+        indizes = np.concatenate((np.arange(fmin,fundamental_freq), np.arange(fundamental_freq,fmin-1,-1)))
+        window_right = impedance[indizes]
+
+        k = 0.0001
+        for i in range(fundamental_freq, fmax, fundamental_freq):
+
+            il = self._get_closest_index(freqs, i-fundamental_freq+1)
+            ir = np.min((len(freqs)-1, il+len(window_right)))
+
+            window_left = impedance[il:ir]
+            if ir-il!=len(window_right):
+                window_right = window_right[0:ir-il]
+
+            ground[il:ir] += window_right*np.exp(i*k)
+
+        for i in range(len(ground)):
+            ground[i] = impedance[i] * ground[i] * 1e-6
+
+        for i in range(len(ground)):
+            x=ground[i]*2e-5
+            ground[i] = 0 if x<1 else 20*np.log10(x) 
+            impedance[i] *= 1e-6
+
+        return np.array(ground)
+
+    def compute_impedance(self):
+        freq, impedance = self.compute_raw_impedance()
+        impedance *= 1e-6
+        return freq, impedance
+
+    def _compute_ground(self):
+        freq, impedance = self.compute_raw_impedance()
+            
     def get_notes(self):        
 
         if self.notes is not None:
@@ -135,17 +186,17 @@ class CADSD():
         self.notes=peaks
         return peaks
 
-    def get_ground_spektrum(self):
-        if self.sound_spektra==None:
-            self._get_sound_spektrum()
+    # def get_ground_spektrum(self):
+    #     if self.sound_spektra==None:
+    #         self._get_sound_spektrum()
 
-        return self.sound_spektra["ground"]
+    #     return self.sound_spektra["ground"]
 
-    def get_overblow_spektrum(self):
-        if self.sound_spektra==None:
-            self._get_sound_spektrum()
+    # def get_overblow_spektrum(self):
+    #     if self.sound_spektra==None:
+    #         self._get_sound_spektrum()
 
-        return self.sound_spektra["overblow"]
+    #     return self.sound_spektra["overblow"]
 
     # this function could use some optimization
     # 1) split it in ground and overblow spektrum
@@ -153,12 +204,12 @@ class CADSD():
     # 3) cython
 
     # parameter offset: frequency offset of ground tone and first overblow
-    def _get_sound_spektrum(self, offset=0):
+    def _get_sound_spektrum_old(self, offset=0):
 
-        spektrum=self.get_impedance_spektrum()
+        freq, impedance=self.get_impedance_spektrum()
 
         fft={
-            "impedance": dict(zip(spektrum.freq, spektrum.impedance)),
+            "impedance": dict(zip(freq, impedance)),
             "ground": {},
             "overblow": {}
         }
@@ -253,105 +304,35 @@ class CADSD():
 
         self.sound_spektra=fft
 
-    def get_all_spektra_df(self):
-        if self.all_spektra_df is not None:
-            return self.all_spektra_df
+    # def get_all_spektra_df(self):
+    #     if self.all_spektra_df is not None:
+    #         return self.all_spektra_df
             
-        if self.sound_spektra==None:
-            self._get_sound_spektrum()
+    #     if self.sound_spektra==None:
+    #         self._get_sound_spektrum()
 
-        self.all_spektra_df={
-            "freq": self.sound_spektra["ground"].keys(),
-            "impedance": self.sound_spektra["impedance"].values(),
-            "ground": self.sound_spektra["ground"].values(),
-            "overblow": self.sound_spektra["overblow"].values()
-        }
+    #     self.all_spektra_df={
+    #         "freq": self.sound_spektra["ground"].keys(),
+    #         "impedance": self.sound_spektra["impedance"].values(),
+    #         "ground": self.sound_spektra["ground"].values(),
+    #         "overblow": self.sound_spektra["overblow"].values()
+    #     }
 
-        self.all_spektra_df=pd.DataFrame(self.all_spektra_df)
-        return self.all_spektra_df
+    #     self.all_spektra_df=pd.DataFrame(self.all_spektra_df)
+    #     return self.all_spektra_df
 
-    def set_additional_metric(self, key, value):
-        self.additional_metrics[key]=value
+    # def set_additional_metric(self, key, value):
+    #     self.additional_metrics[key]=value
 
-    def get_additional_metric(self, key):
-        if key not in self.additional_metrics:
-            return key
-        else:
-            return self.additional_metrics[key]
+    # def get_additional_metric(self, key):
+    #     if key not in self.additional_metrics:
+    #         return key
+    #     else:
+    #         return self.additional_metrics[key]
 
-    def has_additional_metric(self, key):
-        return key in self.additional_metrics
+    # def has_additional_metric(self, key):
+    #     return key in self.additional_metrics
 
-# volume of the didgeridoo ground tone
-# computed as the mean of the ground spektrum
-def cadsd_volume(cadsd):
-
-    if cadsd.has_additional_metric("volume"):
-        return cadsd.get_additional_metric("volume")
-    
-    df=cadsd.get_all_spektra_df()
-    vol=df["ground"].mean()
-    cadsd.set_additional_metric("volume", vol)
-    return vol
-
-# area under the ground spektrum
-# divided in one bin per octave
-def cadsd_octave_tonal_balance(geo, fundamental_note=-31):
-
-    cadsd=geo.get_cadsd()
-    key=f"oct_tonal_balance_fundamental={fundamental_note}"
-    if cadsd.has_additional_metric(key):
-        return cadsd.get_additional_metric(key)
-
-    frequencies=[]
-    f=note_to_freq(fundamental_note)/2
-    df=cadsd.get_all_spektra_df()
-    max_f=df.freq.max()
-    while f<max_f:
-        frequencies.append(f)
-        f*=2
-    frequencies.append(max_f)
-
-    bins=[]
-
-    for i in range(len(frequencies)-1):
-        f1=frequencies[i]
-        f2=frequencies[i+1]
-        df_oct=df[(df.freq>=f1) & (df.freq<=f2)]
-
-        vol=df_oct.ground.mean() / len(df_oct)
-        bins.append(vol)
-
-    m=sum(bins)
-    bins=[x/m for x in bins]
-
-    cadsd.set_additional_metric(key, bins)
-    return bins
-
-# area under the ground spektrum
-# divided in n equally spaced n_bins
-def cadsd_abs_tonal_balance(geo, n_bins=3):
-
-    cadsd=geo.get_cadsd()
-    key=f"abs_tonal_balance_nbins={n_bins}"
-    if cadsd.has_additional_metric(key):
-        return cadsd.get_additional_metric(key)
-
-    bins=[0 for i in range(n_bins)]
-    df=cadsd.get_all_spektra_df()
-    ground=list(df.ground)
-    bin_size=math.ceil(len(ground)/n_bins)
-
-    for i_bin in range(n_bins):
-        for i_sample in range(bin_size):
-            bins[i_bin] += ground[i_sample + i_bin*bin_size]
-
-
-    m=sum(bins)
-    bins=[x/m for x in bins]
-
-    cadsd.set_additional_metric(key, key)
-    return bins
 
 # find maxima or minima of a numpy array
 # scipy.signal import argrelextrema caused problems

@@ -115,12 +115,7 @@ class BasicShape(Shape):
             self,
             n_bubbles=1,
             n_bubble_segments=10,
-            n_segments = 10,
-            min_length = 1000,
-            max_length = 2000,
-            d1 = 32,
-            min_bellsize = 65,
-            max_bellsize = 80
+            n_segments = 10
         ):
         
         Shape.__init__(self)
@@ -128,18 +123,18 @@ class BasicShape(Shape):
         self.d1=32
         self.n_segments = n_segments
         
-        self.add_param("length", min_length, max_length)
-        self.add_param("bellsize", min_bellsize, max_bellsize)
+        self.add_param("length", 1450, 1600)
+        self.add_param("bellsize", 65, 80)
         self.add_param("power", 1,2)
         
-        self.add_param("widening_1_x", 0.3, 0.5)
+        self.add_param("widening_1_x", 500, 800)
         self.add_param("widening_1_y", 1.0, 1.3)
-        self.add_param("widening_2_x", 0.6, 0.8)
+        self.add_param("widening_2_x", 800, 1400)
         self.add_param("widening_2_y", 1.0, 1.3)
         
         self.n_bubbles=n_bubbles
         self.n_bubble_segments=10
-        for i in range(self.n_bubble_segments):
+        for i in range(self.n_bubbles):
             self.add_param(f"bubble{i}_width", 100, 200)
             self.add_param(f"bubble{i}_height", 0, 15)
             self.add_param(f"bubble{i}_pos", -0.3, 0.3)
@@ -158,8 +153,7 @@ class BasicShape(Shape):
         y = np.power(y, p)
         y = self.d1 + y*(bellsize - self.d1)
         
-        widenings = length*np.array([[self.get_value(f"widening_{i}_x"), self.get_value(f"widening_{i}_y")] for i in range(1,3)])
-
+        widenings = [[self.get_value(f"widening_{i}_x"), self.get_value(f"widening_{i}_y")] for i in range(1,3)]
         for w in widenings:
             geo = list(zip(x,y))
             d=geotools.diameter_at_x(Geo(geo), w[0])
@@ -213,18 +207,24 @@ class DetailShape(Shape):
         
         geo = father_shape.make_geo().geo
         self.d1 = geo[0][1]
+        self.update_parameters(geo)
+            
+    def update_parameters(self, geo):
+        self.parameters = []
         self.num_segments = len(geo)
         for i in range(1, len(geo)):
             x=geo[i][0]
-            minx = 0.8*x
+            minx = np.max((0.8*x, geo[i-1][0]*1.1))
             maxx = 1.2*x
+            if i<len(geo)-1:
+                maxx = np.min((maxx, geo[i+1][0]*0.9))
             self.add_param(f"x{i}", minx, maxx, value=x)
             
             y=geo[i][1]
             miny = 0.8*y
             maxy = 1.2*y
             self.add_param(f"y{i}", miny, maxy, value=y)
-            
+        
             
     def make_geo(self):
         x = [0]
@@ -234,5 +234,5 @@ class DetailShape(Shape):
             y.append(self.get_value(f"y{i}"))
         geo = list(zip(x,y))
         geo = sorted(geo, key=lambda x : x[0])
+        self.update_parameters(geo)
         return Geo(geo)
-            

@@ -10,7 +10,7 @@ import logging
 import os
 import pickle
 
-from ..app import get_app, get_config
+from didgelab.app import get_app, get_config
 from .mutator import MutationRateMutator
 from .loss import LossFunction
 from .shapes import Shape, BasicShape, DetailShape
@@ -28,7 +28,8 @@ class Evolution():
         generation_size : int = 200, 
         mutation_rate_decay_after : float = 0.5,
         mutation_probability : float = 1.0,
-        generation_offset : int = 0
+        generation_offset : int = 0,
+        selection_stratey = "pool"
         ):
 
         assert father_shape is not None or initial_population is not None
@@ -49,6 +50,7 @@ class Evolution():
         self.mutation_probability = mutation_probability
 
         self.generation_offset = generation_offset
+        self.selection_strategy = selection_stratey
 
     def create_initial_pool(self):
         self.population = [self.father_shape.copy() for i in range(self.population_size)]
@@ -90,6 +92,7 @@ class Evolution():
 
     def evolve(self, pbar=None):
 
+        #  logging.info("start evolution with parameters " + str(self.__dict__))
         if self.father_shape is not None:
             self.father_shape.loss = self.loss.get_loss(self.father_shape.make_geo())
             self.create_initial_pool()
@@ -102,15 +105,13 @@ class Evolution():
             with ThreadPoolExecutor(multiprocessing.cpu_count()) as executor:
                 results = executor.map(self.mutate, arguments)
                 results = list(results)
-                pool = [[self.population[i]] for i in range(self.population_size)]
-                losses = [[self.population[i].loss["loss"]] for i in range(self.population_size)]
-                for mutant, father_index in results:
-                    pool[father_index].append(mutant)
-                    losses[father_index].append(mutant.loss["loss"])
 
-                for i in range(len(pool)):
-                    mini = np.argmin(losses[i])
-                    self.population[i] = pool[i][mini]
+                if self.selection_strategy == "pool":
+                    self.population = self.select_pool(results)
+                elif self.selection_strategy == "global":
+                    self.population = self.select_global(results)
+                else:
+                    raise Exception()
 
             mini = np.argmin([self.population[i].loss["loss"] for i in range(self.population_size)])
             description = {key:f"{value:.2f}" for key, value in self.population[mini].loss.items()}
@@ -122,6 +123,32 @@ class Evolution():
         
         get_app().publish("evolution_ended", (self.population))
         return self.population
+    
+    # select the best mutant from each pool
+    def select_pool(self, results):
+        pool = [[self.population[i]] for i in range(self.population_size)]
+        losses = [[self.population[i].loss["loss"]] for i in range(self.population_size)]
+        for mutant, father_index in results:
+            pool[father_index].append(mutant)
+            losses[father_index].append(mutant.loss["loss"])
+
+        new_population = []
+        for i in range(len(pool)):
+            mini = np.argmin(losses[i])
+            new_population[i] = pool[i][mini]
+        return new_population
+    
+    # select the best mutants across all mutants
+    def select_global(self, results):
+        pool = [self.population[i] for i in range(self.population_size)]
+        losses = [self.population[i].loss["loss"] for i in range(self.population_size)]
+        for mutant, father_index in results:
+            pool.append(mutant)
+            losses.append(mutant.loss["loss"])
+
+        keys = sorted(np.arange(len(pool)), key=lambda i:losses[i])
+        pool = [pool[i] for i in keys[0:self.population_size]]
+        return pool
 
 class MultiEvolution:
 

@@ -1,4 +1,4 @@
-from ..app import App
+from ..app import get_app, get_config
 import threading
 import copy
 import logging
@@ -10,13 +10,13 @@ class EvolutionState:
         self.i_generation = None
         self.lock = threading.Lock()
 
-        App.register_service(self)
+        get_app().register_service(self)
 
         def on_generation_ended(i_generation, population):
             with self.lock:
                 self.i_generation = i_generation
                 self.population = population
-        App.subscribe("generation_ended", on_generation_ended)
+        get_app().subscribe("generation_ended", on_generation_ended)
 
     def get_geo(self, i_mutant):
         with self.lock:

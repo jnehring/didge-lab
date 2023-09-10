@@ -6,7 +6,7 @@ import threading
 import logging
 
 from didgelab.calc.geo import Geo
-from didgelab.app import App
+from didgelab.app import get_app
 from .stats import EvolutionStats
 from .evolution_state import EvolutionState
 
@@ -24,18 +24,17 @@ def on_generation_finished(i_generation, population):
     latest_geos = [p.make_geo() for p in population]
 
 def init():
-    App.subscribe("generation_finished", on_generation_finished)
+    get_app().subscribe("generation_finished", on_generation_finished)
 
 @app.route('/api/general_evolution_info', methods=['GET'])
 def general_evolution_info():
 
-    stats_service = App.get_service(EvolutionStats)
+    stats_service = get_app().get_service(EvolutionStats)
     loss_data = stats_service.get_data()
     latest_logs = {key: values[-1] for key, values in loss_data.items()}
+
     for key in list(loss_data.keys()):
-        logging.info(key)
         if key != "generation" and key[-4:] != "_min":
-            logging.info("delete")
             del loss_data[key]
     result = {
         "general": latest_logs,
@@ -46,8 +45,8 @@ def general_evolution_info():
 @app.route('/api/get_mutant/<i_mutant>', methods=['GET'])
 def get_mutant(i_mutant):
 
-    evolution_state = App.get_service(EvolutionState)
-    logging.info(evolution_state)
+    evolution_state = get_app().get_service(EvolutionState)
+    # logging.info(evolution_state)
     i_mutant = int(i_mutant)
 
     geo = evolution_state.get_geo(i_mutant)
