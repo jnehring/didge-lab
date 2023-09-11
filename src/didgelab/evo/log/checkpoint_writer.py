@@ -22,7 +22,7 @@ class CheckPointWriter:
         def evolution_ended(population):
             suffix = ""
             if "is_multi_evolution" in get_config() and get_config()["is_multi_evolution"] is True:
-                suffix = get_app().get_service(MultiEvolution).step
+                suffix = get_app().get_service(MultiEvolution).evolution_nr
                 suffix = "_" + str(suffix)
             self.write_checkpoint("final" + suffix, population)
 

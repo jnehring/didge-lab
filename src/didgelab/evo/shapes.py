@@ -115,21 +115,26 @@ class BasicShape(Shape):
             self,
             n_bubbles=1,
             n_bubble_segments=10,
-            n_segments = 10
+            n_segments = 10,
+            min_length = 1300,
+            max_length = 1700,
+            d1 = 32,
+            min_bellsize = 65,
+            max_bellsize = 80
         ):
         
         Shape.__init__(self)
 
-        self.d1=32
+        self.d1=d1
         self.n_segments = n_segments
         
-        self.add_param("length", 1450, 1600)
-        self.add_param("bellsize", 65, 80)
+        self.add_param("length", min_length, max_length)
+        self.add_param("bellsize", min_bellsize, max_bellsize)
         self.add_param("power", 1,2)
         
-        self.add_param("widening_1_x", 500, 800)
+        self.add_param("widening_1_x", 0.2, 0.4)
         self.add_param("widening_1_y", 1.0, 1.3)
-        self.add_param("widening_2_x", 800, 1400)
+        self.add_param("widening_2_x", 0.4, 0.8)
         self.add_param("widening_2_y", 1.0, 1.3)
         
         self.n_bubbles=n_bubbles
@@ -153,7 +158,7 @@ class BasicShape(Shape):
         y = np.power(y, p)
         y = self.d1 + y*(bellsize - self.d1)
         
-        widenings = [[self.get_value(f"widening_{i}_x"), self.get_value(f"widening_{i}_y")] for i in range(1,3)]
+        widenings = [[length*self.get_value(f"widening_{i}_x"), self.get_value(f"widening_{i}_y")] for i in range(1,3)]
         for w in widenings:
             geo = list(zip(x,y))
             d=geotools.diameter_at_x(Geo(geo), w[0])

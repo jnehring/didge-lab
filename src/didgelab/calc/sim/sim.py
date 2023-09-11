@@ -6,6 +6,8 @@ else:
     import didgelab.calc.sim._cadsd as cadsd_imp
 import numpy as np
 import pandas as pd
+from scipy.signal import argrelextrema
+
 from didgelab.calc.geo import Geo
 
 from ..conv import freq_to_note_and_cent, note_name, note_to_freq
@@ -19,8 +21,8 @@ def create_segments(geo):
 # compute impedance spectrum
 # the raw impedance is not properly leveled
 def compute_impedance(segments, frequencies):
-    impedance = [cadsd_imp.cadsd_Ze(segments, freq) for freq in frequencies]
-    impedance = np.array(impedance) * 1e-6
+    impedance = [1e-6*cadsd_imp.cadsd_Ze(segments, freq) for freq in frequencies]
+    impedance = np.array(impedance)
     return impedance
 
 # helper function for compute_ground
@@ -138,16 +140,20 @@ def get_max(y, find="max"):
 
 # compute the impedance spektrum iteratively with high precision only
 # around the peaks
+impedance_iteratively_start_freqs = None
 def compute_impedance_iteratively(geo : Geo, fmax=1000, n_precision_peaks=3):
 
     segments = create_segments(geo)
 
     # start simulation with a low grid size
-    freqs = [np.concatenate((
-        np.arange(1,50,10),
-        np.arange(50, 100, 5),
-        get_log_simulation_frequencies(fmin=101, fmax=fmax, max_error=10)
-    ))]
+    global impedance_iteratively_start_freqs
+    if impedance_iteratively_start_freqs is None:
+        impedance_iteratively_start_freqs = np.concatenate((
+            np.arange(1,50,10),
+            np.arange(50, 100, 5),
+            get_log_simulation_frequencies(fmin=101, fmax=fmax, max_error=10)
+        ))
+    freqs = [impedance_iteratively_start_freqs]
 
     impedances = [compute_impedance(segments, freqs[0])]
 
@@ -195,3 +201,34 @@ def interpolate_spectrum(freqs, impedances):
 
     return freq_interpolated, np.array(impedance_interpolated)
 
+
+def get_notes(freqs, impedances):
+    extrema = argrelextrema(impedances, np.greater)
+    peak_freqs = freqs[extrema]
+    note_and_cent = [freq_to_note_and_cent(f) for f in peak_freqs]
+
+    peaks = {
+        "note_name": [note_name(n[0]) for n in note_and_cent],
+        "cent_diff": [n[1] for n in note_and_cent],
+        "note_nr": [n[0] for n in note_and_cent],
+        "freqs": peak_freqs,
+        "impedance": impedances[extrema],
+    }
+    peaks = pd.DataFrame(peaks)
+    return peaks
+
+def quick_analysis(geo : Geo):
+    freqs = get_log_simulation_frequencies(1, 1000, 1)
+    segments = create_segments(geo)
+    impedance = compute_impedance(segments, freqs)
+    notes = get_notes(freqs, impedance)
+    ground_freqs, imp_ip = interpolate_spectrum(freqs, impedance)
+    ground = compute_ground_spektrum(ground_freqs, imp_ip)
+    result = {
+        "freqs": freqs,
+        "impedance": impedance,
+        "notes": notes,
+        "ground_freqs": ground_freqs,
+        "ground_spectrum": ground
+    }
+    return result

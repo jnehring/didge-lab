@@ -9,6 +9,7 @@ from typing import List
 import logging
 import os
 import pickle
+import sys
 
 from didgelab.app import get_app, get_config
 from .mutator import MutationRateMutator
@@ -29,7 +30,9 @@ class Evolution():
         mutation_rate_decay_after : float = 0.5,
         mutation_probability : float = 1.0,
         generation_offset : int = 0,
-        selection_stratey = "pool"
+        selection_stratey = "pool",
+        early_stopping = True,
+        early_stopping_generations = 7
         ):
 
         assert father_shape is not None or initial_population is not None
@@ -51,6 +54,9 @@ class Evolution():
 
         self.generation_offset = generation_offset
         self.selection_strategy = selection_stratey
+
+        self.early_stopping = early_stopping
+        self.early_stopping_generations = early_stopping_generations
 
     def create_initial_pool(self):
         self.population = [self.father_shape.copy() for i in range(self.population_size)]
@@ -100,24 +106,38 @@ class Evolution():
         if pbar is None:
             pbar = tqdm(total=self.num_generations)
 
+        last_losses = None
+        last_improved_generation = None
         for i_generation in range(self.generation_offset, self.num_generations + self.generation_offset):
             arguments = [(self.population[i%self.population_size], i_generation, i%self.population_size) for i in range(self.generation_size)]
             with ThreadPoolExecutor(multiprocessing.cpu_count()) as executor:
                 results = executor.map(self.mutate, arguments)
                 results = list(results)
-
                 if self.selection_strategy == "pool":
                     self.population = self.select_pool(results)
                 elif self.selection_strategy == "global":
                     self.population = self.select_global(results)
                 else:
-                    raise Exception()
+                    raise Exception()                                    
 
             mini = np.argmin([self.population[i].loss["loss"] for i in range(self.population_size)])
             description = {key:f"{value:.2f}" for key, value in self.population[mini].loss.items()}
             description = str(description).replace("'", "")
             pbar.set_description(description)
             pbar.update(1)
+
+            # apply early stopping
+            if self.early_stopping:
+                current_losses = np.array([i.loss["loss"] for i in self.population])
+                if last_losses is None or not np.array_equal(current_losses, last_losses):
+                    last_losses = current_losses
+                    last_improved_generation = i_generation
+                elif i_generation - last_improved_generation >= self.early_stopping_generations:
+                    logging.info("stop evolution because of early stopping")
+                    while i_generation<self.num_generations:
+                        pbar.update(1)
+                        i_generation+=1
+                    break
 
             get_app().publish("generation_ended", (i_generation, self.population))
         
@@ -135,7 +155,7 @@ class Evolution():
         new_population = []
         for i in range(len(pool)):
             mini = np.argmin(losses[i])
-            new_population[i] = pool[i][mini]
+            new_population.append(pool[i][mini])
         return new_population
     
     # select the best mutants across all mutants
@@ -177,7 +197,7 @@ class MultiEvolution:
         get_app().register_service(self)
         get_config()["is_multi_evolution"] = True
 
-        self.step = -1
+        self.evolution_nr = -1
 
         self.loss=loss
         self.n_bubbles=n_bubbles
@@ -213,8 +233,7 @@ class MultiEvolution:
         n=self.num_generations_1+self.num_generations_2+self.num_generations_3
         pbar = tqdm(total=n)
 
-        get_config()["sim.resolution"] = 50
-        self.step=1
+        self.evolution_nr=1
 
         num_generations = 0
         evo1 = Evolution(
@@ -230,8 +249,7 @@ class MultiEvolution:
         population = evo1.evolve(pbar=pbar)
         num_generations += self.num_generations_1
 
-        get_config()["sim.resolution"] = 10
-        self.step=2
+        self.evolution_nr=2
         evo2 = Evolution(
             self.loss,
             initial_population = population,
@@ -245,7 +263,6 @@ class MultiEvolution:
         evo2.evolve(pbar=pbar)
         num_generations += self.num_generations_2
 
-        get_config()["sim.resolution"] = 2
         evo3 = Evolution(
             self.loss,
             initial_population = population,
@@ -256,5 +273,5 @@ class MultiEvolution:
             mutation_probability = 0.1,
             generation_offset=num_generations
         )
-        self.step=3
+        self.evolution_nr=3
         evo3.evolve(pbar=pbar)

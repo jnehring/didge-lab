@@ -42,7 +42,7 @@ class LossWriter:
 
         step = 0
         if "is_multi_evolution" in get_config() and get_config()["is_multi_evolution"] is True:
-            step = get_app().get_service(MultiEvolution).step
+            step = get_app().get_service(MultiEvolution).evolution_nr
 
         for i in range(len(population)):
             individual = population[i]

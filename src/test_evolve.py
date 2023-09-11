@@ -5,12 +5,15 @@ from didgelab.evo.loss import LossFunction
 
 from didgelab.evo.evolution import MultiEvolution
 from didgelab.initializer import init_console
+from didgelab.app import get_config, get_app
+
+from didgelab.calc.sim.sim import compute_impedance_iteratively, get_notes, compute_impedance, create_segments
 
 class ScaleTuningLoss(LossFunction):
         
     def __init__(self, base_note, target_scale):
         LossFunction.__init__(self)
-        
+
         self.base_note = base_note
 
         f=note_to_freq(self.base_note)
@@ -36,8 +39,18 @@ class ScaleTuningLoss(LossFunction):
         
     def get_loss(self, geo, context=None):
         
-        notes = geo.get_cadsd().get_notes()
-        freqs = np.log2(list(notes.freq))
+        evolution_nr = get_app().get_service(MultiEvolution).evolution_nr
+        
+        if evolution_nr == 1:
+            f = np.arange(1, 1000, 2)
+            segments = create_segments(geo)
+            i = compute_impedance(segments, f)
+        else:
+            f, i = compute_impedance_iteratively(geo, n_precision_peaks=5)
+        notes = get_notes(f,i)
+        
+        freqs = np.log2(list(notes.freqs))
+        notes["rel_imp"] = notes.impedance / notes.impedance.max()
         
         fundamental_loss = self.get_deviations([freqs[0]], [self.target_freqs[0]])[0]
         fundamental_loss *= 10
@@ -62,12 +75,12 @@ if __name__ == "__main__":
 
     init_console()
     evo = MultiEvolution(
-        ScaleTuningLoss(base_note=-31, target_scale=[0,3,5,7,10]),
-        n_bubbles=0,
+        ScaleTuningLoss(base_note=-31, target_scale=[0,4,7,10]),
+        n_bubbles=3,
         num_generations_1=100,
-        num_generations_2=0,
-        num_generations_3=0,
-        population_size=5,
+        num_generations_2=100,
+        num_generations_3=100,
+        population_size=10,
         generation_size=100
     )
     evo.evolve()
