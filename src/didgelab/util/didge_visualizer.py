@@ -6,7 +6,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import os
 import json
-
+from didgelab.calc.sim.sim import quick_analysis
 
 # paint a picture of a didgeridoo
 class DidgeVisualizer:
@@ -70,3 +70,51 @@ class DidgeVisualizer:
 
 def vis_didge(geo):
     DidgeVisualizer.vis_didge(geo)
+
+# # paint an image of fft
+# class FFTVisualiser:
+    
+#     @classmethod
+#     def vis_fft_and_target(cls, fft):
+        
+#         #fft=fft.copy().drop(columns=["ground", "overblow"])
+#         fft=fft.copy()
+#         fft.reset_index(drop=True, inplace=True) 
+#         # for column in fft.columns:
+#         #     fft[column]=fft[column] / fft[column].max()
+
+#         sns.set(rc={'figure.figsize':(15,5)})
+#         sns.lineplot(data=fft, x="freq", y="impedance")
+        
+
+# def visualize_geo_to_files(geo, output_dir, filename, skip_cadsd=False, cadsd_result=None):
+
+#     if not os.path.exists(output_dir):
+#         os.makedirs(output_dir)
+
+#     plt.clf()
+#     DidgeVisualizer.vis_didge(geo)
+#     geofile=os.path.join(output_dir, filename + "geo.png")
+#     plt.savefig(geofile, dpi=500)
+#     plt.clf()
+
+#     if not skip_cadsd:
+
+#         if cadsd_result==None:
+#             cadsd_result=CADSDResult.from_geo(geo)
+
+#         sns.set(rc={'figure.figsize':(15,5)})
+#         sns.lineplot(data=cadsd_result.fft, x="freq", y="impedance")
+
+#         # FFTVisualiser.vis_fft_and_target(cadsd_result.fft)
+#         fftfile=os.path.join(output_dir, filename + "fft.png")
+#         plt.savefig(fftfile, dpi=500)
+
+#         report=geotools.print_geo_summary(geo, peak=cadsd_result.peaks)
+
+#         f=open(os.path.join(output_dir, filename + "report.txt"), "w")
+#         f.write(report)
+#         f.write("\n\n")
+#         f.write(json.dumps(geo.geo))
+#         f.close()
+
