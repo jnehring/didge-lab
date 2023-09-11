@@ -15,6 +15,15 @@ import sys
 from didgelab.calc.geo import Geo
 from didgelab.calc.sim.sim import quick_analysis
 
+def to_latex(df):
+    s=df.style.hide(axis="index").to_latex()
+    lines = s.split("\n")
+    header = lines[1].split("&")
+    header[-1] = header[-1].replace("\\\\", "")
+    header = ["\\textbf{" + h.strip() + "}" for h in header]
+    lines[1] = " & ".join(header) + "\\\\"
+    return "\n".join(lines)
+
 #from cad.calc.parameters import *
 # possible values for contents: all,impedance,spektra,parameters,notes,general
 def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents="all", notes=None):
@@ -30,17 +39,6 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
     plt.plot(spektra["ground_freqs"], spektra["ground_spectrum"], label="Ground Spectrum")
     plt.legend()
     plt.savefig(os.path.join(output_dir, praefix + "spectra.png"))
-    # if in_contents("impedance"):
-    #     plt.clf()
-    #     plt.plot(spektra["freqs"], spektra["impedance"])
-    #     plt.title("Impedance")
-    #     plt.savefig(os.path.join(output_dir, praefix + "impedance.png"))
-
-    # if in_contents("spektra"):
-    #     plt.clf()
-    #     plt.plot(spektra["ground_freqs"], spektra["ground_spectrum"])
-    #     plt.title("Ground Spektrum")
-    #     plt.savefig(os.path.join(output_dir, praefix + "ground.png"))
 
     if in_contents("geo"):
         plt.clf()
@@ -59,15 +57,24 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
         tex += "\\subsection{Shape}\n"
         tex += "\\begin{centering}\n"
         df=[]
-        df.append(["length", geo.length()])
-        df.append(["bell size", geo.geo[-1][1]])
+        df.append(["length", f"{geo.length():.2f} mm"])
+        df.append(["bell size", f"{geo.geo[-1][1]:.2f} mm"])
         df.append(["number segments", len(geo.geo)])
+        df.append(["volume", f"{geo.compute_volume()/100:.2f} cm2"])
+
+        # if losses is not None:
+        #     for key, value in losses.items():
+        #         df.append([key, f"{value:.2f}"])
+        df=pd.DataFrame(df, columns=["Property", "Value"])
+        #df.Value = df.Value.apply(lambda x:f"{x:.2f}")
+        tex += to_latex(df)
 
         if losses is not None:
-            for key, value in losses.items():
-                df.append([key, f"{value:.2f}"])
-        df=pd.DataFrame(df)
-        tex += df.style.hide(axis="index").to_latex()
+            tex += "\\hfill"
+            l = [[k.replace("_", "\\_"),f"{v:.2f}"] for k,v in losses.items()]
+            l = pd.DataFrame(l, columns=["loss type", "value"])
+            tex += to_latex(l)
+
         tex += "\\end{centering}\n\n"
         # didge picture
     if in_contents("geo"):
@@ -90,7 +97,7 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
         notes = notes.rename(columns={c: c.replace("_", "-") for c in notes.columns})
         tex += "\\subsection{Tuning}\n"
         tex += "\\begin{centering}\n"
-        tex += notes.style.hide(axis="index").to_latex()
+        tex += to_latex(notes)
         tex += "\\end{centering}\n"
 
     if in_contents("parameters") and parameters is not None:
@@ -99,7 +106,7 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
         t=type(parameters)
         tex += "\n" + t.__module__ + "." + t.__name__ + "\n\n"
         tex += "\\begin{centering}\n"
-        tex += parameters.to_pandas().style.hide(axis="index").to_latex()
+        tex += to_latex(parameters.to_pandas())
         tex += "\\end{centering}\n"
 
     # impedance, ground and overblow Iimages
@@ -124,7 +131,63 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
 
     return tex
 
-def didge_report(geos, outdir, overview_report=None, parameters=None, losses=None, contents="all", notes=None):
+def loss_report(loss_file, outdir):
+    plt.clf()
+
+    df = pd.read_csv(loss_file)
+    steps = []
+    df = df.query("i_generation<i_generation.max()")
+    df
+
+    x = df.i_generation.unique()
+
+    columns=list(df.columns)
+    columns=columns[columns.index("loss"):]
+    colors = ['#8a3ffc', '#33b1ff', '#007d79', '#ff7eb6', '#fa4d56', '#fff1f1', '#6fdc8c', '#4589ff', '#d12771', '#d2a106', '#08bdba', '#bae6ff', '#ba4e00', '#d4bbff']
+    for i in range(len(columns)):
+        c = columns[i]
+        ymin=df.groupby("i_generation")[c].min()
+        plt.plot(x, ymin, label=c, color=colors[i])
+        ymin=df.groupby("i_generation")[c].max()
+        plt.plot(x, ymin, label="_" + c, color=colors[i])
+        
+    for step in df.step.unique()[0:-1]:
+        f=df.query("step==@step").i_generation.max()
+        plt.axvline(f)
+
+    plt.legend()
+    plt.savefig(os.path.join(outdir, "loss_report.png"))
+    tex = '''
+    \\section{Loss Report}
+    \\begin{centering}\n
+    \\begin{figure}[!ht]
+    {\\includegraphics[width=100mm]{loss_report.png}}
+    \\caption{Loss Report}
+    \\end{figure}
+    \\end{centering}\n
+    '''
+
+    _df = df.query("i_generation==i_generation.max()")
+    columns = _df.columns[4:]
+    dfl = {"loss": columns}
+    for c in ["min", "max", "mean"]:
+        dfl[c] = []
+        
+    for c in columns:
+        dfl["min"].append(_df[c].min())
+        dfl["max"].append(_df[c].max())
+        dfl["mean"].append(_df[c].mean())
+
+    dfl = pd.DataFrame(dfl)
+    for c in ["min", "max", "mean"]:
+        dfl[c] = dfl[c].apply(lambda x:f"{x:.2f}")
+    dfl.loss = dfl.loss.apply(lambda x : x.replace("_", "\\_"))
+
+    tex += to_latex(dfl)
+    
+    return tex
+
+def didge_report(geos, outdir, overview_report=None, loss_file=None, parameters=None, losses=None, contents="all", notes=None):
 
     if parameters is not None:
         assert(len(geos) == len(parameters))
@@ -141,9 +204,8 @@ def didge_report(geos, outdir, overview_report=None, parameters=None, losses=Non
 
 ''')
 
-    if overview_report is not None:
-        overview_report.render(tex)
-
+    if loss_file is not None:
+        tex.write(loss_report(loss_file, outdir))
 
     with tqdm(total=len(geos)) as pbar:
 
@@ -211,13 +273,13 @@ class OverviewReport():
             df.append([key, value])
         df=pd.DataFrame(df, columns=["parameter", "value"])
 
-        tex.write(df.style.hide(axis="index").to_latex())
+        tex.write(to_latex(df))
 
     def cad_report(self, tex):
-            cad_report_outfile=os.path.join(self.outdir, "loss_report.png")
-            loss_report(self.cad_report_file, cad_report_outfile)
+        cad_report_outfile=os.path.join(self.outdir, "loss_report.png")
+        loss_report(self.cad_report_file, cad_report_outfile)
 
-            tex.write('''
+        tex.write('''
 \\subsection{Loss Report}
 \\begin{centering}\n
 \\begin{figure}[!ht]
@@ -226,69 +288,6 @@ class OverviewReport():
 \\end{figure}
 \\end{centering}\n
 ''')
-
-
-def didge_report_from_pkl(options):
-
-    f=open(options.infile, "rb")
-    pool=pickle.load(f)
-    f.close()
-    
-    filename=os.path.basename(options.infile)
-    if filename[-4:] == ".pkl":
-        filename=filename[0:-4]
-
-    outdir=os.path.join(os.path.dirname(options.infile), "report_" + filename)
-
-    if options.single >= 0:
-        outdir += "_single_" + str(options.single)
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-
-    geos=[]
-    parameters=[]
-    losses=[]
-
-    if options.single>=0:
-        mpe=pool.get(options.single)
-        geos.append(mpe.geo)
-        losses.append(mpe.loss)
-        parameters.append(mpe.parameterset)
-
-        didge_report(geos, outdir, overview_report=None, parameters=parameters, losses=losses)
-    else:
-        cad_report=os.path.join(Path(options.infile).parent.parent.absolute(), "cadlogger.log")
-        pipeline_json=os.path.join(Path(options.infile).parent.absolute(), "pipeline.json")
-        overview_report=OverviewReport(outdir, cad_report_file=cad_report, pipeline_json_file=pipeline_json)
-
-        total=pool.len()
-        if options.limit>0 and options.limit < pool.len():
-            total=options.limit
-
-        for i in range(total):
-            mpe=pool.get(i)
-            geos.append(mpe.geo)
-            losses.append(mpe.loss)
-            parameters.append(mpe.parameterset)
-
-        didge_report(geos, outdir, overview_report=overview_report, parameters=parameters, losses=losses)
-
-def didge_report_from_txt(options):
-
-    outdir=os.path.join(os.path.dirname(options.infile), "report_" + options.infile[0:-4])
-    
-    if not os.path.exists(outdir):
-        os.mkdir(outdir)
-
-    f=open(options.infile, "r")
-    geo=json.load(f)
-    f.close()
-    geo=Geo(geo)
-
-    geos=[geo]
-    print(outdir)
-    didge_report(geos, outdir, overview_report=None, parameters=None, losses=None)
-
 
 if __name__ == "__main__":
 
@@ -310,11 +309,27 @@ if __name__ == "__main__":
 
     if not os.path.exists(infile):
         raise Exception(f"cannot find file {infile}")
-    
-    outdir=os.path.join(os.path.dirname(infile), "report")
+
+    indir = os.path.dirname(infile)
+    print("reading from " + indir)
+    outdir=os.path.join(indir, "report")
     if not os.path.exists(outdir):
         os.mkdir(outdir)
 
+    loss_file=os.path.join(indir, "..", "losses.csv")
+    if not os.path.exists(loss_file):
+        loss_file = None
+
+    losses=os.path.join(indir, "losses.json")
+    if not os.path.exists(losses):
+        losses = None
+    else:
+        losses = json.load(open(losses, "r"))
     geos = json.load(open(infile, "r"))
 
-    didge_report(geos, outdir, overview_report=None, parameters=None, losses=None)
+    indizes = list(range(len(losses)))
+    indizes = sorted(indizes, key=lambda i:losses[i]["loss"])
+    geos = [geos[i] for i in indizes]
+    losses = [losses[i] for i in indizes]
+
+    didge_report(geos, outdir, overview_report=True, parameters=None, loss_file=loss_file, losses=losses)

@@ -111,7 +111,14 @@ class Geo:
 
     def diameter_at_x(self, x):
         return geotools.diameter_at_x(self, x)
-
+    
+    def compute_volume(self):
+        v = 0
+        for i in range(1, len(self.geo)):
+            l = self.geo[i][0] - self.geo[i-1][0]
+            v+= l*self.geo[i-1][1]
+            v += l*(self.geo[i][1] - self.geo[i-1][1])
+        return v
 
 class geotools:
 

@@ -48,26 +48,28 @@ class ScaleTuningLoss(LossFunction):
         else:
             f, i = compute_impedance_iteratively(geo, n_precision_peaks=5)
         notes = get_notes(f,i)
-        
-        freqs = np.log2(list(notes.freqs))
-        notes["rel_imp"] = notes.impedance / notes.impedance.max()
+
+        freqs = np.log2(list(notes.query("rel_imp>0.15").freqs))
         
         fundamental_loss = self.get_deviations([freqs[0]], [self.target_freqs[0]])[0]
         fundamental_loss *= 10
         
         deviations = self.get_deviations(freqs[1:], self.target_freqs)
 
-        toots_loss = np.sum(deviations[1:])/2
-        toots_loss *= 3
+        toots_loss = np.sum(deviations) / np.max((1, len(deviations)))
+        toots_loss *= 2
 
-        amp_loss = 1-np.mean(list(notes.rel_imp)[1:])
+        n_toots_loss = 10/len(freqs)
+
+        amp_loss = (1-np.mean(list(notes.rel_imp)[1:])) / len(notes)
         amp_loss *= 2
         
         loss = {
-            "loss": fundamental_loss + toots_loss + amp_loss,
+            "loss": fundamental_loss + toots_loss + amp_loss + n_toots_loss,
             "fundamental_loss": fundamental_loss,
             "toots_loss": toots_loss,
-            "amp_loss": amp_loss
+            "amp_loss": amp_loss,
+            "n_toots_loss": n_toots_loss
         }
         return loss
 

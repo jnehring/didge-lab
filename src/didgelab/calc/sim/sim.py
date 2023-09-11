@@ -216,7 +216,6 @@ def get_notes(freqs, impedances):
     }
     peaks = pd.DataFrame(peaks)
     peaks["rel_imp"] = peaks.impedance / peaks.impedance.max()
-    peaks = peaks.query("rel_imp>0.15").copy()
     return peaks
 
 def quick_analysis(geo : Geo):
