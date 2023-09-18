@@ -90,7 +90,7 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
 
     if in_contents("notes"):
         notes = spektra["notes"]
-        for c in ["cent_diff", "freqs", "impedance", "rel_imp"]:
+        for c in ["cent_diff", "freq", "impedance", "rel_imp"]:
             notes[c] = notes[c].apply(lambda x:f"{x:.2f}")
         
         notes.note_name = notes.note_name.apply(lambda x:x.replace("#", "\\#"))
@@ -118,17 +118,6 @@ def visualize_geo(geo, output_dir, index, parameters=None, losses=None, contents
 \\caption{Sound Spectra ''' + str(index+1) + '''}}
 \\end{figure}'''
 
-    # if in_contents("spektra"):
-
-    #     tex += '''
-    # \\begin{figure}[!h]
-    #     \\begin{tabular}{cc}
-    #             \\includegraphics[width=75mm]{''' + str(index) + '''_ground.png} &  
-    #     \\end{tabular}
-    # \\caption{Spektra ''' + str(index+1) + '''}
-    # \\end{figure}
-    # '''
-
     return tex
 
 def loss_report(loss_file, outdir):
@@ -142,7 +131,7 @@ def loss_report(loss_file, outdir):
     x = df.i_generation.unique()
 
     columns=list(df.columns)
-    columns=columns[columns.index("loss"):]
+    columns=columns[4:]
     colors = ['#8a3ffc', '#33b1ff', '#007d79', '#ff7eb6', '#fa4d56', '#fff1f1', '#6fdc8c', '#4589ff', '#d12771', '#d2a106', '#08bdba', '#bae6ff', '#ba4e00', '#d4bbff']
     for i in range(len(columns)):
         c = columns[i]
@@ -158,7 +147,7 @@ def loss_report(loss_file, outdir):
     plt.legend()
     plt.savefig(os.path.join(outdir, "loss_report.png"))
     tex = '''
-    \\section{Loss Report}
+    \\section{Evolution Overview}
     \\begin{centering}\n
     \\begin{figure}[!ht]
     {\\includegraphics[width=100mm]{loss_report.png}}
@@ -234,60 +223,6 @@ def didge_report(geos, outdir, overview_report=None, loss_file=None, parameters=
             continue
         
         os.remove(os.path.join(outdir, f))
-
-class OverviewReport():
-
-    def __init__(self, outdir, cad_report_file=None, pipeline_json_file=None):
-        self.cad_report_file=cad_report_file
-        self.outdir=outdir
-        self.pipeline_json_file=pipeline_json_file
-    
-    def render(self, tex):
-
-        tex.write("\\section{Evolution Summary}")
-
-        if self.cad_report_file is not None and os.path.exists(self.cad_report_file):
-            self.cad_report(tex)
-
-        if self.pipeline_json_file is not None and os.path.exists(self.pipeline_json_file):
-            self.pipeline_json(tex)
-
-    def pipeline_json(self, tex):
-        f=open(self.pipeline_json_file)
-        data=json.load(f)
-        f.close()
-
-        # convert all durations to min
-        needle="duration_"
-        for key, value in data.items():
-            if key[0:len(needle)]==needle:
-                value/=60
-                value=f"{value:.2f} min"
-                data[key]=value
-
-        # write table
-        tex.write("\\subsection{Evolution Parameters}")
-
-        df=[]
-        for key, value in data.items():
-            df.append([key, value])
-        df=pd.DataFrame(df, columns=["parameter", "value"])
-
-        tex.write(to_latex(df))
-
-    def cad_report(self, tex):
-        cad_report_outfile=os.path.join(self.outdir, "loss_report.png")
-        loss_report(self.cad_report_file, cad_report_outfile)
-
-        tex.write('''
-\\subsection{Loss Report}
-\\begin{centering}\n
-\\begin{figure}[!ht]
-{\\includegraphics[width=100mm]{loss_report.png}}
-\\caption{Loss Report}
-\\end{figure}
-\\end{centering}\n
-''')
 
 if __name__ == "__main__":
 

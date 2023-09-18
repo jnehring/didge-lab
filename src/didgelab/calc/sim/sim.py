@@ -211,7 +211,7 @@ def get_notes(freqs, impedances):
         "note_name": [note_name(n[0]) for n in note_and_cent],
         "cent_diff": [n[1] for n in note_and_cent],
         "note_nr": [n[0] for n in note_and_cent],
-        "freqs": peak_freqs,
+        "freq": peak_freqs,
         "impedance": impedances[extrema],
     }
     peaks = pd.DataFrame(peaks)

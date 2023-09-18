@@ -13,7 +13,7 @@ class MutationRateMutator(Mutator):
     def __init__(self):
         pass
 
-    def mutate(self, father, mutation_rate=1.0, mutation_probability = 1.0):
+    def mutate_individual(self, father, mutation_rate=1.0, mutation_probability = 1.0):
         mutant = father.copy()
 
         maxima = np.array([x.maximum for x in mutant.parameters])

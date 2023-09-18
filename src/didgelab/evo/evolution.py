@@ -110,9 +110,11 @@ class Evolution():
         last_improved_generation = None
         for i_generation in range(self.generation_offset, self.num_generations + self.generation_offset):
             arguments = [(self.population[i%self.population_size], i_generation, i%self.population_size) for i in range(self.generation_size)]
+            
             with ThreadPoolExecutor(multiprocessing.cpu_count()) as executor:
                 results = executor.map(self.mutate, arguments)
                 results = list(results)
+                
                 if self.selection_strategy == "pool":
                     self.population = self.select_pool(results)
                 elif self.selection_strategy == "global":
@@ -260,7 +262,7 @@ class MultiEvolution:
             mutation_probability = 0.3,
             generation_offset=num_generations
         )
-        evo2.evolve(pbar=pbar)
+        population = evo2.evolve(pbar=pbar)
         num_generations += self.num_generations_2
 
         evo3 = Evolution(
@@ -270,7 +272,7 @@ class MultiEvolution:
             num_generations = self.num_generations_3,
             generation_size = self.generation_size, 
             mutation_rate_decay_after = 0,
-            mutation_probability = 0.1,
+            mutation_probability = 0.3,
             generation_offset=num_generations
         )
         self.evolution_nr=3
