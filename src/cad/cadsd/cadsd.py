@@ -257,6 +257,14 @@ class CADSD():
     def has_additional_metric(self, key):
         return key in self.additional_metrics
 
+    def release_memory(self):
+        self.impedance_spectrum=None
+        self.notes=None
+        self.highres_impedance_spektrum=None
+        self.all_spektra_df=None
+        self.ground_peaks=None
+        self.sound_spektra=None
+
 # volume of the didgeridoo ground tone
 # computed as the mean of the ground spektrum
 def cadsd_volume(cadsd):

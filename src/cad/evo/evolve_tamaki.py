@@ -21,41 +21,90 @@ from cad.calc.loss import LossFunction
 from cad.ui.evolution_ui import EvolutionUI
 
 # loss function
+
+def get_harmonic_maxima(freq, spectrum, min_freq=60):
+    i=0
+    maxima = []
+    base_freq = min_freq
+    while i*base_freq<1000:
+        if i==0:
+            window = freq>min_freq
+        else:
+            window = (freq>(i+0.5)*base_freq) & (freq<base_freq*(i+1.5))
+
+        if window.astype(int).sum() == 0:
+            break
+        window_f = freq[window]
+        window_s = spectrum[window]
+        maxi = np.argmax(window_s)
+        max_f = window_f[maxi]
+        if i==0:
+            base_freq=max_f
+
+        maxima.append(max_f)
+        i+=1
+    return maxima
+
 class TamakiLoss(LossFunction):
 
     def __init__(self):
-        self.reference = '{"note": {"0": "D1", "7": "D2", "3": "G2", "6": "A#3", "1": "D#3", "5": "F#3", "4": "A#4", "2": "C4", "8": "E4", "9": "A#5"}, "cent-diff": {"0": -29.186907488181646, "7": -29.186907488181646, "3": -11.705039773796244, "6": 28.121293338425346, "1": 40.170981983253284, "5": -40.057544424674774, "4": 48.36987561570183, "2": -32.98842874872534, "8": 8.621592573854997, "9": 38.215981117865994}, "freq": {"0": 74.66440923932761, "7": 149.32881847865522, "3": 197.32736727536582, "6": 229.32639980650623, "1": 303.9908090458338, "5": 378.6552182851614, "4": 453.319627524489, "2": 533.3172088523401, "8": 655.9801668883782, "9": 911.9724271375014}, "impedance": {"0": 7077269.224123592, "7": 651051.9652029042, "3": 1254565.572641898, "6": 653668.1255613645, "1": 3621993.552801448, "5": 783622.9325813947, "4": 991882.236723337, "2": 2645503.3839946836, "8": 590509.1527637121, "9": 433782.7710599926}}'
-        self.reference = pd.DataFrame(json.loads(self.reference))        
-        self.reference["impedance_normalized"] = self.reference.impedance / self.reference.impedance.max()
-        self.reference["logfreq"] = np.log2(self.reference.freq)
+        r = {"freq": [6.400585038762361, 7.368876179035023, 7.964485923955688, 8.368876179035023, 8.697202045120536, 8.964485923955687, 9.19895117759271, 9.384817722904044, 9.535234565457143, 9.709913096870089, 9.83702501477343, 9.95383867975618], "amp": [1.0, 0.6073456474120418, 0.7250740308214233, 0.5819491541103495, 0.5757528442270442, 0.7646716809346981, 0.7289892200366962, 0.4648478386222508, 0.6236959507896652, 0.49612524062788294, 0.39607427089021596, 0.5221732266032565], "priorities": [0, 5, 6]}
+
+        self.reference_freq = np.array(r["freq"])
+        self.reference_amp = np.array(r["amp"])
+        self.reference_priorities = np.array(r["priorities"])
         
     def get_loss(self, geo):
-        peaks = geo.get_cadsd().get_notes()
-        peaks["logfreq"] = np.log2(peaks.freq)
-        peaks["impedance_normalized"] = peaks.impedance / peaks.impedance.max()
         
-        tuning_loss = []
-        imp_loss = []
-        for ix, peak in peaks.iterrows():
-            mini = np.argmin([np.abs(peak.logfreq-f) for f in self.reference.logfreq])
+        gs = geo.get_cadsd().get_ground_spektrum()
+        computed_freqs = np.array(list(gs.keys()))
+        computed_amp = np.array(list(gs.values()))
+        peaks = get_harmonic_maxima(computed_freqs, computed_amp)
+        peaks = np.log2(peaks)
+        computed_freqs = np.log2(computed_freqs)
+        computed_amp -= computed_amp.min()
+        computed_amp /= computed_amp.max()
+        
+        tuning_loss = 0
+        amp_loss = 0
+        priority_amp_loss = 0
+        fundamental_loss = 0
+        
+        for i in range(len(self.reference_freq)):
+            mini = np.argmin(np.abs(peaks-self.reference_freq[i]))
+            closest_freq = peaks[mini]
+            closest_freq_index = np.argmin(np.abs(computed_freqs-closest_freq))
+            closest_amp = computed_amp[closest_freq_index]
             
-            tl = np.abs(peak.logfreq-self.reference.logfreq[mini])
-            il = np.abs(peak.impedance_normalized - self.reference.impedance_normalized[mini])
-            tuning_loss.append(tl)
-            imp_loss.append(il)
-            # print(f"{self.reference.freq[mini]:.0f}, {peak.freq:.0f}, {tl:.2f}, {il:.2f}")
+            _tuning_loss = np.sqrt(np.power(closest_freq-self.reference_freq[i], 2))
+            
+            if i in self.reference_priorities:
+                priority_amp_loss += 1-closest_amp
+                tuning_loss += _tuning_loss*3
+            else:
+                amp_loss += np.sqrt(np.power(closest_amp-self.reference_amp[i], 2))
+                tuning_loss += _tuning_loss
+                
+            if i==0:
+                fundamental_loss = _tuning_loss
+                
+        tuning_loss /= len(self.reference_freq)
+        amp_loss /= len(self.reference_freq)
 
-        fundamental_loss = tuning_loss[0]*10
-        tuning_loss = np.sum(tuning_loss)
-        imp_loss = np.sum(imp_loss)
+        geo.get_cadsd().release_memory()
         
+        tuning_loss *= 5
+        fundamental_loss *= 5
+        amp_loss *= 5
+
         return {
-            "loss": fundamental_loss + tuning_loss + imp_loss,
+            "loss": fundamental_loss + tuning_loss + amp_loss + priority_amp_loss,
             "fundamental_loss": fundamental_loss,
             "tuning_loss": tuning_loss,
-            "imp_loss": imp_loss
+            "amp_loss": amp_loss,
+            "priority_amp_loss": priority_amp_loss
         }
-        
+
 if __name__=="__main__":
     try:
         App.full_init("evolve_tamaki")
@@ -68,7 +117,7 @@ if __name__=="__main__":
 
         pipeline=Pipeline()
 
-        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=200, generation_size=70))
+        pipeline.add_step(ExplorePipelineStep(ExploringMutator(), loss, initial_pool, n_generations=500, generation_size=30))
         pipeline.add_step(FinetuningPipelineStep(FinetuningMutator(), loss, n_generations=500, generation_size=30))
 
         ui=EvolutionUI()
