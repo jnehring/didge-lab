@@ -1,5 +1,5 @@
 import sys
-sys.path.append('../')
+#sys.path.append('../')
 from didgelab.calc.geo import Geo
 from didgelab.util.didge_visualizer import vis_didge
 import seaborn as sns
@@ -13,9 +13,13 @@ from didgelab.calc.sim.sim import compute_impedance_iteratively, get_notes, comp
 from scipy.signal import argrelextrema
 import jsonlines
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
 import os
+from datetime import datetime
+import time
+import logging
+import concurrent
 
 # compute a smoothed version of a rough didgeridoo shape
 def smooth_didge(geo,resolution=20):
@@ -123,7 +127,7 @@ def get_deviation(geo, scaling, target):
 # scale the didge to tune its fundamental
 tuned_notes = None
 tuned_frequencies = None
-def find_scaling(geo, n_steps=10, interval=0.15, max_error=2):
+def find_scaling(geo, n_steps=10, interval=0.15, max_error=3):
 
     global tuned_notes, tuned_frequencies
     if tuned_notes is None:
@@ -142,8 +146,6 @@ def find_scaling(geo, n_steps=10, interval=0.15, max_error=2):
     assert fundamental>tuned_notes[0] or fundamental<tuned_notes[-1]
         
     deviation = np.abs(np.log2(fundamental)-target_freq)
-    deviations = [deviation]
-    scalings = [fundamental]
         
     i=0
     scaling=1
@@ -160,6 +162,7 @@ def find_scaling(geo, n_steps=10, interval=0.15, max_error=2):
     f = (f1, f2)
     f1 = np.min(f)
     f2 = np.max(f)
+
     
     for i in range(n_steps):
         
@@ -176,10 +179,6 @@ def find_scaling(geo, n_steps=10, interval=0.15, max_error=2):
             f2=fnew
             d2=fnew
             scaling+=interval
-
-    f = (f1, f2)
-    f1 = np.min(f)
-    f2 = np.max(f)
 
     return fnew, ng
 
@@ -224,7 +223,7 @@ def extract_didge_info(geo):
     
     return features
 
-def create_db_entry(x):
+def create_db_entry():
     try:
         geo = create_geo()
         geo = smooth_didge(geo)
@@ -232,6 +231,7 @@ def create_db_entry(x):
         features = extract_didge_info(geo)
         return features
     except Exception as e:
+        logging.error(e)
         return None
 
 def create_database(folder):
@@ -243,21 +243,36 @@ def create_database(folder):
         outfile = os.path.join(folder, f"database_{i}.jsonl")
         with jsonlines.open(outfile, mode='w') as writer:
             n_created = 0
-            batch = []
-            batch_size = 100
+
+            num_cpus = os.getenv("NUM_CPUS")
+            if num_cpus is None:
+                num_cpus = multiprocessing.cpu_count()
+            else:
+                num_cpus = int(os.getenv("NUM_CPUS"))
+            batch_size = num_cpus*10
             while n_created<n_entries:
-                arguments = [None]*np.min((batch_size, n_entries-n_created))
-                with ThreadPoolExecutor(multiprocessing.cpu_count()) as executor:
-                #with ThreadPoolExecutor(1) as executor:
-                    for result in executor.map(create_db_entry, arguments):
+
+                n_tasks = np.min((batch_size, n_entries-n_created))
+                                
+                with ProcessPoolExecutor(max_workers=num_cpus) as executor:
+
+                    futures = [executor.submit(create_db_entry) for i in range(n_tasks)]
+
+                    for future in concurrent.futures.as_completed(futures):
+                        result = future.result()
                         if result is not None:
                             writer.write(result)
                         pbar.update(1)
-                    n_created += len(arguments)
+                        n_created += 1
 
-if __name__ == "__main__":
-    folder = "../../didge-database"
+def main():
+    folder = os.path.join(
+        "../../didge-database/", 
+        datetime.now().isoformat()
+    )
     if not os.path.exists(folder):
-        os.mkdir(folder)
+        os.makedirs(folder)
     create_database(folder)
 
+if __name__ == "__main__":
+    main()
