@@ -180,6 +180,7 @@ def find_scaling(geo, n_steps=10, interval=0.15, max_error=3):
             d2=fnew
             scaling+=interval
 
+    print(fnew)
     return fnew, ng
 
 # get all features for the didgeridoo database
@@ -275,4 +276,5 @@ def main():
     create_database(folder)
 
 if __name__ == "__main__":
-    main()
+    features = create_db_entry()
+    #main()

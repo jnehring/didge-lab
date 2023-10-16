@@ -102,7 +102,7 @@ class CADSD():
             return len(freqs)-1
         
     # helper function for compute_ground
-    def _find_first_maximum_index(impedance):
+    def _find_first_maximum_index(self, impedance):
 
         peaks=[0,0]
         vally=[0,0]

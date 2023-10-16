@@ -26,6 +26,6 @@ def init_jupyter():
     scm = SVMCorrectionModel()
 
 def init_console_no_output():
-    init_app()
+    init_app(create_output_folder=False)
     scm = SVMCorrectionModel()
 
