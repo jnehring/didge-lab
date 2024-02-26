@@ -50,12 +50,12 @@ def get_harmonic_maxima(freq, spectrum, min_freq=60):
     return maxima
 
 # average the spectrum across a sliding window
-def average_spectrum(freq, spectrum, window_size=100):
+def sling_window_average_spectrum(freq, spectrum, window_size=5):
     new_freqs = []
     new_spectrum = []
     
     for i in np.arange(window_size, len(freq), window_size):
         new_freqs.append(freq[i])
         new_spectrum.append(np.mean(spectrum[i-window_size:i]))
-    return new_freqs, new_spectrum
+    return np.array(new_freqs), np.array(new_spectrum)
 

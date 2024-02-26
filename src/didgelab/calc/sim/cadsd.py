@@ -130,15 +130,46 @@ class CADSD():
 
         return peaks[0]
     
+    def interpolate_ground(self, freqs, impedance):
+        fundamental_i = self._find_first_maximum_index(impedance)
+        fundamental_freq = freqs[fundamental_i]
+
+        mem0 = fundamental_freq
+        mem0a = fundamental_freq
+        mem0b = fundamental_freq
+        
+        for i in range(mem0, get_config()["sim.fmax"], mem0):
+            for j in range(-mem0a, mem0b):
+                if i + j < get_config()["sim.fmax"] and i + j + offset>get_config()["sim.fmin"] and mem0-j>=get_config()["sim.fmin"] and mem0+j>=get_config()["sim.fmin"]: 
+                    if j < 0:
+                        fft["ground"][i + j + offset] += fft["impedance"][mem0 + j] * np.exp (i * k)
+                    else:
+                        fft["ground"][i + j + offset] += fft["impedance"][mem0 - j] * np.exp (i * k)
+
+        # calculate sound specturm of base tone
+        for i in range(get_config()["sim.fmin"], get_config()["sim.fmax"]):
+            fft["ground"][i] = fft["impedance"][i] * fft["ground"][i] * 1e-6
+
+
+        
+
     # compute ground spektrum from impedance spektrum
     # warning: frequencies must be evenly spaced
-    def compute_ground_spektrum(self, freqs, impedance, fmin, fmax):
+    def compute_ground_spektrum(self, freqs, impedance):
+
+        fmin = np.min(freqs)
+        fmax = np.max(freqs)
 
         fundamental_i = self._find_first_maximum_index(impedance)
         fundamental_freq = freqs[fundamental_i]
 
+        print(fmin, fmax, fundamental_freq)
+
         ground = np.zeros(len(freqs))
         indizes = np.concatenate((np.arange(fmin,fundamental_freq), np.arange(fundamental_freq,fmin-1,-1)))
+
+        print(indizes)
+
         window_right = impedance[indizes]
 
         k = 0.0001
@@ -159,9 +190,14 @@ class CADSD():
         for i in range(len(ground)):
             x=ground[i]*2e-5
             ground[i] = 0 if x<1 else 20*np.log10(x) 
-            impedance[i] *= 1e-6
 
         return np.array(ground)
+    
+    def compute_impedance_and_ground(self):
+        freq, impedance = self.compute_raw_impedance()
+        ground = self.compute_ground_spektrum(freq, impedance)
+        impedance *= 1e-6
+        return freq, impedance, ground
 
     def compute_impedance(self):
         freq, impedance = self.compute_raw_impedance()
@@ -170,7 +206,8 @@ class CADSD():
 
     def _compute_ground(self):
         freq, impedance = self.compute_raw_impedance()
-            
+        
+
     def get_notes(self):        
 
         if self.notes is not None:

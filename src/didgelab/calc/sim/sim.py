@@ -43,7 +43,7 @@ def _get_closest_index(freqs, f):
 
 # helper function for compute_ground
 # find first maximum in a list of numbers
-def _find_first_maximum_index(impedance):
+def find_first_maximum_index(impedance):
 
     peaks=[0,0]
     vally=[0,0]
@@ -78,7 +78,7 @@ def compute_ground_spektrum(freqs, impedance):
     impedance = impedance.copy() / 1e-6
     fmin = 1
     fmax = freqs[-1]
-    fundamental_i = _find_first_maximum_index(impedance)
+    fundamental_i = find_first_maximum_index(impedance)
     fundamental_freq = freqs[fundamental_i]
 
     ground = np.zeros(len(freqs))
