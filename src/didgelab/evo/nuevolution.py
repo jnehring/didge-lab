@@ -15,6 +15,7 @@ import json
 from didgelab.calc.geo import Geo
 from didgelab.calc.sim.sim import get_log_simulation_frequencies, create_segments, compute_impedance, get_notes
 from copy import deepcopy
+import sys
 
 class Genome(ABC):
 
@@ -32,6 +33,7 @@ class Genome(ABC):
     
     def randomize_genome(self):
         self.genome = np.random.sample(size=len(self.genome))
+
 
 class GeoGenome(Genome):
 
@@ -54,7 +56,7 @@ class GeoGenome(Genome):
 class GeoGenomeA(GeoGenome):
 
     def build(n_segments):
-        return GeoGenomeA(n_genes=n_segments*2+1)
+        return GeoGenomeA(n_genes=(n_segments*2)+1)
 
     def genome2geo(genome : Genome) -> Geo:
 
@@ -69,7 +71,7 @@ class GeoGenomeA(GeoGenome):
 
         l = genome.genome[0] * (max_l-min_l) + min_l 
         i=1
-        while i < len(genome.genome):
+        while i+2 < len(genome.genome):
             x.append(genome.genome[i] + x[-1])
             y.append(genome.genome[i+1])
             i += 2
@@ -130,7 +132,7 @@ class RandomCrossover(CrossoverOperator):
     def apply(self, parent1 : Genome, parent2 : Genome) -> Genome:
         assert type(parent1) == type(parent2)
         new_genome = list(zip(parent1.genome, parent2.genome))
-        new_genome = [np.random.choice(x) for x in new_genome]
+        new_genome = np.array([np.random.choice(x) for x in new_genome])
         return type(parent1)(genome=new_genome)
     
 class AverageCrossover(CrossoverOperator):
@@ -140,119 +142,8 @@ class AverageCrossover(CrossoverOperator):
         new_genome = (parent1.genome + parent2.genome) / 2
         return type(parent1)(genome=new_genome)
 
-class Nuevolution():
 
-    def __init__( self,
-        loss : LossFunction,
-        father_genome : Genome,
-        generation_size = 5,
-        num_generations = 10,
-        population_size = 10,
-        mutation_prob = 0.5,
-        crossover_prob = 0.5,
-        crossover_operators = [RandomCrossover(), AverageCrossover()],
-        mutation_operators = [SimpleMutation(), RandomMutation()]):
-
-        crossover_operators = [RandomCrossover()]
-        mutation_operators = [SimpleMutation()]
-
-        self.loss = loss
-        self.father_genome = father_genome
-        self.generation_size = generation_size
-        self.num_generations = num_generations
-        self.population_size = population_size
-        self.mutation_prob = mutation_prob
-        self.crossover_prob = crossover_prob
-        self.crossover_operators = crossover_operators
-        self.mutation_operators = mutation_operators
-
-        self.i_generation = -1
-        self.population = None
-
-    def evolve(self):
-
-        # initialize
-        pool = multiprocessing.Pool()
-
-        self.population = []
-        for i in range(self.generation_size):
-            mutant = deepcopy(self.father_genome)
-            mutant.randomize_genome()
-            self.population.append(mutant)
-
-        losses = pool.map(self.loss.loss, self.population)
-        for i in range(len(losses)):
-            self.population[i].loss = losses[i]
-
-        self.population = sorted(self.population, key=lambda x:x.loss["loss"])
-
-        probs = []
-
-        # evolve
-        pbar = tqdm(total=self.num_generations)
-        for i_generation in range(self.num_generations):
-            
-            if len(probs) != len(self.population):
-                # compute probabilities that an individual will be selected
-                probs = np.arange(0, 1, 1/len(self.population))
-                probs = np.exp(probs)
-                probs = np.exp(probs)
-                probs = np.flip(probs)
-                probs /= probs.sum()
-
-            self.i_generation = i_generation
-
-            losses = np.array([p.loss for p in self.population])
-            indizes = np.random.choice(np.arange(len(self.population)), size=self.generation_size, replace=False, p=probs)
-            generation = [self.population[i] for i in indizes]
-            
-            # mutate
-            i_mutants = np.arange(self.generation_size)[np.random.sample(self.generation_size)<self.mutation_prob]
-            for i in i_mutants:
-                if len(self.mutation_operators) == 1:
-                    operator = self.mutation_operators[0]
-                else:
-                    operator = np.random.choice(self.mutation_operators)
-
-                generation[i] = operator.apply(generation[i])
-
-            # crossover
-            i_crossover = np.arange(self.generation_size)[np.random.sample(self.generation_size)<self.crossover_prob]
-            for parent1 in i_crossover:
-                parent2 = parent1
-                while parent1 == parent2:
-                    parent2 = np.random.choice(np.arange(len(self.population)), p=probs)
-
-                if len(self.crossover_operators) == 1:
-                    operator = self.crossover_operators[0]
-                else:
-                    operator = np.random.choice(self.crossover_operators)
-                generation[parent1] = operator.apply(self.population[parent1], self.population[parent2])
-                
-            # add only changed genes to population
-            i_changed = np.arange(self.generation_size)
-            i_changed = i_changed[[i in i_mutants or i in i_crossover for i in i_changed]]
-            generation = [generation[i] for i in i_changed]
-
-            # compute loss
-            losses = pool.map(self.loss.loss, generation)
-            for i in range(len(losses)):
-                generation[i].loss = losses[i]
-
-            self.population = self.population + generation
-            self.population = sorted(self.population, key=lambda x:x.loss["loss"])
-
-            if len(self.population) > self.population_size:
-                self.population = self.population[0:self.population_size]
-
-            get_app().publish("generation_ended", (self.i_generation, self.population))
-
-            pbar.update(1)
-
-        get_app().publish("evolution_ended", (self.population))
-        return self.population
-
-class NevolutionWriter:
+class NuevolutionWriter:
     
     def __init__(self, interval=100):
 
@@ -267,12 +158,51 @@ class NevolutionWriter:
 
         def evolution_ended(population):
             self.csvfile.close()
+            self.evolution_operations_f.close()
             self.writer = None
+            self.evolution_operations_stream = None
             self.write_population(population)
 
+        self.evolution_operations_stream = None
+        self.evolution_operations_format = None
+
         get_app().subscribe("evolution_ended", evolution_ended)
+        get_app().subscribe("log_evolution_operations", self.log_evolution_operations)
         get_app().register_service(self)
         
+    def log_evolution_operations(self, i_generation, operations, losses_before, losses_after):
+
+        if self.evolution_operations_stream is None:
+            outfile = os.path.join(get_app().get_output_folder(), "evolution_operations.csv")
+            self.evolution_operations_f = open(outfile, "w")
+            self.evolution_operations_stream = csv.writer(self.evolution_operations_f)
+            
+            self.evolution_operations_format = ["generation", "mutation", "crossover"]
+            for key in losses_before[0].keys():
+                self.evolution_operations_format.append("loss_before_" + key)
+            for key in losses_after[0].keys():
+                self.evolution_operations_format.append("loss_after_" + key)
+
+            self.evolution_operations_stream.writerow(self.evolution_operations_format)
+
+        for i in range(len(operations)):
+            if len(operations[i]) == 0:
+                continue
+
+            row = [i_generation, operations[i][0].__name__]
+
+            if len(operations[i]) > 1:
+                row.append(operations[i][1].__name__)
+            else:
+                row.append(None)
+
+            for key, value in losses_before[i].items():
+                row.append(value)
+            for key, value in losses_after[i].items():
+                row.append(value)
+
+            self.evolution_operations_stream.writerow(row)
+
     def write_population(self, population : List[Genome]):
         outfile = os.path.join(get_app().get_output_folder(), "population.json")
         f = open(outfile, "w")
@@ -316,16 +246,140 @@ class NevolutionWriter:
                 row.append(individual.loss[key])
             self.writer.writerow(row)
 
+class Nuevolution():
+
+    def __init__( self,
+        loss : LossFunction,
+        father_genome : Genome,
+        generation_size = 5,
+        num_generations = 10,
+        population_size = 10,
+        mutation_prob = 0.5,
+        crossover_prob = 0.5,
+        crossover_operators = [RandomCrossover(), AverageCrossover()],
+        mutation_operators = [SimpleMutation(), RandomMutation()]):
+
+        self.loss = loss
+        self.father_genome = father_genome
+        self.generation_size = generation_size
+        self.num_generations = num_generations
+        self.population_size = population_size
+        self.mutation_prob = mutation_prob
+        self.crossover_prob = crossover_prob
+        self.crossover_operators = crossover_operators
+        self.mutation_operators = mutation_operators
+
+        self.i_generation = -1
+        self.population = None
+
+    def evolve(self):
+
+        # initialize
+        pool = multiprocessing.Pool()
+
+        self.population = []
+        for i in range(self.generation_size):
+            mutant = deepcopy(self.father_genome)
+            mutant.randomize_genome()
+            self.population.append(mutant)
+
+        losses = pool.map(self.loss.loss, self.population)
+        for i in range(len(losses)):
+            self.population[i].loss = losses[i]
+
+        self.population = sorted(self.population, key=lambda x:x.loss["total"])
+
+        probs = []
+
+        # evolve
+        pbar = tqdm(total=self.num_generations)
+        for i_generation in range(self.num_generations):
+            
+            if len(probs) != len(self.population):
+                # compute probabilities that an individual will be selected
+                probs = (1+np.arange(len(self.population))) / len(self.population)
+                probs = np.exp(probs)
+                probs = np.exp(probs)
+                probs = np.flip(probs)
+                probs /= probs.sum()
+                #print(len(probs))
+
+            self.i_generation = i_generation
+
+            losses = np.array([p.loss for p in self.population])
+
+            #print(len(self.population), self.generation_size, len(probs))
+
+            indizes = np.random.choice(np.arange(len(self.population)), size=self.generation_size, replace=False, p=probs)
+            generation = [self.population[i] for i in indizes]
+            losses_before = [p.loss for p in generation]
+
+            i_mutants = np.arange(self.generation_size)[np.random.sample(self.generation_size)<self.mutation_prob]
+            operations = []
+            for i in range(self.generation_size):
+                operations.append([])
+            for i in i_mutants:
+                if len(self.mutation_operators) == 1:
+                    operator = self.mutation_operators[0]
+                else:
+                    operator = np.random.choice(self.mutation_operators)
+
+                operations[i].append(type(operator))
+                generation[i] = operator.apply(generation[i])
+
+            # crossover
+            i_crossover = np.arange(self.generation_size)[np.random.sample(self.generation_size)<self.crossover_prob]
+            for parent1 in i_crossover:
+                parent2 = parent1
+                while parent1 == parent2:
+                    parent2 = np.random.choice(np.arange(len(self.population)), p=probs)
+
+                if len(self.crossover_operators) == 1:
+                    operator = self.crossover_operators[0]
+                else:
+                    operator = np.random.choice(self.crossover_operators)
+
+                operations[parent1].append(type(operator))
+                generation[parent1] = operator.apply(self.population[parent1], self.population[parent2])
+                
+            # add only changed genes to population
+            i_changed = np.arange(self.generation_size)
+            i_changed = i_changed[[i in i_mutants or i in i_crossover for i in i_changed]]
+
+            generation = [generation[i] for i in i_changed]
+            operations = [operations[i] for i in i_changed]
+            losses_before = [losses_before[i] for i in i_changed]
+
+            # compute loss
+            losses = pool.map(self.loss.loss, generation)
+            get_app().publish("log_evolution_operations", (self.i_generation, operations, losses_before, losses))
+
+            for i in range(len(losses)):
+                generation[i].loss = losses[i]
+
+            self.population = self.population + generation
+            self.population = sorted(self.population, key=lambda x:x.loss["total"])
+
+            if len(self.population) > self.population_size:
+                self.population = self.population[0:self.population_size]
+
+            get_app().publish("generation_ended", (self.i_generation, self.population))
+
+            pbar.update(1)
+
+        get_app().publish("evolution_ended", (self.population))
+        return self.population
+
 class TestLossFunction(LossFunction):
 
     def loss(self, genome : Genome):
         l = int(len(genome.genome)/2)
-        return {"loss": np.sum(genome.genome[0:l]) / np.sum(genome.genome[l:])}
+        return {"total": np.sum(genome.genome[0:l]) / np.sum(genome.genome[l:])}
     
 # test method
 if __name__ == "__main__":
 
-    writer = NevolutionWriter()
+    writer = NuevolutionWriter()
     evo = Nuevolution(TestLossFunction(), GeoGenomeA.build(5))
     evo.evolve()
 
