@@ -51,19 +51,31 @@ def get_fundamental_freq(geo):
 class MultiplierLoss(LossFunction):
     
     def __init__(self):
-        self.target_f = np.arange(1,14) * note_to_freq(-31)
+        self.target_f = np.arange(1,15) * note_to_freq(-19)
         self.target_f = np.log2(self.target_f)
 
-    
     def loss(self, genome : GeoGenomeA):
         geo = genome.genome2geo()
-        fundamental = get_fundamental_freq(geo)
+        freqs = get_log_simulation_frequencies(1, 1000, 5)
+        segments = create_segments(geo)
+        impedance = compute_impedance(segments, freqs)
+        notes = get_notes(freqs, impedance)
 
-        fundamental_loss = np.abs(np.log2(fundamental) - self.target_f[0])
-        multiple_loss = np.abs(np.log2(fundamental) - self.target_f[0])
+        logfreq = np.log2(notes.freq)
+        deltas = []
+        for freq in logfreq:
+            closest_target_i = np.argmin(np.abs(self.target_f - freq))
+            deltas.append(np.abs(self.target_f[closest_target_i]-freq))
+
+        fundamental_loss = 7*deltas[0]
+        harmonic_loss = np.mean(deltas[1:])
+        n_notes_loss = (10-len(notes))/10
 
         return {
-            "total": fundamental_loss
+            "total": fundamental_loss,
+            "fundamental_loss": fundamental_loss,
+            "harmonic_loss": harmonic_loss,
+            "n_notes_loss": n_notes_loss
         }
 
 def evolve():
@@ -93,7 +105,10 @@ def evolve():
     segments = create_segments(best_geo)
     impedance = compute_impedance(segments, freqs)
     notes = get_notes(freqs, impedance)
+
     print(notes)
+    for key, value in population[0].loss.items():
+        print(key, np.round(value, 2))
 
 
     #genome = Genome(n_genes=n_segments+1)
