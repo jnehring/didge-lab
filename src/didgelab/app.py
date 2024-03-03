@@ -148,6 +148,10 @@ class App:
             if len(suffix)>0:
                 folder_name += "_" + suffix
 
+            config = get_config()
+            if "log_folder_suffix" in config:
+                folder_name += "_" + config["log_folder_suffix"]
+
             self.output_folder=os.path.join(f, folder_name)
             os.mkdir(self.output_folder)
 

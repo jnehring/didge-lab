@@ -8,6 +8,7 @@ from didgelab.evo.nuevolution import GeoGenomeA, NuevolutionWriter
 from didgelab.util.didge_visualizer import vis_didge
 from didgelab.calc.sim.sim import compute_impedance_iteratively, get_notes, compute_impedance, create_segments, get_log_simulation_frequencies, quick_analysis
 from didgelab.calc.conv import note_to_freq, freq_to_note_and_cent, note_name
+from didgelab.app import get_config
 
 import numpy as np
 
@@ -80,6 +81,7 @@ class MultiplierLoss(LossFunction):
 
 def evolve():
 
+    get_config()["log_folder_suffix"] = "nuevolution_test"
     loss = MultiplierLoss()
 
     writer = NuevolutionWriter()
