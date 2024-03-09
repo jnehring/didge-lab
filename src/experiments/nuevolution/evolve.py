@@ -308,4 +308,7 @@ def evolve():
 
 
 if __name__ == "__main__":
-    evolve()
+    try:
+        evolve()
+    except Exception as e:
+        logging.exception(e)
