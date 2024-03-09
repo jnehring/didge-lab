@@ -4,7 +4,7 @@ python -m didgelab.evo.nuevolution
 
 import numpy as np
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Dict
 import multiprocessing
 from tqdm import tqdm
 from didgelab.app import get_app, get_config
@@ -119,26 +119,26 @@ class LossFunction(ABC):
 class MutationOperator(ABC):
 
     @abstractmethod
-    def apply(self, genome : Genome) -> Genome:
+    def apply(self, genome : Genome, evolution_parameters : Dict) -> Genome:
         pass
 
 class CrossoverOperator(ABC):
 
     @abstractmethod
-    def apply(self, genome1 : Genome, genome2 : Genome) -> Genome:
+    def apply(self, genome1 : Genome, genome2 : Genome, evolution_parameters : Dict) -> Genome:
         pass
 
 class SimpleMutation(MutationOperator):
 
-    def __init__(self):
+    def apply(self, genome : Genome, evolution_parameters : Dict):
 
-        self.mutation_prob=0.5
-        self.mutation_rate=0.5
+        mr = evolution_parameters["mutation_rate"]
+        if mr is None:
+            mr = 0.5
+        mp = evolution_parameters["gene_mutation_prob"]
+        if mp is None:
+            mp = 0.5
 
-    def apply(self, genome : Genome):
-        progress = get_app().get_service(Nuevolution).get_evolution_progress()
-        mr = self.mutation_rate * (1-progress)
-        mp = self.mutation_prob * (1-progress)
         mutation = np.random.uniform(low=-mr, high=mr, size=len(genome.genome))
         mutation *= (np.random.sample(size=len(mutation))<mp).astype(int)
         mutation = genome.genome + mutation
@@ -152,14 +152,14 @@ class SimpleMutation(MutationOperator):
     
 class RandomMutation(MutationOperator):
 
-    def apply(self, genome : Genome):
+    def apply(self, genome : Genome, evolution_parameters : Dict):
         new_genome = genome.clone()
         new_genome.genome = np.random.sample(len(genome.genome))
         return new_genome
     
 class RandomCrossover(CrossoverOperator):
 
-    def apply(self, parent1 : Genome, parent2 : Genome) -> Genome:
+    def apply(self, parent1 : Genome, parent2 : Genome, evolution_parameters : Dict) -> Genome:
         assert type(parent1) == type(parent2)
         new_genome = list(zip(parent1.genome, parent2.genome))
         new_genome = np.array([np.random.choice(x) for x in new_genome])
@@ -170,7 +170,7 @@ class RandomCrossover(CrossoverOperator):
     
 class AverageCrossover(CrossoverOperator):
 
-    def apply(self, parent1 : Genome, parent2 : Genome) -> Genome:
+    def apply(self, parent1 : Genome, parent2 : Genome, evolution_parameters : Dict) -> Genome:
         assert type(parent1) == type(parent2)
         new_genome = (parent1.genome + parent2.genome) / 2
 
@@ -283,6 +283,7 @@ class NuevolutionWriter:
                 row.append(individual.loss[key])
             self.writer.writerow(row)
 
+
 class Nuevolution():
 
     def __init__( self,
@@ -291,8 +292,12 @@ class Nuevolution():
         generation_size = 5,
         num_generations = 10,
         population_size = 10,
-        mutation_prob = 0.5,
-        crossover_prob = 0.5,
+        evolution_parameters = {
+            "mutation_rate": 0.5,
+            "gene_mutation_prob": 0.5,
+            "individual_mutation_prob": 0.5,
+            "crossover_prob": 0.5
+        },
         crossover_operators = [RandomCrossover(), AverageCrossover()],
         mutation_operators = [SimpleMutation(), RandomMutation()]):
 
@@ -301,8 +306,7 @@ class Nuevolution():
         self.generation_size = generation_size
         self.num_generations = num_generations
         self.population_size = population_size
-        self.mutation_prob = mutation_prob
-        self.crossover_prob = crossover_prob
+        self.evolution_parameters = evolution_parameters
         self.crossover_operators = crossover_operators
         self.mutation_operators = mutation_operators
 
@@ -312,6 +316,11 @@ class Nuevolution():
         self.recompute_losses = False
 
         get_app().register_service(self)
+
+        def recompute_loss():
+            self.recompute_losses = True
+
+        get_app().subscribe("recompute_loss", recompute_loss)
 
     def get_evolution_progress(self):
         return (self.i_generation+1) / self.num_generations 
@@ -327,22 +336,23 @@ class Nuevolution():
             mutant.randomize_genome()
             self.population.append(mutant)
 
-        losses = pool.map(self.loss.loss, self.population)
-        for i in range(len(losses)):
-            self.population[i].loss = losses[i]
-
-        self.population = sorted(self.population, key=lambda x:x.loss["total"])
-
         probs = []
 
         new_genome_ids = [g.id for g in self.population]
         nones = [None] * len(self.population)
         operations = [["init"]] * len(self.population)
+        
+        losses = pool.map(self.loss.loss, self.population)
+        for i in range(len(losses)):
+            self.population[i].loss = losses[i]
+        self.population = sorted(self.population, key=lambda x:x.loss["total"])
         get_app().publish("log_evolution_operations", (self.i_generation, new_genome_ids, nones, nones, nones, operations, losses))
 
         # evolve
         for i_generation in range(self.num_generations):
             
+            get_app().publish("generation_started", (self.i_generation, self.population))
+
             if len(probs) != len(self.population):
                 # compute probabilities that an individual will be selected
                 probs = (1+np.arange(len(self.population))) / len(self.population)
@@ -350,7 +360,6 @@ class Nuevolution():
                 probs = np.exp(probs)
                 probs = np.flip(probs)
                 probs /= probs.sum()
-                #print(len(probs))
 
             self.i_generation = i_generation
 
@@ -360,13 +369,15 @@ class Nuevolution():
 
             losses = np.array([p.loss for p in self.population])
 
-            #print(len(self.population), self.generation_size, len(probs))
-
             indizes = np.random.choice(np.arange(len(self.population)), size=self.generation_size, replace=False, p=probs)
             generation = [self.population[i] for i in indizes]
             losses_before = [p.loss for p in generation]
 
-            i_mutants = np.arange(self.generation_size)[np.random.sample(self.generation_size)<self.mutation_prob]
+            mutation_prob = self.evolution_parameters["individual_mutation_prob"]
+            if mutation_prob is None:
+                mutation_prob = 0.5
+
+            i_mutants = np.arange(self.generation_size)[np.random.sample(self.generation_size)<mutation_prob]
             operations = []
 
             mutation_parent = []
@@ -387,10 +398,14 @@ class Nuevolution():
 
                 operations[i].append(type(operator).__name__)
                 mutation_parent[i] = generation[i].id
-                generation[i] = operator.apply(generation[i])
+                generation[i] = operator.apply(generation[i], self.evolution_parameters)
 
             # crossover
-            i_crossover = np.arange(self.generation_size)[np.random.sample(self.generation_size)<self.crossover_prob]
+            crossover_prob = self.evolution_parameters["crossover_prob"]
+            if mutation_prob is None:
+                crossover_prob = 0.5
+
+            i_crossover = np.arange(self.generation_size)[np.random.sample(self.generation_size)<crossover_prob]
             for parent1 in i_crossover:
                 parent2 = parent1
                 while parent1 == parent2:
@@ -404,7 +419,7 @@ class Nuevolution():
                 crossover_parent1[i] = self.population[parent1].id
                 crossover_parent2[i] = self.population[parent2].id
                 operations[parent1].append(type(operator).__name__)
-                generation[parent1] = operator.apply(self.population[parent1], self.population[parent2])
+                generation[parent1] = operator.apply(self.population[parent1], self.population[parent2], self.evolution_parameters)
                 
             # add only changed genes to population
             i_changed = np.arange(self.generation_size)
@@ -457,10 +472,59 @@ class TestLossFunction(LossFunction):
     def loss(self, genome : Genome):
         l = int(len(genome.genome)/2)
         return {"total": np.sum(genome.genome[0:l]) / np.sum(genome.genome[l:])}
-    
+
+class LinearDecreasingMutation:
+
+    def __init__(self):
+
+        n_steps = 4
+        self.schedule = np.arange(1,n_steps+1) / n_steps
+        self.rates = 1-(np.arange(n_steps)/n_steps)
+        self.i = -1
+
+        def update(i_generation, population):
+
+            if self.i>=len(self.schedule):
+                return
+            
+            nuevolution = get_app().get_service(Nuevolution)
+            progress = nuevolution.get_evolution_progress()
+            if self.i == -1 or progress > self.schedule[self.i]:
+                self.i += 1
+                rate = self.rates[self.i]
+                nuevolution.evolution_parameters["mutation_rate"] = rate
+                nuevolution.evolution_parameters["gene_mutation_prob"] = rate
+                get_app().publish("recompute_loss")
+
+        get_app().subscribe("generation_started", update)
+
+class LinearDecreasingCrossover:
+
+    def __init__(self):
+
+        n_steps = 4
+        self.schedule = np.arange(1,n_steps+1) / n_steps
+        self.rates = 0.5-(np.arange(n_steps)/n_steps)
+        self.rates = [np.max(x, 0) for x in self.rates]
+        self.i = -1
+
+        def update(i_generation, population):
+            if self.i>=len(self.schedule):
+                return
+            
+            nuevolution = get_app().get_service(Nuevolution)
+            progress = nuevolution.get_evolution_progress()
+            if self.i == -1 or progress > self.schedule[self.i]:
+                self.i += 1
+                rate = self.rates[self.i]
+                nuevolution.evolution_parameters["crossover_prob"] = rate
+                get_app().publish("recompute_loss")
+        get_app().subscribe("generation_started", update)
+
+
 # test method
 if __name__ == "__main__":
-
+    # np.seterr(invalid='raise')
     writer = NuevolutionWriter()
     evo = Nuevolution(TestLossFunction(), GeoGenomeA.build(5))
     evo.evolve()

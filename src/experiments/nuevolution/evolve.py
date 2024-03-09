@@ -4,7 +4,8 @@ python -m experiments.nuevolution.evolve
 
 from didgelab.calc.geo import Geo, geotools
 from didgelab.evo.nuevolution import Genome, LossFunction, Nuevolution
-from didgelab.evo.nuevolution import GeoGenomeA, NuevolutionWriter, GeoGenome, NuevolutionProgressBar
+from didgelab.evo.nuevolution import GeoGenomeA, NuevolutionWriter, GeoGenome
+from didgelab.evo.nuevolution import NuevolutionProgressBar, LinearDecreasingCrossover,LinearDecreasingMutation
 from didgelab.util.didge_visualizer import vis_didge
 from didgelab.calc.sim.sim import compute_impedance_iteratively, get_notes, compute_impedance, create_segments, get_log_simulation_frequencies, quick_analysis
 from didgelab.calc.conv import note_to_freq, freq_to_note_and_cent, note_name
@@ -12,6 +13,8 @@ from didgelab.app import get_config
 
 import math
 import numpy as np
+from typing import DefaultDict, List
+import pandas as pd
 
 class GeoGenomeB (GeoGenome):
 
@@ -104,7 +107,7 @@ class MbeyaGemome(GeoGenome):
             self.add_param(f"add_bubble_{i}", 0, 1)
             self.add_param(f"bubble_height_{i}", -0.5, 1)
             self.add_param(f"bubble_pos_{i}", 0, 1)
-            self.add_param(f"bubble_width_{i}", 0, 300)
+            self.add_param(f"bubble_width_{i}", 150, 300)
 
         GeoGenome.__init__(self, n_genes = len(self.named_params))
 
@@ -231,7 +234,10 @@ class MultiplierLoss(LossFunction):
             deltas.append(np.abs(self.target_f[closest_target_i]-freq))
 
         fundamental_loss = 5*deltas[0]
-        harmonic_loss = np.mean(deltas[1:])
+        if len(deltas) == 1:
+            harmonic_loss = 10
+        else:
+            harmonic_loss = np.mean(deltas[1:])
         n_notes_loss = (10-len(notes))/10
 
         return {
@@ -253,12 +259,15 @@ def evolve():
     evo = Nuevolution(
         loss, 
         MbeyaGemome(n_bubbles=3, add_bubble_prob=0.7),
-        generation_size = 50,
-        num_generations = 10,
-        population_size = 1000,
-        mutation_prob = 0.5,
-        crossover_prob = 0.5
+        generation_size = 10,
+        num_generations = 5,
+        population_size = 50,
     )
+
+    schedulers = [
+        LinearDecreasingCrossover(),
+        LinearDecreasingMutation()
+    ]
 
     pbar = NuevolutionProgressBar()
     population = evo.evolve() 
@@ -268,11 +277,34 @@ def evolve():
     segments = create_segments(best_geo)
     impedance = compute_impedance(segments, freqs)
     notes = get_notes(freqs, impedance)
+    for c in ["cent_diff", "freq", "impedance", "rel_imp"]:
+        notes[c] = notes[c].round(2)
 
-    print(notes)
+    print()
+    print("losses")
     for key, value in population[0].loss.items():
         print(key, np.round(value, 2))
 
+    print()
+    target_f = np.arange(1,15) * note_to_freq(-31)
+    print(target_f)
+    log_target_freq = np.log2(target_f) 
+    logfreq = np.log2(notes.freq)
+    deltas = DefaultDict(list)
+    for i in range(len(logfreq)):
+        closest_target_i = np.argmin(np.abs(log_target_freq - logfreq[i]))
+        print(closest_target_i)
+        print(notes.freq[i], target_f[i])
+        print(np.argmin(np.abs(log_target_freq - logfreq[i])))
+
+        deltas["mult"].append(closest_target_i)
+        deltas["freq"].append(notes.freq[i])
+        deltas["target"].append(target_f[i])
+        
+    deltas = pd.DataFrame(deltas)
+    deltas.target = deltas.target.round(2)
+    deltas["diff"] = np.abs(deltas.target - deltas.freq)
+    print(deltas)
 
 
 if __name__ == "__main__":
