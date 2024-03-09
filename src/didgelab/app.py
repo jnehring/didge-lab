@@ -13,7 +13,7 @@ def init_app(name=None, create_output_folder=True):
 
 def get_app():
     if app is None:
-        init_app(None, False)
+        init_app(None, True)
     return app
 
 def get_config():
@@ -22,6 +22,7 @@ def get_config():
 class App:
 
     def __init__(self, name=None, create_output_folder=True):
+
         self.subscribers = {}
         self.output_folder = None
         self.services = {}
@@ -148,7 +149,7 @@ class App:
             if len(suffix)>0:
                 folder_name += "_" + suffix
 
-            config = get_config()
+            config = self.get_config()
             if "log_folder_suffix" in config:
                 folder_name += "_" + config["log_folder_suffix"]
 

@@ -17,7 +17,8 @@ from didgelab.calc.sim.sim import get_log_simulation_frequencies, create_segment
 from copy import deepcopy
 import sys
 import threading
-
+import logging
+from concurrent.futures import ThreadPoolExecutor
 
 class Genome(ABC):
 
@@ -261,7 +262,7 @@ class NuevolutionWriter:
         f.write(json.dumps(data, indent=4))
         f.close()
 
-    def write_loss(self, i_generation, population : list[Genome]):
+    def write_loss(self, i_generation, population : List[Genome]):
 
         if self.writer is None:
             outfile = os.path.join(get_app().get_output_folder(), "losses.csv")
@@ -328,7 +329,7 @@ class Nuevolution():
     def evolve(self):
 
         # initialize
-        pool = multiprocessing.Pool()
+        pool = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
 
         self.population = []
         for i in range(self.generation_size):
@@ -342,7 +343,10 @@ class Nuevolution():
         nones = [None] * len(self.population)
         operations = [["init"]] * len(self.population)
         
-        losses = pool.map(self.loss.loss, self.population)
+        logging.info("compute initial generation")
+        losses = list(tqdm(pool.map(self.loss.loss, self.population), total=len(self.population)))
+        logging.info("done")
+        # losses = pool.map(self.loss.loss, self.population)
         for i in range(len(losses)):
             self.population[i].loss = losses[i]
         self.population = sorted(self.population, key=lambda x:x.loss["total"])
@@ -364,7 +368,7 @@ class Nuevolution():
             self.i_generation = i_generation
 
             if self.recompute_losses:
-                losses = pool.map(self.loss.loss, self.population)
+                losses = list(pool.map(self.loss.loss, self.population))
                 self.recompute_losses = False
 
             losses = np.array([p.loss for p in self.population])
@@ -434,7 +438,7 @@ class Nuevolution():
             mutation_parent = [mutation_parent[i] for i in i_changed]
 
             # compute loss
-            losses = pool.map(self.loss.loss, generation)
+            losses = list(pool.map(self.loss.loss, generation))
 
             get_app().publish("log_evolution_operations", (self.i_generation, new_genome_ids, mutation_parent, crossover_parent1, crossover_parent2, operations, losses))
 
@@ -526,6 +530,11 @@ class LinearDecreasingCrossover:
 if __name__ == "__main__":
     # np.seterr(invalid='raise')
     writer = NuevolutionWriter()
-    evo = Nuevolution(TestLossFunction(), GeoGenomeA.build(5))
+    evo = Nuevolution(
+        TestLossFunction(), 
+        GeoGenomeA.build(5),
+        num_generations=1000,
+        population_size=1000,
+        generation_size=200)
     evo.evolve()
 

@@ -9,7 +9,7 @@ from didgelab.evo.nuevolution import NuevolutionProgressBar, LinearDecreasingCro
 from didgelab.util.didge_visualizer import vis_didge
 from didgelab.calc.sim.sim import compute_impedance_iteratively, get_notes, compute_impedance, create_segments, get_log_simulation_frequencies, quick_analysis
 from didgelab.calc.conv import note_to_freq, freq_to_note_and_cent, note_name
-from didgelab.app import get_config
+from didgelab.app import get_config, get_app
 
 import math
 import numpy as np
@@ -249,6 +249,8 @@ class MultiplierLoss(LossFunction):
 
 def evolve():
 
+    get_app()
+
     get_config()["log_folder_suffix"] = "nuevolution_test"
     loss = MultiplierLoss()
 
@@ -259,9 +261,12 @@ def evolve():
     evo = Nuevolution(
         loss, 
         MbeyaGemome(n_bubbles=3, add_bubble_prob=0.7),
-        generation_size = 10,
-        num_generations = 5,
-        population_size = 50,
+        generation_size = 200,
+        num_generations = 1000,
+        population_size = 1000
+        # generation_size = 5,
+        # num_generations = 5,
+        # population_size = 5
     )
 
     schedulers = [
