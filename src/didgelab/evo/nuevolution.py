@@ -181,16 +181,32 @@ class AverageCrossover(CrossoverOperator):
 
 class NuevolutionWriter:
     
-    def __init__(self, interval=100):
+    def __init__(self, 
+        interval=20,
+        write_loss = True,
+        write_population_interval=100, # log best individual at this interval
+        log_operations = True):
 
         self.interval = interval
         self.writer = None
         self.format = None
+        self.write_loss = self.write_loss
+        self.write_population_interval = write_population_interval
+        self.log_operations = log_operations
 
-        def write_loss(i_generation, population):
-            self.write_loss(i_generation, population)
+        def generation_ended(i_generation, population):
+            if self.write_loss:
+                self.write_loss(i_generation, population)
+            if self.write_population_interval > 0 and i_generation % self.write_population_interval == 0:
+                msg = f"generation {i_generation} ended, writing population to file\n"
+                msg += "loss:\n"
+                losses = [f"{key}: {value}" for key, value in population[0].loss.items()]
+                msg += "\n".join(losses)
+                logging.info(msg)                
+                self.write_population(population, i_generation)
 
-        get_app().subscribe("generation_ended", write_loss)
+        if self.write_population_interval>0 or self.write_loss:
+            get_app().subscribe("generation_ended", generation_ended)
 
         def evolution_ended(population):
             self.csvfile.close()
@@ -241,8 +257,11 @@ class NuevolutionWriter:
 
             self.evolution_operations_stream.writerow(row)
 
-    def write_population(self, population : List[Genome]):
-        outfile = os.path.join(get_app().get_output_folder(), "population.json")
+    def write_population(self, population : List[Genome], generation=None):
+
+        if generation is None:
+            generation = f"_{generation}"
+        outfile = os.path.join(get_app().get_output_folder(), f"population{generation}.json")
         f = open(outfile, "w")
         data = []
         max_individuals = 20
@@ -323,13 +342,28 @@ class Nuevolution():
 
         get_app().subscribe("recompute_loss", recompute_loss)
 
+        logging_infos = {
+            "loss": type(loss).__name__,
+            "father_genome": type(father_genome).__name__,
+            "generation_size": generation_size,
+            "num_generations": num_generations,
+            "population_size": population_size,
+            "evolution_parameters": evolution_parameters,
+            "crossover_operators": [type(o).__name__ for o in crossover_operators],
+            "mutation_operators": [type(o).__name__ for o in mutation_operators]
+        }
+        logging_infos = sorted([f"{key}: {value}" for key, value in logging_infos.items()])
+        logging_infos = "Initialize Nuevolution\n" + "\n".join(logging_infos)
+        logging.info(logging_infos)
+
     def get_evolution_progress(self):
         return (self.i_generation+1) / self.num_generations 
 
     def evolve(self):
 
         # initialize
-        pool = ThreadPoolExecutor(max_workers=multiprocessing.cpu_count())
+        num_workers = 2*multiprocessing.cpu_count()
+        pool = ThreadPoolExecutor(max_workers=num_workers)
 
         self.population = []
         for i in range(self.generation_size):

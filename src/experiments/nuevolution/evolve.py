@@ -234,18 +234,31 @@ class MultiplierLoss(LossFunction):
             closest_target_i = np.argmin(np.abs(self.target_f - freq))
             deltas.append(np.abs(self.target_f[closest_target_i]-freq))
 
-        fundamental_loss = 5*deltas[0]
+        if len(deltas) == 0:
+            fundamental_loss = 100
+            harmonic_loss = 100
+            n_notes_loss = 100
+            toots_loss = 100
+        else:
+            fundamental_loss = 5*deltas[0]
+        
         if len(deltas) == 1:
             harmonic_loss = 10
-        else:
+            toots_loss = 10
+        elif len(deltas) > 1:
             harmonic_loss = np.mean(deltas[1:])
-        n_notes_loss = (10-len(notes))/10
+            toots_loss = deltas[1:min(len(deltas),4)]
+            toots_loss = toots_loss * (1-(np.arange(len(toots_loss))/len(toots_loss)))
+            toots_loss = 5*np.mean(toots_loss)
+
+        n_notes_loss = np.max(0.0, (7-len(notes))/7)
 
         return {
             "total": fundamental_loss + harmonic_loss + n_notes_loss,
             "fundamental_loss": fundamental_loss,
             "harmonic_loss": harmonic_loss,
-            "n_notes_loss": n_notes_loss
+            "n_notes_loss": n_notes_loss,
+            "toots_loss": toots_loss
         }
 
 def evolve():

@@ -41,7 +41,16 @@ class App:
                         name = name[0:name.find(".")]
             outfolder=self.get_output_folder(suffix=name)
             log_file=os.path.join(outfolder, "log.txt")
+            
             self.init_logging(filename=log_file, log_to_file=create_output_folder)
+
+            self.start_message()
+            
+            conf = self.get_config()
+            conf_str = "Configuration:"
+            for key in sorted(conf.keys()):
+                conf_str += f"\n{key}: {conf[key]}"
+            logging.info(conf_str)
 
         if "ipykernel" in sys.modules:
             self.start_message()
