@@ -15,6 +15,7 @@ import math
 import numpy as np
 from typing import DefaultDict, List
 import pandas as pd
+import logging
 
 class GeoGenomeB (GeoGenome):
 
@@ -259,9 +260,9 @@ def evolve():
     evo = Nuevolution(
         loss, 
         MbeyaGemome(n_bubbles=3, add_bubble_prob=0.7),
-        generation_size = 10,
-        num_generations = 5,
-        population_size = 50,
+        generation_size = 200,
+        num_generations = 1000,
+        population_size = 1000,
     )
 
     schedulers = [
@@ -287,15 +288,11 @@ def evolve():
 
     print()
     target_f = np.arange(1,15) * note_to_freq(-31)
-    print(target_f)
     log_target_freq = np.log2(target_f) 
     logfreq = np.log2(notes.freq)
     deltas = DefaultDict(list)
     for i in range(len(logfreq)):
         closest_target_i = np.argmin(np.abs(log_target_freq - logfreq[i]))
-        print(closest_target_i)
-        print(notes.freq[i], target_f[i])
-        print(np.argmin(np.abs(log_target_freq - logfreq[i])))
 
         deltas["mult"].append(closest_target_i)
         deltas["freq"].append(notes.freq[i])

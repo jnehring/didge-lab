@@ -345,7 +345,6 @@ class Nuevolution():
         
         logging.info("compute initial generation")
         losses = list(tqdm(pool.map(self.loss.loss, self.population), total=len(self.population)))
-        logging.info("done")
         # losses = pool.map(self.loss.loss, self.population)
         for i in range(len(losses)):
             self.population[i].loss = losses[i]
