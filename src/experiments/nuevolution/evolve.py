@@ -261,6 +261,38 @@ class MultiplierLoss(LossFunction):
             "toots_loss": toots_loss
         }
 
+def print_results(best_genome):
+    best_geo = best_genome.genome2geo()
+    freqs = get_log_simulation_frequencies(1, 1000, 1)
+    segments = create_segments(best_geo)
+    impedance = compute_impedance(segments, freqs)
+    notes = get_notes(freqs, impedance)
+    for c in ["cent_diff", "freq", "impedance", "rel_imp"]:
+        notes[c] = notes[c].round(2)
+
+    print()
+    # print("losses")
+    # for key, value in best_genome.loss.items():
+    #     print(key, np.round(value, 2))
+
+    print()
+    target_f = np.arange(1,15) * note_to_freq(-31)
+    log_target_freq = np.log2(target_f) 
+    logfreq = np.log2(notes.freq)
+    deltas = DefaultDict(list)
+    for i in range(len(logfreq)):
+        closest_target_i = np.argmin(np.abs(log_target_freq - logfreq[i]))
+
+        deltas["mult"].append(closest_target_i)
+        deltas["freq"].append(notes.freq[i])
+        deltas["target"].append(target_f[closest_target_i])
+        
+    deltas = pd.DataFrame(deltas)
+    deltas.target = deltas.target.round(2)
+    deltas["diff"] = np.abs(deltas.target - deltas.freq)
+    print(deltas)
+
+
 def evolve():
 
     get_config()["log_folder_suffix"] = "nuevolution_test"
@@ -285,40 +317,36 @@ def evolve():
 
     pbar = NuevolutionProgressBar()
     population = evo.evolve() 
-
-    best_geo = population[0].genome2geo()
-    freqs = get_log_simulation_frequencies(1, 1000, 1)
-    segments = create_segments(best_geo)
-    impedance = compute_impedance(segments, freqs)
-    notes = get_notes(freqs, impedance)
-    for c in ["cent_diff", "freq", "impedance", "rel_imp"]:
-        notes[c] = notes[c].round(2)
-
-    print()
-    print("losses")
-    for key, value in population[0].loss.items():
-        print(key, np.round(value, 2))
-
-    print()
-    target_f = np.arange(1,15) * note_to_freq(-31)
-    log_target_freq = np.log2(target_f) 
-    logfreq = np.log2(notes.freq)
-    deltas = DefaultDict(list)
-    for i in range(len(logfreq)):
-        closest_target_i = np.argmin(np.abs(log_target_freq - logfreq[i]))
-
-        deltas["mult"].append(closest_target_i)
-        deltas["freq"].append(notes.freq[i])
-        deltas["target"].append(target_f[i])
-        
-    deltas = pd.DataFrame(deltas)
-    deltas.target = deltas.target.round(2)
-    deltas["diff"] = np.abs(deltas.target - deltas.freq)
-    print(deltas)
-
+    print_results(population[0])
 
 if __name__ == "__main__":
-    try:
-        evolve()
+    try:        
+        # evolve()
+
+        best_results = MbeyaGemome()
+        best_results.genome = np.array([
+            0.3308829219020733,
+            0.7095509481483759,
+            0.7190104907102507,
+            0.4702396602347367,
+            0.35311625130395563,
+            0.5164820716169264,
+            0.5603468710708703,
+            0.7759474078716314,
+            0.4826899045341879,
+            0.5063990176827418,
+            0.773911254976597,
+            0.8834710243594909,
+            0.2877977922091996,
+            0.5598690422663528,
+            0.4637318508190664,
+            0.7784074254697624,
+            0.606040028636369,
+            0.4820644423316256,
+            0.16125887408049994,
+            0.9987838067548336,
+            0.12737013824459034
+        ])
+        print_results(best_results)
     except Exception as e:
         logging.exception(e)
