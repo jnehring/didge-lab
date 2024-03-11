@@ -362,7 +362,7 @@ class Nuevolution():
     def evolve(self):
 
         # initialize
-        num_workers = 2*multiprocessing.cpu_count()
+        num_workers = multiprocessing.cpu_count()
         pool = ThreadPoolExecutor(max_workers=num_workers)
 
         self.population = []

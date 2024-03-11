@@ -251,7 +251,7 @@ class MultiplierLoss(LossFunction):
             toots_loss = toots_loss * (1-(np.arange(len(toots_loss))/len(toots_loss)))
             toots_loss = 5*np.mean(toots_loss)
 
-        n_notes_loss = np.max(0.0, (7-len(notes))/7)
+        n_notes_loss = np.max((0.0, 7-len(notes)/7))
 
         return {
             "total": fundamental_loss + harmonic_loss + n_notes_loss,
