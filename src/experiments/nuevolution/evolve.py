@@ -272,8 +272,9 @@ def print_results(best_genome):
 
     print()
     print("losses")
-    for key, value in best_genome.loss.items():
-        print(key, np.round(value, 2))
+    if best_genome.loss is not None:
+        for key, value in best_genome.loss.items():
+            print(key, np.round(value, 2))
 
     print()
     target_f = np.arange(1,15) * note_to_freq(-31)
@@ -305,6 +306,9 @@ def evolve():
     evo = Nuevolution(
         loss, 
         MbeyaGemome(n_bubbles=3, add_bubble_prob=0.7),
+        # generation_size = 5,
+        # num_generations = 5,
+        # population_size = 10,
         generation_size = 200,
         num_generations = 1000,
         population_size = 1000,
@@ -321,32 +325,6 @@ def evolve():
 
 if __name__ == "__main__":
     try:        
-        # evolve()
-
-        best_results = MbeyaGemome()
-        best_results.genome = np.array([
-            0.3308829219020733,
-            0.7095509481483759,
-            0.7190104907102507,
-            0.4702396602347367,
-            0.35311625130395563,
-            0.5164820716169264,
-            0.5603468710708703,
-            0.7759474078716314,
-            0.4826899045341879,
-            0.5063990176827418,
-            0.773911254976597,
-            0.8834710243594909,
-            0.2877977922091996,
-            0.5598690422663528,
-            0.4637318508190664,
-            0.7784074254697624,
-            0.606040028636369,
-            0.4820644423316256,
-            0.16125887408049994,
-            0.9987838067548336,
-            0.12737013824459034
-        ])
-        print_results(best_results)
+        evolve()
     except Exception as e:
         logging.exception(e)
