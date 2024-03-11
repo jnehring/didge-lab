@@ -271,9 +271,9 @@ def print_results(best_genome):
         notes[c] = notes[c].round(2)
 
     print()
-    # print("losses")
-    # for key, value in best_genome.loss.items():
-    #     print(key, np.round(value, 2))
+    print("losses")
+    for key, value in best_genome.loss.items():
+        print(key, np.round(value, 2))
 
     print()
     target_f = np.arange(1,15) * note_to_freq(-31)
